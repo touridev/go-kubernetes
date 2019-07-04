@@ -84,6 +84,10 @@ func (namer *variableNamer) GetNameForVariableForRulesRouteMainMap(rulesIndex in
 func generateVirtualServerConfig(virtualServerEx *VirtualServerEx, tlsPemFileName string, baseCfgParams *ConfigParams, isPlus bool) version2.VirtualServerConfig {
 	ssl := generateSSLConfig(virtualServerEx.VirtualServer.Spec.TLS, tlsPemFileName, baseCfgParams)
 
+	// crUpstreams maps an UpstreamName to its conf_v1alpha1.Upstream as they are generated
+	// necessary for generateLocation to know what Upstream each Location references
+	crUpstreams := make(map[string]conf_v1alpha1.Upstream)
+
 	virtualServerUpstreamNamer := newUpstreamNamerForVirtualServer(virtualServerEx.VirtualServer)
 
 	var upstreams []version2.Upstream
@@ -94,6 +98,7 @@ func generateVirtualServerConfig(virtualServerEx *VirtualServerEx, tlsPemFileNam
 		endpointsKey := GenerateEndpointsKey(virtualServerEx.VirtualServer.Namespace, u.Service, u.Port)
 		ups := generateUpstream(upstreamName, u, virtualServerEx.Endpoints[endpointsKey], isPlus, baseCfgParams)
 		upstreams = append(upstreams, ups)
+		crUpstreams[upstreamName] = u
 	}
 	// generate upstreams for each VirtualServerRoute
 	for _, vsr := range virtualServerEx.VirtualServerRoutes {
@@ -103,6 +108,7 @@ func generateVirtualServerConfig(virtualServerEx *VirtualServerEx, tlsPemFileNam
 			endpointsKey := GenerateEndpointsKey(vsr.Namespace, u.Service, u.Port)
 			ups := generateUpstream(upstreamName, u, virtualServerEx.Endpoints[endpointsKey], isPlus, baseCfgParams)
 			upstreams = append(upstreams, ups)
+			crUpstreams[upstreamName] = u
 		}
 	}
 
@@ -123,13 +129,13 @@ func generateVirtualServerConfig(virtualServerEx *VirtualServerEx, tlsPemFileNam
 		}
 
 		if len(r.Splits) > 0 {
-			splitCfg := generateSplitRouteConfig(r, virtualServerUpstreamNamer, variableNamer, len(splitClients), baseCfgParams)
+			splitCfg := generateSplitRouteConfig(r, virtualServerUpstreamNamer, crUpstreams, variableNamer, len(splitClients), baseCfgParams)
 
 			splitClients = append(splitClients, splitCfg.SplitClient)
 			locations = append(locations, splitCfg.Locations...)
 			internalRedirectLocations = append(internalRedirectLocations, splitCfg.InternalRedirectLocation)
 		} else if r.Rules != nil {
-			rulesRouteCfg := generateRulesRouteConfig(r, virtualServerUpstreamNamer, variableNamer, rulesRoutes, baseCfgParams)
+			rulesRouteCfg := generateRulesRouteConfig(r, virtualServerUpstreamNamer, crUpstreams, variableNamer, rulesRoutes, baseCfgParams)
 
 			maps = append(maps, rulesRouteCfg.Maps...)
 			locations = append(locations, rulesRouteCfg.Locations...)
@@ -138,9 +144,11 @@ func generateVirtualServerConfig(virtualServerEx *VirtualServerEx, tlsPemFileNam
 			rulesRoutes++
 		} else {
 			upstreamName := virtualServerUpstreamNamer.GetNameForUpstream(r.Upstream)
-			loc := generateLocation(r.Path, upstreamName, baseCfgParams)
+			upstream := crUpstreams[upstreamName]
+			loc := generateLocation(r.Path, upstreamName, upstream, baseCfgParams)
 			locations = append(locations, loc)
 		}
+
 	}
 
 	// generate config for subroutes of each VirtualServerRoute
@@ -148,13 +156,13 @@ func generateVirtualServerConfig(virtualServerEx *VirtualServerEx, tlsPemFileNam
 		upstreamNamer := newUpstreamNamerForVirtualServerRoute(virtualServerEx.VirtualServer, vsr)
 		for _, r := range vsr.Spec.Subroutes {
 			if len(r.Splits) > 0 {
-				splitCfg := generateSplitRouteConfig(r, upstreamNamer, variableNamer, len(splitClients), baseCfgParams)
+				splitCfg := generateSplitRouteConfig(r, upstreamNamer, crUpstreams, variableNamer, len(splitClients), baseCfgParams)
 
 				splitClients = append(splitClients, splitCfg.SplitClient)
 				locations = append(locations, splitCfg.Locations...)
 				internalRedirectLocations = append(internalRedirectLocations, splitCfg.InternalRedirectLocation)
 			} else if r.Rules != nil {
-				rulesRouteCfg := generateRulesRouteConfig(r, upstreamNamer, variableNamer, rulesRoutes, baseCfgParams)
+				rulesRouteCfg := generateRulesRouteConfig(r, upstreamNamer, crUpstreams, variableNamer, rulesRoutes, baseCfgParams)
 
 				maps = append(maps, rulesRouteCfg.Maps...)
 				locations = append(locations, rulesRouteCfg.Locations...)
@@ -163,7 +171,8 @@ func generateVirtualServerConfig(virtualServerEx *VirtualServerEx, tlsPemFileNam
 				rulesRoutes++
 			} else {
 				upstreamName := upstreamNamer.GetNameForUpstream(r.Upstream)
-				loc := generateLocation(r.Path, upstreamName, baseCfgParams)
+				upstream := crUpstreams[upstreamName]
+				loc := generateLocation(r.Path, upstreamName, upstream, baseCfgParams)
 				locations = append(locations, loc)
 			}
 		}
@@ -216,13 +225,11 @@ func generateUpstream(upstreamName string, upstream conf_v1alpha1.Upstream, endp
 		upsServers = append(upsServers, s)
 	}
 
-	ups := version2.Upstream{
+	return version2.Upstream{
 		Name:     upstreamName,
 		Servers:  upsServers,
 		LBMethod: generateLBMethod(upstream.LBMethod, cfgParams.LBMethod),
 	}
-
-	return ups
 }
 
 func generateLBMethod(method string, defaultMethod string) string {
@@ -231,7 +238,6 @@ func generateLBMethod(method string, defaultMethod string) string {
 	} else if method == "round_robin" {
 		return ""
 	}
-
 	return method
 }
 
@@ -249,12 +255,13 @@ func generatePositiveIntFromPointer(n *int, defaultN int) int {
 	return *n
 }
 
-func generateLocation(path string, upstreamName string, cfgParams *ConfigParams) version2.Location {
-	loc := version2.Location{
+func generateLocation(path string, upstreamName string, upstream conf_v1alpha1.Upstream, cfgParams *ConfigParams) version2.Location {
+	return version2.Location{
 		Path:                 path,
 		Snippets:             cfgParams.LocationSnippets,
-		ProxyConnectTimeout:  cfgParams.ProxyConnectTimeout,
-		ProxyReadTimeout:     cfgParams.ProxyReadTimeout,
+		ProxyConnectTimeout:  generateTime(upstream.ProxyConnectTimeout, cfgParams.ProxyConnectTimeout),
+		ProxyReadTimeout:     generateTime(upstream.ProxyReadTimeout, cfgParams.ProxyReadTimeout),
+		ProxySendTimeout:     generateTime(upstream.ProxySendTimeout, cfgParams.ProxySendTimeout),
 		ClientMaxBodySize:    cfgParams.ClientMaxBodySize,
 		ProxyMaxTempFileSize: cfgParams.ProxyMaxTempFileSize,
 		ProxyBuffering:       cfgParams.ProxyBuffering,
@@ -262,7 +269,6 @@ func generateLocation(path string, upstreamName string, cfgParams *ConfigParams)
 		ProxyBufferSize:      cfgParams.ProxyBufferSize,
 		ProxyPass:            fmt.Sprintf("http://%v", upstreamName),
 	}
-	return loc
 }
 
 type splitRouteCfg struct {
@@ -271,7 +277,7 @@ type splitRouteCfg struct {
 	InternalRedirectLocation version2.InternalRedirectLocation
 }
 
-func generateSplitRouteConfig(route conf_v1alpha1.Route, upstreamNamer *upstreamNamer, variableNamer *variableNamer, index int, cfgParams *ConfigParams) splitRouteCfg {
+func generateSplitRouteConfig(route conf_v1alpha1.Route, upstreamNamer *upstreamNamer, crUpstreams map[string]conf_v1alpha1.Upstream, variableNamer *variableNamer, index int, cfgParams *ConfigParams) splitRouteCfg {
 	splitClientVarName := variableNamer.GetNameForSplitClientVariable(index)
 
 	// Generate a SplitClient
@@ -297,7 +303,8 @@ func generateSplitRouteConfig(route conf_v1alpha1.Route, upstreamNamer *upstream
 	for i, s := range route.Splits {
 		path := fmt.Sprintf("@splits_%d_split_%d", index, i)
 		upstreamName := upstreamNamer.GetNameForUpstream(s.Upstream)
-		loc := generateLocation(path, upstreamName, cfgParams)
+		upstream := crUpstreams[upstreamName]
+		loc := generateLocation(path, upstreamName, upstream, cfgParams)
 		locations = append(locations, loc)
 	}
 
@@ -320,7 +327,8 @@ type rulesRouteCfg struct {
 	InternalRedirectLocation version2.InternalRedirectLocation
 }
 
-func generateRulesRouteConfig(route conf_v1alpha1.Route, upstreamNamer *upstreamNamer, variableNamer *variableNamer, index int, cfgParams *ConfigParams) rulesRouteCfg {
+func generateRulesRouteConfig(route conf_v1alpha1.Route, upstreamNamer *upstreamNamer, crUpstreams map[string]conf_v1alpha1.Upstream,
+	variableNamer *variableNamer, index int, cfgParams *ConfigParams) rulesRouteCfg {
 	// Generate maps
 	var maps []version2.Map
 
@@ -378,14 +386,16 @@ func generateRulesRouteConfig(route conf_v1alpha1.Route, upstreamNamer *upstream
 	for i, m := range route.Rules.Matches {
 		path := fmt.Sprintf("@rules_%d_match_%d", index, i)
 		upstreamName := upstreamNamer.GetNameForUpstream(m.Upstream)
-		loc := generateLocation(path, upstreamName, cfgParams)
+		upstream := crUpstreams[upstreamName]
+		loc := generateLocation(path, upstreamName, upstream, cfgParams)
 		locations = append(locations, loc)
 	}
 
-	// Generate defaultUpsteam location
+	// Generate defaultUpstream location
 	path := fmt.Sprintf("@rules_%d_default", index)
 	upstreamName := upstreamNamer.GetNameForUpstream(route.Rules.DefaultUpstream)
-	loc := generateLocation(path, upstreamName, cfgParams)
+	upstream := crUpstreams[upstreamName]
+	loc := generateLocation(path, upstreamName, upstream, cfgParams)
 	locations = append(locations, loc)
 
 	// Generate an InternalRedirectLocation to the location defined by the main map variable
@@ -521,11 +531,9 @@ func createUpstreamServersForPlus(virtualServerEx *VirtualServerEx) map[string][
 }
 
 func createUpstreamServersConfig(baseCfgParams *ConfigParams) nginx.ServerConfig {
-	cfg := nginx.ServerConfig{
+	return nginx.ServerConfig{
 		MaxFails:    baseCfgParams.MaxFails,
 		FailTimeout: baseCfgParams.FailTimeout,
 		SlowStart:   baseCfgParams.SlowStart,
 	}
-
-	return cfg
 }

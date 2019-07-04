@@ -53,6 +53,7 @@ type Location struct {
 	Snippets             []string
 	ProxyConnectTimeout  string
 	ProxyReadTimeout     string
+	ProxySendTimeout     string
 	ClientMaxBodySize    string
 	ProxyMaxTempFileSize string
 	ProxyBuffering       bool
