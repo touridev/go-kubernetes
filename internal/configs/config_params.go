@@ -41,6 +41,7 @@ type ConfigParams struct {
 	MainWorkerRlimitNofile        string
 	Keepalive                     int64
 	MaxFails                      int
+	MaxConns                      int
 	FailTimeout                   string
 	HealthCheckEnabled            bool
 	HealthCheckMandatory          bool
@@ -107,6 +108,7 @@ func NewDefaultConfigParams() *ConfigParams {
 		Ports:                      []int{80},
 		SSLPorts:                   []int{443},
 		MaxFails:                   1,
+		MaxConns:                   0,
 		FailTimeout:                "10s",
 		LBMethod:                   "random two least_conn",
 		MainErrorLogLevel:          "notice",

@@ -289,6 +289,7 @@ func createUpstream(ingEx *IngressEx, name string, backend *extensions.IngressBa
 				Address:     addressport[0],
 				Port:        addressport[1],
 				MaxFails:    cfg.MaxFails,
+				MaxConns:    cfg.MaxConns,
 				FailTimeout: cfg.FailTimeout,
 				SlowStart:   cfg.SlowStart,
 				Resolve:     isExternalNameSvc,

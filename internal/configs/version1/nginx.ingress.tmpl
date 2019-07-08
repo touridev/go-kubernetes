@@ -3,7 +3,7 @@
 upstream {{$upstream.Name}} {
 	{{if $upstream.LBMethod }}{{$upstream.LBMethod}};{{end}}
 	{{range $server := $upstream.UpstreamServers}}
-	server {{$server.Address}}:{{$server.Port}} max_fails={{$server.MaxFails}} fail_timeout={{$server.FailTimeout}};{{end}}
+	server {{$server.Address}}:{{$server.Port}} max_fails={{$server.MaxFails}} fail_timeout={{$server.FailTimeout}} max_conns={{$server.MaxConns}};{{end}}
 	{{if $.Keepalive}}keepalive {{$.Keepalive}};{{end}}
 }{{end}}
 

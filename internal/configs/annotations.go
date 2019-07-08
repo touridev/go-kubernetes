@@ -48,6 +48,7 @@ var minionInheritanceList = map[string]bool{
 	"nginx.org/lb-method":                true,
 	"nginx.org/keepalive":                true,
 	"nginx.org/max-fails":                true,
+	"nginx.org/max-conns":                true,
 	"nginx.org/fail-timeout":             true,
 }
 
@@ -282,6 +283,14 @@ func parseAnnotations(ingEx *IngressEx, baseCfgParams *ConfigParams, isPlus bool
 			glog.Error(err)
 		} else {
 			cfgParams.MaxFails = maxFails
+		}
+	}
+
+	if maxConns, exists, err := GetMapKeyAsInt(ingEx.Ingress.Annotations, "nginx.org/max-conns", ingEx.Ingress); exists {
+		if err != nil {
+			glog.Error(err)
+		} else {
+			cfgParams.MaxConns = maxConns
 		}
 	}
 

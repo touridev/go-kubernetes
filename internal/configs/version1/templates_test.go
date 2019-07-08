@@ -18,6 +18,7 @@ var testUps = Upstream{
 			Address:     "127.0.0.1",
 			Port:        "8181",
 			MaxFails:    0,
+			MaxConns:    0,
 			FailTimeout: "1s",
 			SlowStart:   "5s",
 		},
