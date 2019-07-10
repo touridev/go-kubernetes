@@ -3,14 +3,14 @@ package validation
 import (
 	"testing"
 
-	"k8s.io/apimachinery/pkg/util/sets"
-
 	"github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1alpha1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
 func TestValidateVirtualServer(t *testing.T) {
+	var keepalive = 32
 	virtualServer := v1alpha1.VirtualServer{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "cafe",
@@ -23,10 +23,11 @@ func TestValidateVirtualServer(t *testing.T) {
 			},
 			Upstreams: []v1alpha1.Upstream{
 				{
-					Name:     "first",
-					Service:  "service-1",
-					LBMethod: "random",
-					Port:     80,
+					Name:      "first",
+					Service:   "service-1",
+					LBMethod:  "random",
+					Port:      80,
+					Keepalive: &keepalive,
 				},
 				{
 					Name:    "second",
@@ -1160,7 +1161,7 @@ func TestIsValidMatchValue(t *testing.T) {
 	validValues := []string{
 		"abc",
 		"123",
-		`\" 
+		`\"
 		abc\"`,
 		`\"`,
 	}
@@ -1477,7 +1478,6 @@ func TestValidatePositiveIntOrZeroFails(t *testing.T) {
 	if len(allErrs) == 0 {
 		t.Error("validatePositiveInt returned no errors for case: invalid (-1)")
 	}
-
 }
 
 func TestValidateTime(t *testing.T) {

@@ -6,14 +6,14 @@ type VirtualServerConfig struct {
 	Upstreams    []Upstream
 	SplitClients []SplitClient
 	Maps         []Map
-	Keepalive    string
 }
 
 // Upstream defines an upstream.
 type Upstream struct {
-	Name     string
-	Servers  []UpstreamServer
-	LBMethod string
+	Name      string
+	Servers   []UpstreamServer
+	LBMethod  string
+	Keepalive int
 }
 
 // UpstreamServer defines an upstream server.
@@ -60,6 +60,7 @@ type Location struct {
 	ProxyBuffers         string
 	ProxyBufferSize      string
 	ProxyPass            string
+	HasKeepalive         bool
 }
 
 // SplitClient defines a split_clients.

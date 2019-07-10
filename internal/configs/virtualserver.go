@@ -178,11 +178,6 @@ func generateVirtualServerConfig(virtualServerEx *VirtualServerEx, tlsPemFileNam
 		}
 	}
 
-	keepalive := ""
-	if baseCfgParams.Keepalive > 0 {
-		keepalive = fmt.Sprint(baseCfgParams.Keepalive)
-	}
-
 	return version2.VirtualServerConfig{
 		Upstreams:    upstreams,
 		SplitClients: splitClients,
@@ -200,7 +195,6 @@ func generateVirtualServerConfig(virtualServerEx *VirtualServerEx, tlsPemFileNam
 			InternalRedirectLocations:             internalRedirectLocations,
 			Locations:                             locations,
 		},
-		Keepalive: keepalive,
 	}
 }
 
@@ -210,7 +204,7 @@ func generateUpstream(upstreamName string, upstream conf_v1alpha1.Upstream, endp
 	for _, e := range endpoints {
 		s := version2.UpstreamServer{
 			Address:     e,
-			MaxFails:    generatePositiveIntFromPointer(upstream.MaxFails, cfgParams.MaxFails),
+			MaxFails:    generateIntFromPointer(upstream.MaxFails, cfgParams.MaxFails),
 			FailTimeout: generateTime(upstream.FailTimeout, cfgParams.FailTimeout),
 		}
 		upsServers = append(upsServers, s)
@@ -219,16 +213,17 @@ func generateUpstream(upstreamName string, upstream conf_v1alpha1.Upstream, endp
 	if !isPlus && len(upsServers) == 0 {
 		s := version2.UpstreamServer{
 			Address:     nginx502Server,
-			MaxFails:    generatePositiveIntFromPointer(upstream.MaxFails, cfgParams.MaxFails),
+			MaxFails:    generateIntFromPointer(upstream.MaxFails, cfgParams.MaxFails),
 			FailTimeout: generateTime(upstream.FailTimeout, cfgParams.FailTimeout),
 		}
 		upsServers = append(upsServers, s)
 	}
 
 	return version2.Upstream{
-		Name:     upstreamName,
-		Servers:  upsServers,
-		LBMethod: generateLBMethod(upstream.LBMethod, cfgParams.LBMethod),
+		Name:      upstreamName,
+		Servers:   upsServers,
+		LBMethod:  generateLBMethod(upstream.LBMethod, cfgParams.LBMethod),
+		Keepalive: generateIntFromPointer(upstream.Keepalive, cfgParams.Keepalive),
 	}
 }
 
@@ -248,11 +243,18 @@ func generateTime(time string, defaultTime string) string {
 	return time
 }
 
-func generatePositiveIntFromPointer(n *int, defaultN int) int {
+func generateIntFromPointer(n *int, defaultN int) int {
 	if n == nil {
 		return defaultN
 	}
 	return *n
+}
+
+func upstreamHasKeepalive(upstream conf_v1alpha1.Upstream, cfgParams *ConfigParams) bool {
+	if upstream.Keepalive != nil {
+		return *upstream.Keepalive != 0
+	}
+	return cfgParams.Keepalive != 0
 }
 
 func generateLocation(path string, upstreamName string, upstream conf_v1alpha1.Upstream, cfgParams *ConfigParams) version2.Location {
@@ -268,6 +270,7 @@ func generateLocation(path string, upstreamName string, upstream conf_v1alpha1.U
 		ProxyBuffers:         cfgParams.ProxyBuffers,
 		ProxyBufferSize:      cfgParams.ProxyBufferSize,
 		ProxyPass:            fmt.Sprintf("http://%v", upstreamName),
+		HasKeepalive:         upstreamHasKeepalive(upstream, cfgParams),
 	}
 }
 
