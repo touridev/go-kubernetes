@@ -133,14 +133,20 @@ func TestValidateUpstreams(t *testing.T) {
 		{
 			upstreams: []v1alpha1.Upstream{
 				{
-					Name:    "upstream1",
-					Service: "test-1",
-					Port:    80,
+					Name:                     "upstream1",
+					Service:                  "test-1",
+					Port:                     80,
+					ProxyNextUpstream:        "error timeout",
+					ProxyNextUpstreamTimeout: "10s",
+					ProxyNextUpstreamTries:   5,
 				},
 				{
-					Name:    "upstream2",
-					Service: "test-2",
-					Port:    80,
+					Name:                     "upstream2",
+					Service:                  "test-2",
+					Port:                     80,
+					ProxyNextUpstream:        "error timeout",
+					ProxyNextUpstreamTimeout: "10s",
+					ProxyNextUpstreamTries:   5,
 				},
 			},
 			expectedUpstreamNames: map[string]sets.Empty{
@@ -171,9 +177,12 @@ func TestValidateUpstreamsFails(t *testing.T) {
 		{
 			upstreams: []v1alpha1.Upstream{
 				{
-					Name:    "@upstream1",
-					Service: "test-1",
-					Port:    80,
+					Name:                     "@upstream1",
+					Service:                  "test-1",
+					Port:                     80,
+					ProxyNextUpstream:        "http_502",
+					ProxyNextUpstreamTimeout: "10s",
+					ProxyNextUpstreamTries:   5,
 				},
 			},
 			expectedUpstreamNames: sets.String{},
@@ -182,9 +191,12 @@ func TestValidateUpstreamsFails(t *testing.T) {
 		{
 			upstreams: []v1alpha1.Upstream{
 				{
-					Name:    "upstream1",
-					Service: "@test-1",
-					Port:    80,
+					Name:                     "upstream1",
+					Service:                  "@test-1",
+					Port:                     80,
+					ProxyNextUpstream:        "error timeout",
+					ProxyNextUpstreamTimeout: "10s",
+					ProxyNextUpstreamTries:   5,
 				},
 			},
 			expectedUpstreamNames: map[string]sets.Empty{
@@ -195,9 +207,12 @@ func TestValidateUpstreamsFails(t *testing.T) {
 		{
 			upstreams: []v1alpha1.Upstream{
 				{
-					Name:    "upstream1",
-					Service: "test-1",
-					Port:    0,
+					Name:                     "upstream1",
+					Service:                  "test-1",
+					Port:                     0,
+					ProxyNextUpstream:        "error timeout",
+					ProxyNextUpstreamTimeout: "10s",
+					ProxyNextUpstreamTries:   5,
 				},
 			},
 			expectedUpstreamNames: map[string]sets.Empty{
@@ -208,20 +223,74 @@ func TestValidateUpstreamsFails(t *testing.T) {
 		{
 			upstreams: []v1alpha1.Upstream{
 				{
-					Name:    "upstream1",
-					Service: "test-1",
-					Port:    80,
+					Name:                     "upstream1",
+					Service:                  "test-1",
+					Port:                     80,
+					ProxyNextUpstream:        "error timeout",
+					ProxyNextUpstreamTimeout: "10s",
+					ProxyNextUpstreamTries:   5,
 				},
 				{
-					Name:    "upstream1",
-					Service: "test-2",
-					Port:    80,
+					Name:                     "upstream1",
+					Service:                  "test-2",
+					Port:                     80,
+					ProxyNextUpstream:        "error timeout",
+					ProxyNextUpstreamTimeout: "10s",
+					ProxyNextUpstreamTries:   5,
 				},
 			},
 			expectedUpstreamNames: map[string]sets.Empty{
 				"upstream1": sets.Empty{},
 			},
 			msg: "duplicated upstreams",
+		},
+		{
+			upstreams: []v1alpha1.Upstream{
+				{
+					Name:                     "upstream1",
+					Service:                  "test-1",
+					Port:                     80,
+					ProxyNextUpstream:        "https_504",
+					ProxyNextUpstreamTimeout: "10s",
+					ProxyNextUpstreamTries:   5,
+				},
+			},
+			expectedUpstreamNames: map[string]sets.Empty{
+				"upstream1": sets.Empty{},
+			},
+			msg: "invalid next upstream syntax",
+		},
+		{
+			upstreams: []v1alpha1.Upstream{
+				{
+					Name:                     "upstream1",
+					Service:                  "test-1",
+					Port:                     80,
+					ProxyNextUpstream:        "http_504",
+					ProxyNextUpstreamTimeout: "-2s",
+					ProxyNextUpstreamTries:   5,
+				},
+			},
+			expectedUpstreamNames: map[string]sets.Empty{
+				"upstream1": sets.Empty{},
+			},
+			msg: "invalid upstream timeout value",
+		},
+		{
+			upstreams: []v1alpha1.Upstream{
+				{
+					Name:                     "upstream1",
+					Service:                  "test-1",
+					Port:                     80,
+					ProxyNextUpstream:        "https_504",
+					ProxyNextUpstreamTimeout: "10s",
+					ProxyNextUpstreamTries:   -1,
+				},
+			},
+			expectedUpstreamNames: map[string]sets.Empty{
+				"upstream1": sets.Empty{},
+			},
+			msg: "invalid upstream tries value",
 		},
 	}
 
@@ -233,6 +302,44 @@ func TestValidateUpstreamsFails(t *testing.T) {
 		}
 		if !resultUpstreamNames.Equal(test.expectedUpstreamNames) {
 			t.Errorf("validateUpstreams() returned %v expected %v for the case of %s", resultUpstreamNames, test.expectedUpstreamNames, test.msg)
+		}
+	}
+}
+
+func TestValidateNextUpstream(t *testing.T) {
+	tests := []struct {
+		inputS string
+	}{
+		{
+			inputS: "error timeout",
+		},
+		{
+			inputS: "http_404 timeout",
+		},
+	}
+	for _, test := range tests {
+		allErrs := validateNextUpstream(test.inputS, field.NewPath("next-upstreams"))
+		if len(allErrs) > 0 {
+			t.Errorf("validateNextUpstream(%q) returned errors %v for valid input.", test.inputS, allErrs)
+		}
+	}
+}
+
+func TestValidateNextUpstreamFails(t *testing.T) {
+	tests := []struct {
+		inputS string
+	}{
+		{
+			inputS: "error error",
+		},
+		{
+			inputS: "https_404",
+		},
+	}
+	for _, test := range tests {
+		allErrs := validateNextUpstream(test.inputS, field.NewPath("next-upstreams"))
+		if len(allErrs) < 0 {
+			t.Errorf("validateNextUpstream(%q) didn't return errors %v for invalid input.", test.inputS, allErrs)
 		}
 	}
 }

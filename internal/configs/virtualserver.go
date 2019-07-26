@@ -205,7 +205,7 @@ func generateUpstream(upstreamName string, upstream conf_v1alpha1.Upstream, endp
 		s := version2.UpstreamServer{
 			Address:     e,
 			MaxFails:    generateIntFromPointer(upstream.MaxFails, cfgParams.MaxFails),
-			FailTimeout: generateTime(upstream.FailTimeout, cfgParams.FailTimeout),
+			FailTimeout: generateString(upstream.FailTimeout, cfgParams.FailTimeout),
 		}
 		upsServers = append(upsServers, s)
 	}
@@ -214,7 +214,7 @@ func generateUpstream(upstreamName string, upstream conf_v1alpha1.Upstream, endp
 		s := version2.UpstreamServer{
 			Address:     nginx502Server,
 			MaxFails:    generateIntFromPointer(upstream.MaxFails, cfgParams.MaxFails),
-			FailTimeout: generateTime(upstream.FailTimeout, cfgParams.FailTimeout),
+			FailTimeout: generateString(upstream.FailTimeout, cfgParams.FailTimeout),
 		}
 		upsServers = append(upsServers, s)
 	}
@@ -234,13 +234,6 @@ func generateLBMethod(method string, defaultMethod string) string {
 		return ""
 	}
 	return method
-}
-
-func generateTime(time string, defaultTime string) string {
-	if time == "" {
-		return defaultTime
-	}
-	return time
 }
 
 func generateIntFromPointer(n *int, defaultN int) int {
@@ -264,20 +257,30 @@ func generateProxyPassProtocol(upstream conf_v1alpha1.Upstream) string {
 	return "http"
 }
 
+func generateString(s string, defaultS string) string {
+	if s == "" {
+		return defaultS
+	}
+	return s
+}
+
 func generateLocation(path string, upstreamName string, upstream conf_v1alpha1.Upstream, cfgParams *ConfigParams) version2.Location {
 	return version2.Location{
-		Path:                 path,
-		Snippets:             cfgParams.LocationSnippets,
-		ProxyConnectTimeout:  generateTime(upstream.ProxyConnectTimeout, cfgParams.ProxyConnectTimeout),
-		ProxyReadTimeout:     generateTime(upstream.ProxyReadTimeout, cfgParams.ProxyReadTimeout),
-		ProxySendTimeout:     generateTime(upstream.ProxySendTimeout, cfgParams.ProxySendTimeout),
-		ClientMaxBodySize:    cfgParams.ClientMaxBodySize,
-		ProxyMaxTempFileSize: cfgParams.ProxyMaxTempFileSize,
-		ProxyBuffering:       cfgParams.ProxyBuffering,
-		ProxyBuffers:         cfgParams.ProxyBuffers,
-		ProxyBufferSize:      cfgParams.ProxyBufferSize,
-		ProxyPass:            fmt.Sprintf("%v://%v", generateProxyPassProtocol(upstream), upstreamName),
-		HasKeepalive:         upstreamHasKeepalive(upstream, cfgParams),
+		Path:                     path,
+		Snippets:                 cfgParams.LocationSnippets,
+		ProxyConnectTimeout:      generateString(upstream.ProxyConnectTimeout, cfgParams.ProxyConnectTimeout),
+		ProxyReadTimeout:         generateString(upstream.ProxyReadTimeout, cfgParams.ProxyReadTimeout),
+		ProxySendTimeout:         generateString(upstream.ProxySendTimeout, cfgParams.ProxySendTimeout),
+		ClientMaxBodySize:        cfgParams.ClientMaxBodySize,
+		ProxyMaxTempFileSize:     cfgParams.ProxyMaxTempFileSize,
+		ProxyBuffering:           cfgParams.ProxyBuffering,
+		ProxyBuffers:             cfgParams.ProxyBuffers,
+		ProxyBufferSize:          cfgParams.ProxyBufferSize,
+		ProxyPass:                fmt.Sprintf("%v://%v", generateProxyPassProtocol(upstream), upstreamName),
+		ProxyNextUpstream:        generateString(upstream.ProxyNextUpstream, "error timeout"),
+		ProxyNextUpstreamTimeout: generateString(upstream.ProxyNextUpstreamTimeout, "0s"),
+		ProxyNextUpstreamTries:   upstream.ProxyNextUpstreamTries,
+		HasKeepalive:             upstreamHasKeepalive(upstream, cfgParams),
 	}
 }
 
