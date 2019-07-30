@@ -307,6 +307,10 @@ func ParseConfigMap(cfgm *v1.ConfigMap, nginxPlus bool) *ConfigParams {
 		}
 	}
 
+	if upstreamZoneSize, exists := cfgm.Data["upstream-zone-size"]; exists {
+		cfgParams.UpstreamZoneSize = upstreamZoneSize
+	}
+
 	if failTimeout, exists := cfgm.Data["fail-timeout"]; exists {
 		cfgParams.FailTimeout = failTimeout
 	}

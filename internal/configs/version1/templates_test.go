@@ -13,6 +13,7 @@ const nginxPlusMainTmpl = "nginx-plus.tmpl"
 
 var testUps = Upstream{
 	Name: "test",
+	UpstreamZoneSize: "256k",
 	UpstreamServers: []UpstreamServer{
 		{
 			Address:     "127.0.0.1",

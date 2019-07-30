@@ -23,6 +23,7 @@ type Upstream struct {
 	LBMethod        string
 	Queue           int64
 	QueueTimeout    int64
+	UpstreamZoneSize string
 }
 
 // UpstreamServer describes a server in an NGINX upstream.
@@ -169,6 +170,7 @@ type MainConfig struct {
 func NewUpstreamWithDefaultServer(name string) Upstream {
 	return Upstream{
 		Name: name,
+		UpstreamZoneSize: "256k",
 		UpstreamServers: []UpstreamServer{
 			{
 				Address:     "127.0.0.1",

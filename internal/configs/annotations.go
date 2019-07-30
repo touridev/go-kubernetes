@@ -45,6 +45,7 @@ var minionInheritanceList = map[string]bool{
 	"nginx.org/proxy-buffers":            true,
 	"nginx.org/proxy-buffer-size":        true,
 	"nginx.org/proxy-max-temp-file-size": true,
+	"nginx.org/upstream-zone-size":       true,
 	"nginx.org/location-snippets":        true,
 	"nginx.org/lb-method":                true,
 	"nginx.org/keepalive":                true,
@@ -245,6 +246,10 @@ func parseAnnotations(ingEx *IngressEx, baseCfgParams *ConfigParams, isPlus bool
 
 	if proxyBufferSize, exists := ingEx.Ingress.Annotations["nginx.org/proxy-buffer-size"]; exists {
 		cfgParams.ProxyBufferSize = proxyBufferSize
+	}
+
+	if upstreamZoneSize, exists := ingEx.Ingress.Annotations["nginx.org/upstream-zone-size"]; exists {
+		cfgParams.UpstreamZoneSize = upstreamZoneSize
 	}
 
 	if proxyMaxTempFileSize, exists := ingEx.Ingress.Annotations["nginx.org/proxy-max-temp-file-size"]; exists {

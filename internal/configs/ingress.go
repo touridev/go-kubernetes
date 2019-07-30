@@ -301,6 +301,7 @@ func createUpstream(ingEx *IngressEx, name string, backend *extensions.IngressBa
 	}
 
 	ups.LBMethod = cfg.LBMethod
+	ups.UpstreamZoneSize = cfg.UpstreamZoneSize
 	return ups
 }
 
