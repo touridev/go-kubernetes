@@ -189,7 +189,7 @@ read-timeout: 30s
 send-timeout: 30s
 next-upstream: "error timeout non_idempotent"
 next-upstream-timeout: 5s
-next-upstreeam-tries: 10
+next-upstream-tries: 10
 tls:
   enable: True
 ```
