@@ -35,7 +35,9 @@ else
 endif
 
 verify-codegen: 
+ifneq ($(BUILD_IN_CONTAINER), 1)
 	./hack/verify-codegen.sh
+endif
 
 update-codegen: 
 	./hack/update-codegen.sh
