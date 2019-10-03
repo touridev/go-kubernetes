@@ -1,6 +1,6 @@
 module github.com/nginxinc/kubernetes-ingress
 
-go 1.12
+go 1.13
 
 require (
 	github.com/evanphx/json-patch v4.2.0+incompatible // indirect
