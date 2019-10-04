@@ -7,11 +7,10 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/nginxinc/kubernetes-ingress/internal/configs/version2"
-	"github.com/nginxinc/kubernetes-ingress/internal/metrics/collectors"
-
 	"github.com/nginxinc/kubernetes-ingress/internal/configs"
 	"github.com/nginxinc/kubernetes-ingress/internal/configs/version1"
+	"github.com/nginxinc/kubernetes-ingress/internal/configs/version2"
+	"github.com/nginxinc/kubernetes-ingress/internal/metrics/collectors"
 	"github.com/nginxinc/kubernetes-ingress/internal/nginx"
 	conf_v1alpha1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1alpha1"
 	v1 "k8s.io/api/core/v1"
@@ -755,7 +754,7 @@ func TestComparePorts(t *testing.T) {
 }
 
 func TestFindProbeForPods(t *testing.T) {
-	pods := []v1.Pod{
+	pods := []*v1.Pod{
 		{
 			Spec: v1.PodSpec{
 				Containers: []v1.Container{
@@ -1516,5 +1515,60 @@ func TestFormatWarningsMessages(t *testing.T) {
 
 	if result != expected {
 		t.Errorf("formatWarningMessages(%v) returned %v but expected %v", warnings, result, expected)
+	}
+}
+
+func TestGetEndpointsBySubselectedPods(t *testing.T) {
+	tests := []struct {
+		desc        string
+		targetPort  int32
+		svcEps      v1.Endpoints
+		expectedEps []string
+	}{
+		{
+			desc:        "find one endpoint",
+			targetPort:  80,
+			expectedEps: []string{"1.2.3.4:80"},
+		},
+		{
+			desc:        "targetPort mismatch",
+			targetPort:  21,
+			expectedEps: nil,
+		},
+	}
+
+	pods := []*v1.Pod{
+		{
+			Status: v1.PodStatus{
+				PodIP: "1.2.3.4",
+			},
+		},
+	}
+
+	svcEps := v1.Endpoints{
+		Subsets: []v1.EndpointSubset{
+			{
+				Addresses: []v1.EndpointAddress{
+					{
+						IP:       "1.2.3.4",
+						Hostname: "asdf.com",
+					},
+				},
+				Ports: []v1.EndpointPort{
+					{
+						Port: 80,
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			gotEndps := getEndpointsBySubselectedPods(test.targetPort, pods, svcEps)
+			if !reflect.DeepEqual(gotEndps, test.expectedEps) {
+				t.Errorf("getEndpointsBySubselectedPods() = %v, want %v", gotEndps, test.expectedEps)
+			}
+		})
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/nginxinc/kubernetes-ingress/internal/nginx"
 	api_v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/nginxinc/kubernetes-ingress/internal/configs/version2"
@@ -46,7 +47,10 @@ func (vsx *VirtualServerEx) String() string {
 }
 
 // GenerateEndpointsKey generates a key for the Endpoints map in VirtualServerEx.
-func GenerateEndpointsKey(serviceNamespace string, serviceName string, port uint16) string {
+func GenerateEndpointsKey(serviceNamespace string, serviceName string, subselector map[string]string, port uint16) string {
+	if len(subselector) > 0 {
+		return fmt.Sprintf("%s/%s_%s:%d", serviceNamespace, serviceName, labels.Set(subselector).String(), port)
+	}
 	return fmt.Sprintf("%s/%s:%d", serviceNamespace, serviceName, port)
 }
 
@@ -137,7 +141,7 @@ func newVirtualServerConfigurator(cfgParams *ConfigParams, isPlus bool, isResolv
 }
 
 func (vsc *virtualServerConfigurator) generateEndpointsForUpstream(owner runtime.Object, namespace string, upstream conf_v1alpha1.Upstream, virtualServerEx *VirtualServerEx) []string {
-	endpointsKey := GenerateEndpointsKey(namespace, upstream.Service, upstream.Port)
+	endpointsKey := GenerateEndpointsKey(namespace, upstream.Service, upstream.Subselector, upstream.Port)
 	externalNameSvcKey := GenerateExternalNameSvcKey(namespace, upstream.Service)
 	endpoints := virtualServerEx.Endpoints[endpointsKey]
 	if !vsc.isPlus && len(endpoints) == 0 {
@@ -756,7 +760,7 @@ func createUpstreamsForPlus(virtualServerEx *VirtualServerEx, baseCfgParams *Con
 		upstreamName := upstreamNamer.GetNameForUpstream(u.Name)
 		upstreamNamespace := virtualServerEx.VirtualServer.Namespace
 
-		endpointsKey := GenerateEndpointsKey(upstreamNamespace, u.Service, u.Port)
+		endpointsKey := GenerateEndpointsKey(upstreamNamespace, u.Service, u.Subselector, u.Port)
 		endpoints := virtualServerEx.Endpoints[endpointsKey]
 
 		ups := vsc.generateUpstream(virtualServerEx.VirtualServer, upstreamName, u, isExternalNameSvc, endpoints)
@@ -775,7 +779,7 @@ func createUpstreamsForPlus(virtualServerEx *VirtualServerEx, baseCfgParams *Con
 			upstreamName := upstreamNamer.GetNameForUpstream(u.Name)
 			upstreamNamespace := vsr.Namespace
 
-			endpointsKey := GenerateEndpointsKey(upstreamNamespace, u.Service, u.Port)
+			endpointsKey := GenerateEndpointsKey(upstreamNamespace, u.Service, u.Subselector, u.Port)
 			endpoints := virtualServerEx.Endpoints[endpointsKey]
 
 			ups := vsc.generateUpstream(vsr, upstreamName, u, isExternalNameSvc, endpoints)

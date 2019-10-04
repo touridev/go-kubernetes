@@ -50,11 +50,26 @@ func TestGenerateEndpointsKey(t *testing.T) {
 	serviceName := "test"
 	var port uint16 = 80
 
-	expected := "default/test:80"
+	tests := []struct {
+		subselector map[string]string
+		expected    string
+	}{
+		{
+			subselector: nil,
+			expected:    "default/test:80",
+		},
+		{
+			subselector: map[string]string{"version": "v1"},
+			expected:    "default/test_version=v1:80",
+		},
+	}
 
-	result := GenerateEndpointsKey(serviceNamespace, serviceName, port)
-	if result != expected {
-		t.Errorf("GenerateEndpointsKey() returned %q but expected %q", result, expected)
+	for _, test := range tests {
+		result := GenerateEndpointsKey(serviceNamespace, serviceName, test.subselector, port)
+		if result != test.expected {
+			t.Errorf("GenerateEndpointsKey() returned %q but expected %q", result, test.expected)
+		}
+
 	}
 }
 
@@ -174,6 +189,12 @@ func TestGenerateVirtualServerConfig(t *testing.T) {
 						Service: "tea-svc",
 						Port:    80,
 					},
+					{
+						Name:        "tea-latest",
+						Service:     "tea-svc",
+						Subselector: map[string]string{"version": "v1"},
+						Port:        80,
+					},
 				},
 				Routes: []conf_v1alpha1.Route{
 					{
@@ -181,8 +202,16 @@ func TestGenerateVirtualServerConfig(t *testing.T) {
 						Upstream: "tea",
 					},
 					{
+						Path:     "/tea-latest",
+						Upstream: "tea-latest",
+					},
+					{
 						Path:  "/coffee",
 						Route: "default/coffee",
+					},
+					{
+						Path:  "/subtea",
+						Route: "default/subtea",
 					},
 				},
 			},
@@ -191,8 +220,14 @@ func TestGenerateVirtualServerConfig(t *testing.T) {
 			"default/tea-svc:80": {
 				"10.0.0.20:80",
 			},
-			"default/coffee-svc:80": {
+			"default/tea-svc_version=v1:80": {
 				"10.0.0.30:80",
+			},
+			"default/coffee-svc:80": {
+				"10.0.0.40:80",
+			},
+			"default/sub-tea-svc_version=v1:80": {
+				"10.0.0.50:80",
 			},
 		},
 		VirtualServerRoutes: []*conf_v1alpha1.VirtualServerRoute{
@@ -214,6 +249,29 @@ func TestGenerateVirtualServerConfig(t *testing.T) {
 						{
 							Path:     "/coffee",
 							Upstream: "coffee",
+						},
+					},
+				},
+			},
+			{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "subtea",
+					Namespace: "default",
+				},
+				Spec: conf_v1alpha1.VirtualServerRouteSpec{
+					Host: "cafe.example.com",
+					Upstreams: []conf_v1alpha1.Upstream{
+						{
+							Name:        "subtea",
+							Service:     "sub-tea-svc",
+							Port:        80,
+							Subselector: map[string]string{"version": "v1"},
+						},
+					},
+					Subroutes: []conf_v1alpha1.Route{
+						{
+							Path:     "/subtea",
+							Upstream: "subtea",
 						},
 					},
 				},
@@ -244,10 +302,28 @@ func TestGenerateVirtualServerConfig(t *testing.T) {
 				Keepalive: 16,
 			},
 			{
-				Name: "vs_default_cafe_vsr_default_coffee_coffee",
+				Name: "vs_default_cafe_tea-latest",
 				Servers: []version2.UpstreamServer{
 					{
 						Address: "10.0.0.30:80",
+					},
+				},
+				Keepalive: 16,
+			},
+			{
+				Name: "vs_default_cafe_vsr_default_coffee_coffee",
+				Servers: []version2.UpstreamServer{
+					{
+						Address: "10.0.0.40:80",
+					},
+				},
+				Keepalive: 16,
+			},
+			{
+				Name: "vs_default_cafe_vsr_default_subtea_subtea",
+				Servers: []version2.UpstreamServer{
+					{
+						Address: "10.0.0.50:80",
 					},
 				},
 				Keepalive: 16,
@@ -273,8 +349,24 @@ func TestGenerateVirtualServerConfig(t *testing.T) {
 					HasKeepalive:             true,
 				},
 				{
+					Path:                     "/tea-latest",
+					ProxyPass:                "http://vs_default_cafe_tea-latest",
+					ProxyNextUpstream:        "error timeout",
+					ProxyNextUpstreamTimeout: "0s",
+					ProxyNextUpstreamTries:   0,
+					HasKeepalive:             true,
+				},
+				{
 					Path:                     "/coffee",
 					ProxyPass:                "http://vs_default_cafe_vsr_default_coffee_coffee",
+					ProxyNextUpstream:        "error timeout",
+					ProxyNextUpstreamTimeout: "0s",
+					ProxyNextUpstreamTries:   0,
+					HasKeepalive:             true,
+				},
+				{
+					Path:                     "/subtea",
+					ProxyPass:                "http://vs_default_cafe_vsr_default_subtea_subtea",
 					ProxyNextUpstream:        "error timeout",
 					ProxyNextUpstreamTimeout: "0s",
 					ProxyNextUpstreamTries:   0,
@@ -1135,6 +1227,12 @@ func TestCreateUpstreamServersForPlus(t *testing.T) {
 						Port:    80,
 					},
 					{
+						Name:        "subselector-test",
+						Service:     "test-svc",
+						Subselector: map[string]string{"it": "works"},
+						Port:        80,
+					},
+					{
 						Name:    "external",
 						Service: "external-svc",
 						Port:    80,
@@ -1161,8 +1259,11 @@ func TestCreateUpstreamServersForPlus(t *testing.T) {
 				"10.0.0.20:80",
 			},
 			"default/test-svc:80": {},
-			"default/coffee-svc:80": {
+			"default/test-svc_it=works:80": {
 				"10.0.0.30:80",
+			},
+			"default/coffee-svc:80": {
+				"10.0.0.40:80",
 			},
 			"default/external-svc:80": {
 				"example.com:80",
@@ -1211,10 +1312,18 @@ func TestCreateUpstreamServersForPlus(t *testing.T) {
 			Servers: nil,
 		},
 		{
-			Name: "vs_default_cafe_vsr_default_coffee_coffee",
+			Name: "vs_default_cafe_subselector-test",
 			Servers: []version2.UpstreamServer{
 				{
 					Address: "10.0.0.30:80",
+				},
+			},
+		},
+		{
+			Name: "vs_default_cafe_vsr_default_coffee_coffee",
+			Servers: []version2.UpstreamServer{
+				{
+					Address: "10.0.0.40:80",
 				},
 			},
 		},
@@ -2038,6 +2147,50 @@ func TestGenerateEndpointsForUpstream(t *testing.T) {
 			isResolverConfigured: false,
 			expected:             nil,
 			msg:                  "Service with no endpoints",
+		},
+		{
+			upstream: conf_v1alpha1.Upstream{
+				Service:     name,
+				Port:        8080,
+				Subselector: map[string]string{"version": "test"},
+			},
+			vsEx: &VirtualServerEx{
+				VirtualServer: &conf_v1alpha1.VirtualServer{
+					ObjectMeta: meta_v1.ObjectMeta{
+						Name:      name,
+						Namespace: namespace,
+					},
+				},
+				Endpoints: map[string][]string{
+					"test-namespace/test_version=test:8080": {"192.168.10.10:8080"},
+				},
+			},
+			isPlus:               false,
+			isResolverConfigured: false,
+			expected:             []string{"192.168.10.10:8080"},
+			msg:                  "Upstream with subselector, with a matching endpoint",
+		},
+		{
+			upstream: conf_v1alpha1.Upstream{
+				Service:     name,
+				Port:        8080,
+				Subselector: map[string]string{"version": "test"},
+			},
+			vsEx: &VirtualServerEx{
+				VirtualServer: &conf_v1alpha1.VirtualServer{
+					ObjectMeta: meta_v1.ObjectMeta{
+						Name:      name,
+						Namespace: namespace,
+					},
+				},
+				Endpoints: map[string][]string{
+					"test-namespace/test:8080": {"192.168.10.10:8080"},
+				},
+			},
+			isPlus:               false,
+			isResolverConfigured: false,
+			expected:             []string{nginx502Server},
+			msg:                  "Upstream with subselector, without a matching endpoint",
 		},
 	}
 
