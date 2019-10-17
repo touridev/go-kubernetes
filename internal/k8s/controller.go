@@ -605,8 +605,10 @@ func (lbc *LoadBalancerController) sync(task task) {
 		lbc.syncExternalService(task)
 	case virtualserver:
 		lbc.syncVirtualServer(task)
+		lbc.updateVirtualServerMetrics()
 	case virtualServerRoute:
 		lbc.syncVirtualServerRoute(task)
+		lbc.updateVirtualServerMetrics()
 	}
 }
 
@@ -847,8 +849,14 @@ func (lbc *LoadBalancerController) syncIng(task task) {
 func (lbc *LoadBalancerController) updateIngressMetrics() {
 	counters := lbc.configurator.GetIngressCounts()
 	for nType, count := range counters {
-		lbc.metricsCollector.SetIngressResources(nType, count)
+		lbc.metricsCollector.SetIngresses(nType, count)
 	}
+}
+
+func (lbc *LoadBalancerController) updateVirtualServerMetrics() {
+	vsCount, vsrCount := lbc.configurator.GetVirtualServerCounts()
+	lbc.metricsCollector.SetVirtualServers(vsCount)
+	lbc.metricsCollector.SetVirtualServerRoutes(vsrCount)
 }
 
 // syncExternalService does not sync all services.
