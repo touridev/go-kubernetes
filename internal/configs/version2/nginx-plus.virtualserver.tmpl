@@ -15,6 +15,12 @@ upstream {{ $u.Name }} {
     {{ if $u.Queue }}
     queue {{ $u.Queue.Size }} timeout={{ $u.Queue.Timeout }};
     {{ end }}
+
+    {{ with $u.SessionCookie }}
+        {{ if .Enable }}
+    sticky cookie {{ .Name }}{{ if .Expires }} expires={{ .Expires }}{{ end }}{{ if .Domain }} domain={{ .Domain }}{{ end }}{{ if .HTTPOnly }} httponly{{ end }}{{ if .Secure }} secure{{ end }}{{ if .Path }} path={{ .Path }}{{ end }};
+        {{ end }}
+    {{ end }}
 }
 {{ end }}
 
