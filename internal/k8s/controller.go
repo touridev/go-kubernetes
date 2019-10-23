@@ -187,6 +187,8 @@ func NewLoadBalancerController(input NewLoadBalancerControllerInput) *LoadBalanc
 		lbc.addLeaderHandler(createLeaderHandler(lbc))
 	}
 
+	lbc.updateIngressMetrics()
+
 	return lbc
 }
 
