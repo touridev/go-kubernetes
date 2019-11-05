@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -40,8 +41,11 @@ var (
 	gitCommit string
 
 	healthStatus = flag.Bool("health-status", false,
-		`Add a location "/nginx-health" to the default server. The location responds with the 200 status code for any request.
+		`Add a location based on the value of health-status-uri to the default server. The location responds with the 200 status code for any request.
 	Useful for external health-checking of the Ingress controller`)
+
+	healthStatusURI = flag.String("health-status-uri", "/nginx-health",
+		`Sets the URI of health status location in the default server. Requires -health-status`)
 
 	proxyURL = flag.String("proxy", "",
 		`Use a proxy server to connect to Kubernetes API started by "kubectl proxy" command. For testing purposes only.
@@ -135,6 +139,11 @@ func main() {
 	if *versionFlag {
 		fmt.Printf("Version=%v GitCommit=%v\n", version, gitCommit)
 		os.Exit(0)
+	}
+
+	healthStatusURIValidationError := validateLocation(*healthStatusURI)
+	if healthStatusURIValidationError != nil {
+		glog.Fatalf("Invalid value for health-status-uri: %v", healthStatusURIValidationError)
 	}
 
 	statusLockNameValidationError := validateResourceName(*leaderElectionLockName)
@@ -320,6 +329,7 @@ func main() {
 
 	staticCfgParams := &configs.StaticConfigParams{
 		HealthStatus:                   *healthStatus,
+		HealthStatusURI:                *healthStatusURI,
 		NginxStatus:                    *nginxStatus,
 		NginxStatusAllowCIDRs:          allowedCIDRs,
 		NginxStatusPort:                *nginxStatusPort,
@@ -514,4 +524,20 @@ func getAndValidateSecret(kubeClient *kubernetes.Clientset, secretNsName string)
 		return nil, fmt.Errorf("%v is invalid: %v", secretNsName, err)
 	}
 	return secret, nil
+}
+
+const locationFmt = `/[^\s{};]*`
+const locationErrMsg = "must start with / and must not include any whitespace character, `{`, `}` or `;`"
+
+var locationRegexp = regexp.MustCompile("^" + locationFmt + "$")
+
+func validateLocation(location string) error {
+	if location == "" || location == "/" {
+		return fmt.Errorf("invalid location format: '%v' is an invalid location", location)
+	}
+	if !locationRegexp.MatchString(location) {
+		msg := validation.RegexError(locationErrMsg, locationFmt, "/path", "/path/subpath-123")
+		return fmt.Errorf("invalid location format: %v", msg)
+	}
+	return nil
 }
