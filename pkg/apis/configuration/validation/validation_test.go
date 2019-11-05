@@ -96,11 +96,28 @@ func TestValidateTLS(t *testing.T) {
 			Secret: "my-secret",
 		},
 		{
+			Secret:   "my-secret",
+			Redirect: &v1alpha1.TLSRedirect{},
+		},
+		{
+			Secret: "my-secret",
+			Redirect: &v1alpha1.TLSRedirect{
+				Enable: true,
+			},
+		},
+		{
 			Secret: "my-secret",
 			Redirect: &v1alpha1.TLSRedirect{
 				Enable:  true,
 				Code:    createPointerFromInt(302),
 				BasedOn: "scheme",
+			},
+		},
+		{
+			Secret: "my-secret",
+			Redirect: &v1alpha1.TLSRedirect{
+				Enable: true,
+				Code:   createPointerFromInt(307),
 			},
 		},
 	}
