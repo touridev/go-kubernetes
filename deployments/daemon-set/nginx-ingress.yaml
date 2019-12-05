@@ -54,4 +54,3 @@ spec:
          #- -external-service=nginx-ingress
          #- -enable-leader-election
          #- -enable-prometheus-metrics
-         #- -enable-custom-resources
