@@ -1396,7 +1396,13 @@ func findVirtualServersForVirtualServerRouteKey(virtualServers []*conf_v1.Virtua
 
 	for _, vs := range virtualServers {
 		for _, r := range vs.Spec.Routes {
-			if r.Route == key {
+			// if route is defined without a namespace, use the namespace of VirtualServer.
+			vsrKey := r.Route
+			if !strings.Contains(r.Route, "/") {
+				vsrKey = fmt.Sprintf("%s/%s", vs.Namespace, r.Route)
+			}
+
+			if vsrKey == key {
 				result = append(result, vs)
 				break
 			}
