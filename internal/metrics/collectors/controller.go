@@ -21,12 +21,13 @@ type ControllerMetricsCollector struct {
 }
 
 // NewControllerMetricsCollector creates a new ControllerMetricsCollector
-func NewControllerMetricsCollector(crdsEnabled bool) *ControllerMetricsCollector {
+func NewControllerMetricsCollector(crdsEnabled bool, constLabels map[string]string) *ControllerMetricsCollector {
 	ingResTotal := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name:      "ingress_resources_total",
-			Namespace: metricsNamespace,
-			Help:      "Number of handled ingress resources",
+			Name:        "ingress_resources_total",
+			Namespace:   metricsNamespace,
+			Help:        "Number of handled ingress resources",
+			ConstLabels: constLabels,
 		},
 		labelNamesController,
 	)
@@ -37,17 +38,19 @@ func NewControllerMetricsCollector(crdsEnabled bool) *ControllerMetricsCollector
 
 	vsResTotal := prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name:      "virtualserver_resources_total",
-			Namespace: metricsNamespace,
-			Help:      "Number of handled VirtualServer resources",
+			Name:        "virtualserver_resources_total",
+			Namespace:   metricsNamespace,
+			Help:        "Number of handled VirtualServer resources",
+			ConstLabels: constLabels,
 		},
 	)
 
 	vsrResTotal := prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name:      "virtualserverroute_resources_total",
-			Namespace: metricsNamespace,
-			Help:      "Number of handled VirtualServerRoute resources",
+			Name:        "virtualserverroute_resources_total",
+			Namespace:   metricsNamespace,
+			Help:        "Number of handled VirtualServerRoute resources",
+			ConstLabels: constLabels,
 		},
 	)
 
