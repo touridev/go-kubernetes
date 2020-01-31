@@ -5,7 +5,7 @@ This document explains how to build an Ingress Controller image. Note that for N
 ## Prerequisites
 
 Before you can build the image, make sure that the following software is installed on your machine:
-* [Docker](https://www.docker.com/products/docker)
+* [Docker](https://www.docker.com/products/docker) v18.09+
 * [GNU Make](https://www.gnu.org/software/make/)
 * [git](https://git-scm.com/)
 * [OpenSSL](https://www.openssl.org/), optionally, if you would like to generate a self-signed certificate and a key for the default server.
@@ -31,7 +31,7 @@ We build the image using the make utility and the provided `Makefile`. Let’s c
       $ make PREFIX=myregistry.example.com/nginx-ingress
       ```
       `myregistry.example.com/nginx-ingress` defines the repo in your private registry where the image will be pushed. Substitute that value with the repo in your private registry.
-      
+
       As the result, the image **myregistry.example.com/nginx-ingress:edge** is built and pushed to the registry. Note that the tag `edge` comes from the `VERSION` variable, defined in the Makefile.
 
     * For NGINX Plus, first, make sure that the certificate (`nginx-repo.crt`) and the key (`nginx-repo.key`) of your license are located in the root of the project:
@@ -45,7 +45,7 @@ We build the image using the make utility and the provided `Makefile`. Let’s c
       $ make DOCKERFILE=DockerfileForPlus PREFIX=myregistry.example.com/nginx-plus-ingress
       ```
       `myregistry.example.com/nginx-plus-ingress` defines the repo in your private registry where the image will be pushed. Substitute that value with the repo in your private registry.
-      
+
       As the result, the image **myregistry.example.com/nginx-plus-ingress:edge** is built and pushed to the registry. Note that the tag `edge` comes from the `VERSION` variable, defined in the Makefile.
 
 Next you will find the details about available Makefile targets and variables.
@@ -53,8 +53,8 @@ Next you will find the details about available Makefile targets and variables.
 ### Makefile Targets
 
 The **Makefile** we provide has the following targets:
-* **test**: runs unit tests.
-* **nginx-ingress**: creates the controller binary.
+* **test**: runs unit tests (ignored when `BUILD_IN_CONTAINER` is `1`).
+* **binary**: creates the controller binary using local golang environment (ignored when `BUILD_IN_CONTAINER` is `1`).
 * **container**: builds a Docker image.
 * **push**: pushes the image to the private Docker registry.
 * **all** (the default target): executes the four targets above in the order listed. If one of the targets fails, the execution process stops, reporting an error.

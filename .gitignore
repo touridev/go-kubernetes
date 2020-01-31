@@ -39,8 +39,5 @@ cmd/nginx-ingress/nginx-ingress
 # Default certificate and key
 default.pem
 
-# Dockerfiles for building
-/Dockerfile
-
 # IntelliJ IDEA
 .idea
