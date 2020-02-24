@@ -49,7 +49,7 @@ RUN set -x \
 	&& cp objs/ngx_http_opentracing_module.so /ngx_http_opentracing_module.so
 
 
-FROM debian:stretch-slim AS tracer-downloader
+FROM debian:buster-slim AS tracer-downloader
 ARG JAEGER_VERSION=v0.4.2
 RUN set -x \
 	&& apt-get update \
