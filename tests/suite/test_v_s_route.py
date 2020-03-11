@@ -1,5 +1,6 @@
 import requests
 import pytest
+from kubernetes.client.rest import ApiException
 
 from settings import TEST_DATA
 from suite.custom_assertions import assert_event_and_count, assert_event_and_get_count
@@ -322,6 +323,35 @@ class TestVirtualServerRouteValidation:
         assert_event_and_count(f"Ignored by VirtualServer {v_s_route_setup.namespace}/{v_s_route_setup.vs_name}",
                                1,
                                new_vsr_events)
+
+    def test_openapi_validation_flow(self, kube_apis, ingress_controller_prerequisites,
+                                     crd_ingress_controller, v_s_route_setup):
+        ic_pod_name = get_first_pod_name(kube_apis.v1, ingress_controller_prerequisites.namespace)
+        config_old = get_vs_nginx_template_conf(kube_apis.v1,
+                                                v_s_route_setup.namespace,
+                                                v_s_route_setup.vs_name,
+                                                ic_pod_name,
+                                                ingress_controller_prerequisites.namespace)
+        route_yaml = f"{TEST_DATA}/virtual-server-route/route-single-invalid-openapi.yaml"
+        try:
+            patch_v_s_route_from_yaml(kube_apis.custom_objects,
+                                      v_s_route_setup.route_s.name,
+                                      route_yaml,
+                                      v_s_route_setup.route_s.namespace)
+        except ApiException as ex:
+            assert ex.status == 422 and "spec.subroutes.action.pass: Invalid value" in ex.body
+        except Exception as ex:
+            pytest.fail(f"An unexpected exception is raised: {ex}")
+        else:
+            pytest.fail("Expected an exception but there was none")
+
+        wait_before_test(1)
+        config_new = get_vs_nginx_template_conf(kube_apis.v1,
+                                                v_s_route_setup.namespace,
+                                                v_s_route_setup.vs_name,
+                                                ic_pod_name,
+                                                ingress_controller_prerequisites.namespace)
+        assert config_old == config_new, "Expected: config doesn't change"
 
 
 @pytest.mark.vsr

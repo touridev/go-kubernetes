@@ -41,7 +41,7 @@ class TestVirtualServerUpstreamTls:
         assert_event(vs_event_text, events_vs)
 
     def test_validation_flow(self, kube_apis, ingress_controller_prerequisites,
-                                     crd_ingress_controller, virtual_server_setup):
+                             crd_ingress_controller, virtual_server_setup):
         ic_pod_name = get_first_pod_name(kube_apis.v1, ingress_controller_prerequisites.namespace)
         initial_events_vs = get_events(kube_apis.v1, virtual_server_setup.namespace)
         try:
@@ -51,6 +51,10 @@ class TestVirtualServerUpstreamTls:
                                            virtual_server_setup.namespace)
         except ApiException as ex:
             assert ex.status == 422 and "spec.upstreams.tls.enable: Invalid value" in ex.body
+        except Exception as ex:
+            pytest.fail(f"An unexpected exception is raised: {ex}")
+        else:
+            pytest.fail("Expected an exception but there was none")
 
         wait_before_test(1)
         config = get_vs_nginx_template_conf(kube_apis.v1,

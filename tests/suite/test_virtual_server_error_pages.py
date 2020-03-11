@@ -1,11 +1,12 @@
 import pytest
 import json
 import requests
+from kubernetes.client.rest import ApiException
 
 from suite.custom_assertions import wait_and_assert_status_code, assert_vs_conf_not_exists, \
     assert_event_starts_with_text_and_contains_errors
 from settings import TEST_DATA
-from suite.custom_resources_utils import patch_virtual_server_from_yaml
+from suite.custom_resources_utils import patch_virtual_server_from_yaml, get_vs_nginx_template_conf
 from suite.resources_utils import wait_before_test, get_first_pod_name, get_events
 
 
@@ -71,6 +72,41 @@ class TestVSErrorPages:
         assert_event_starts_with_text_and_contains_errors(vs_event_text, vs_events, invalid_fields)
         assert_vs_conf_not_exists(kube_apis, ic_pod_name, ingress_controller_prerequisites.namespace,
                                   virtual_server_setup)
+
+    def test_openapi_validation_flow(self, kube_apis, ingress_controller_prerequisites,
+                                     crd_ingress_controller, virtual_server_setup):
+        ic_pod_name = get_first_pod_name(kube_apis.v1, ingress_controller_prerequisites.namespace)
+        config_old = get_vs_nginx_template_conf(kube_apis.v1,
+                                                virtual_server_setup.namespace,
+                                                virtual_server_setup.vs_name,
+                                                ic_pod_name,
+                                                ingress_controller_prerequisites.namespace)
+        vs_file = f"{TEST_DATA}/virtual-server-error-pages/virtual-server-invalid-openapi.yaml"
+        try:
+            patch_virtual_server_from_yaml(kube_apis.custom_objects, virtual_server_setup.vs_name, vs_file,
+                                           virtual_server_setup.namespace)
+        except ApiException as ex:
+            assert ex.status == 422 \
+                   and "spec.routes.errorPages.codes: Invalid value" in ex.body \
+                   and "spec.routes.errorPages.redirect.code: Invalid value" in ex.body \
+                   and "spec.routes.errorPages.redirect.url: Invalid value" in ex.body \
+                   and "spec.routes.errorPages.return.code: Invalid value" in ex.body \
+                   and "spec.routes.errorPages.return.type: Invalid value" in ex.body \
+                   and "spec.routes.errorPages.return.body: Invalid value" in ex.body \
+                   and "spec.routes.errorPages.return.headers.name: Invalid value" in ex.body \
+                   and "spec.routes.errorPages.return.headers.value: Invalid value" in ex.body
+        except Exception as ex:
+            pytest.fail(f"An unexpected exception is raised: {ex}")
+        else:
+            pytest.fail("Expected an exception but there was none")
+
+        wait_before_test(1)
+        config_new = get_vs_nginx_template_conf(kube_apis.v1,
+                                                virtual_server_setup.namespace,
+                                                virtual_server_setup.vs_name,
+                                                ic_pod_name,
+                                                ingress_controller_prerequisites.namespace)
+        assert config_old == config_new, "Expected: config doesn't change"
 
     @pytest.mark.parametrize('v_s_data', [
         {"src": "virtual-server-splits.yaml", "expected_code": 308},

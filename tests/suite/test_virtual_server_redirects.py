@@ -1,5 +1,6 @@
 import pytest
 import requests
+from kubernetes.client.rest import ApiException
 
 from settings import TEST_DATA
 from suite.custom_assertions import wait_and_assert_status_code, assert_event_and_get_count, \
@@ -72,3 +73,32 @@ class TestVSRedirects:
                                     virtual_server_setup.vs_host, allow_redirects=False)
         vs_events = get_events(kube_apis.v1, virtual_server_setup.namespace)
         assert_event_starts_with_text_and_contains_errors(event_text, vs_events, invalid_fields)
+
+    def test_openapi_validation_flow(self, kube_apis, ingress_controller_prerequisites,
+                                     crd_ingress_controller, virtual_server_setup):
+        ic_pod_name = get_first_pod_name(kube_apis.v1, ingress_controller_prerequisites.namespace)
+        config_old = get_vs_nginx_template_conf(kube_apis.v1,
+                                                virtual_server_setup.namespace,
+                                                virtual_server_setup.vs_name,
+                                                ic_pod_name,
+                                                ingress_controller_prerequisites.namespace)
+        vs_src = f"{TEST_DATA}/virtual-server-redirects/virtual-server-invalid-openapi.yaml"
+        try:
+            patch_virtual_server_from_yaml(kube_apis.custom_objects, virtual_server_setup.vs_name, vs_src,
+                                           virtual_server_setup.namespace)
+        except ApiException as ex:
+            assert ex.status == 422 \
+                   and "spec.routes.action.redirect.url: Invalid value" in ex.body \
+                   and "spec.routes.action.redirect.code: Invalid value" in ex.body
+        except Exception as ex:
+            pytest.fail(f"An unexpected exception is raised: {ex}")
+        else:
+            pytest.fail("Expected an exception but there was none")
+
+        wait_before_test(1)
+        config_new = get_vs_nginx_template_conf(kube_apis.v1,
+                                                virtual_server_setup.namespace,
+                                                virtual_server_setup.vs_name,
+                                                ic_pod_name,
+                                                ingress_controller_prerequisites.namespace)
+        assert config_old == config_new, "Expected: config doesn't change"

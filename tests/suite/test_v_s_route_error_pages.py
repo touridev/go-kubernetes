@@ -2,6 +2,8 @@ import requests
 import pytest
 import json
 
+from kubernetes.client.rest import ApiException
+
 from settings import TEST_DATA
 from suite.custom_assertions import wait_and_assert_status_code, \
     assert_event_starts_with_text_and_contains_errors
@@ -95,6 +97,43 @@ class TestVSRErrorPages:
         assert_event_starts_with_text_and_contains_errors(vsr_m_event_text, vsr_m_events, invalid_fields_m)
         assert "upstream" not in config
 
+    def test_openapi_validation_flow(self, kube_apis, ingress_controller_prerequisites,
+                                     crd_ingress_controller, v_s_route_setup):
+        ic_pod_name = get_first_pod_name(kube_apis.v1, ingress_controller_prerequisites.namespace)
+        config_old = get_vs_nginx_template_conf(kube_apis.v1,
+                                                v_s_route_setup.namespace,
+                                                v_s_route_setup.vs_name,
+                                                ic_pod_name,
+                                                ingress_controller_prerequisites.namespace)
+        vsr_src = f"{TEST_DATA}/virtual-server-route-error-pages/route-multiple-invalid-openapi.yaml"
+        try:
+            patch_v_s_route_from_yaml(kube_apis.custom_objects,
+                                      v_s_route_setup.route_m.name,
+                                      vsr_src,
+                                      v_s_route_setup.route_m.namespace)
+        except ApiException as ex:
+            assert ex.status == 422 \
+                   and "spec.subroutes.errorPages.codes: Invalid value" in ex.body \
+                   and "spec.subroutes.errorPages.redirect.code: Invalid value" in ex.body \
+                   and "spec.subroutes.errorPages.redirect.url: Invalid value" in ex.body \
+                   and "spec.subroutes.errorPages.return.code: Invalid value" in ex.body \
+                   and "spec.subroutes.errorPages.return.type: Invalid value" in ex.body \
+                   and "spec.subroutes.errorPages.return.body: Invalid value" in ex.body \
+                   and "spec.subroutes.errorPages.return.headers.name: Invalid value" in ex.body \
+                   and "spec.subroutes.errorPages.return.headers.value: Invalid value" in ex.body
+        except Exception as ex:
+            pytest.fail(f"An unexpected exception is raised: {ex}")
+        else:
+            pytest.fail("Expected an exception but there was none")
+
+        wait_before_test(1)
+        config_new = get_vs_nginx_template_conf(kube_apis.v1,
+                                                v_s_route_setup.namespace,
+                                                v_s_route_setup.vs_name,
+                                                ic_pod_name,
+                                                ingress_controller_prerequisites.namespace)
+        assert config_old == config_new, "Expected: config doesn't change"
+
     @pytest.mark.parametrize('v_s_r_data', [
         {"src": "route-multiple-splits.yaml", "expected_code": 308},
         {"src": "route-multiple-matches.yaml", "expected_code": 307}
@@ -129,4 +168,3 @@ class TestVSRErrorPages:
         resp = requests.get(f"{req_url}{v_s_route_setup.route_m.paths[0]}",
                             headers={"host": v_s_route_setup.vs_host}, allow_redirects=False)
         assert f'http://{v_s_route_setup.vs_host}/error.html' in resp.next.url
-

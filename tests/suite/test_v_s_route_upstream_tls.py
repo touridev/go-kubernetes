@@ -86,8 +86,8 @@ class TestVSRouteUpstreamTls:
         assert_event(vs_event_text, events_ns_m)
 
     def test_validation_flow(self, kube_apis, ingress_controller_prerequisites,
-                                     crd_ingress_controller,
-                                     v_s_route_setup, v_s_route_secure_app_setup):
+                             crd_ingress_controller,
+                             v_s_route_setup, v_s_route_secure_app_setup):
         ic_pod_name = get_first_pod_name(kube_apis.v1, ingress_controller_prerequisites.namespace)
         initial_events_ns_m = get_events(kube_apis.v1, v_s_route_setup.route_m.namespace)
         initial_events_ns_s = get_events(kube_apis.v1, v_s_route_setup.route_s.namespace)
@@ -98,6 +98,10 @@ class TestVSRouteUpstreamTls:
                                       v_s_route_setup.route_s.namespace)
         except ApiException as ex:
             assert ex.status == 422 and "spec.upstreams.tls.enable: Invalid value" in ex.body
+        except Exception as ex:
+            pytest.fail(f"An unexpected exception is raised: {ex}")
+        else:
+            pytest.fail("Expected an exception but there was none")
 
         wait_before_test(1)
         config = get_vs_nginx_template_conf(kube_apis.v1,

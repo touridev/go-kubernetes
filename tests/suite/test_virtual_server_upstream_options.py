@@ -1,5 +1,6 @@
 import requests
 import pytest
+from kubernetes.client.rest import ApiException
 
 from settings import TEST_DATA
 from suite.custom_assertions import assert_event_and_get_count, assert_event_count_increased, assert_response_codes, \
@@ -246,6 +247,48 @@ class TestVirtualServerUpstreamOptionValidation:
         assert_vs_conf_not_exists(kube_apis, ic_pod_name, ingress_controller_prerequisites.namespace,
                                   virtual_server_setup)
 
+    def test_openapi_validation_flow(self, kube_apis, ingress_controller_prerequisites,
+                                     crd_ingress_controller, virtual_server_setup):
+        ic_pod_name = get_first_pod_name(kube_apis.v1, ingress_controller_prerequisites.namespace)
+        invalid_fields = [
+            "upstreams.lb-method", "upstreams.fail-timeout",
+            "upstreams.max-fails", "upstreams.connect-timeout",
+            "upstreams.read-timeout", "upstreams.send-timeout",
+            "upstreams.keepalive", "upstreams.max-conns",
+            "upstreams.next-upstream",
+            "upstreams.next-upstream-timeout", "upstreams.next-upstream-tries",
+            "upstreams.client-max-body-size",
+            "upstreams.buffers.number", "upstreams.buffers.size", "upstreams.buffer-size",
+            "upstreams.buffering", "upstreams.tls"
+        ]
+        config_old = get_vs_nginx_template_conf(kube_apis.v1,
+                                                virtual_server_setup.namespace,
+                                                virtual_server_setup.vs_name,
+                                                ic_pod_name,
+                                                ingress_controller_prerequisites.namespace)
+        vs_file = f"{TEST_DATA}/virtual-server-upstream-options/virtual-server-with-invalid-keys-openapi.yaml"
+        try:
+            patch_virtual_server_from_yaml(kube_apis.custom_objects,
+                                           virtual_server_setup.vs_name,
+                                           vs_file,
+                                           virtual_server_setup.namespace)
+        except ApiException as ex:
+            assert ex.status == 422
+            for item in invalid_fields:
+                assert item in ex.body
+        except Exception as ex:
+            pytest.fail(f"An unexpected exception is raised: {ex}")
+        else:
+            pytest.fail("Expected an exception but there was none")
+
+        wait_before_test(2)
+        config_new = get_vs_nginx_template_conf(kube_apis.v1,
+                                                virtual_server_setup.namespace,
+                                                virtual_server_setup.vs_name,
+                                                ic_pod_name,
+                                                ingress_controller_prerequisites.namespace)
+        assert config_old == config_new, "Expected: config doesn't change"
+
 
 @pytest.mark.vs
 @pytest.mark.skip_for_nginx_oss
@@ -380,3 +423,48 @@ class TestOptionsSpecificForPlus:
         assert_event_starts_with_text_and_contains_errors(vs_event_text, vs_events, invalid_fields)
         assert_vs_conf_not_exists(kube_apis, ic_pod_name, ingress_controller_prerequisites.namespace,
                                   virtual_server_setup)
+
+    def test_openapi_validation_flow(self, kube_apis, ingress_controller_prerequisites,
+                                     crd_ingress_controller, virtual_server_setup):
+        ic_pod_name = get_first_pod_name(kube_apis.v1, ingress_controller_prerequisites.namespace)
+        invalid_fields = [
+            "upstreams.healthCheck.enable", "upstreams.healthCheck.path",
+            "upstreams.healthCheck.interval", "upstreams.healthCheck.jitter",
+            "upstreams.healthCheck.fails", "upstreams.healthCheck.passes",
+            "upstreams.healthCheck.port", "upstreams.healthCheck.connect-timeout",
+            "upstreams.healthCheck.read-timeout", "upstreams.healthCheck.send-timeout",
+            "upstreams.healthCheck.headers.name", "upstreams.healthCheck.headers.value",
+            "upstreams.healthCheck.statusMatch",
+            "upstreams.slow-start",
+            "upstreams.queue.size", "upstreams.queue.timeout",
+            "upstreams.sessionCookie.name", "upstreams.sessionCookie.path",
+            "upstreams.sessionCookie.expires", "upstreams.sessionCookie.domain",
+            "upstreams.sessionCookie.httpOnly", "upstreams.sessionCookie.secure"
+        ]
+        config_old = get_vs_nginx_template_conf(kube_apis.v1,
+                                                virtual_server_setup.namespace,
+                                                virtual_server_setup.vs_name,
+                                                ic_pod_name,
+                                                ingress_controller_prerequisites.namespace)
+        vs_file = f"{TEST_DATA}/virtual-server-upstream-options/plus-virtual-server-with-invalid-keys-openapi.yaml"
+        try:
+            patch_virtual_server_from_yaml(kube_apis.custom_objects,
+                                           virtual_server_setup.vs_name,
+                                           vs_file,
+                                           virtual_server_setup.namespace)
+        except ApiException as ex:
+            assert ex.status == 422
+            for item in invalid_fields:
+                assert item in ex.body
+        except Exception as ex:
+            pytest.fail(f"An unexpected exception is raised: {ex}")
+        else:
+            pytest.fail("Expected an exception but there was none")
+
+        wait_before_test(2)
+        config_new = get_vs_nginx_template_conf(kube_apis.v1,
+                                                virtual_server_setup.namespace,
+                                                virtual_server_setup.vs_name,
+                                                ic_pod_name,
+                                                ingress_controller_prerequisites.namespace)
+        assert config_old == config_new, "Expected: config doesn't change"
