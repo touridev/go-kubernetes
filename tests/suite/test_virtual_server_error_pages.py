@@ -87,14 +87,14 @@ class TestVSErrorPages:
                                            virtual_server_setup.namespace)
         except ApiException as ex:
             assert ex.status == 422 \
-                   and "spec.routes.errorPages.codes: Invalid value" in ex.body \
-                   and "spec.routes.errorPages.redirect.code: Invalid value" in ex.body \
-                   and "spec.routes.errorPages.redirect.url: Invalid value" in ex.body \
-                   and "spec.routes.errorPages.return.code: Invalid value" in ex.body \
-                   and "spec.routes.errorPages.return.type: Invalid value" in ex.body \
-                   and "spec.routes.errorPages.return.body: Invalid value" in ex.body \
-                   and "spec.routes.errorPages.return.headers.name: Invalid value" in ex.body \
-                   and "spec.routes.errorPages.return.headers.value: Invalid value" in ex.body
+                   and "spec.routes.errorPages.codes" in ex.body \
+                   and "spec.routes.errorPages.redirect.code" in ex.body \
+                   and "spec.routes.errorPages.redirect.url" in ex.body \
+                   and "spec.routes.errorPages.return.code" in ex.body \
+                   and "spec.routes.errorPages.return.type" in ex.body \
+                   and "spec.routes.errorPages.return.body" in ex.body \
+                   and "spec.routes.errorPages.return.headers.name" in ex.body \
+                   and "spec.routes.errorPages.return.headers.value" in ex.body
         except Exception as ex:
             pytest.fail(f"An unexpected exception is raised: {ex}")
         else:

@@ -339,7 +339,7 @@ class TestVirtualServerRouteValidation:
                                       route_yaml,
                                       v_s_route_setup.route_s.namespace)
         except ApiException as ex:
-            assert ex.status == 422 and "spec.subroutes.action.pass: Invalid value" in ex.body
+            assert ex.status == 422 and "spec.subroutes.action.pass" in ex.body
         except Exception as ex:
             pytest.fail(f"An unexpected exception is raised: {ex}")
         else:

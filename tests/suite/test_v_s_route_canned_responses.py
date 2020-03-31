@@ -125,9 +125,9 @@ class TestVSRCannedResponses:
                                       v_s_route_setup.route_m.name, vsr_src, v_s_route_setup.namespace)
         except ApiException as ex:
             assert ex.status == 422 \
-                   and "spec.subroutes.action.return.type: Invalid value" in ex.body \
-                   and "spec.subroutes.action.return.body: Invalid value" in ex.body \
-                   and "spec.subroutes.action.return.code: Invalid value" in ex.body
+                   and "spec.subroutes.action.return.type" in ex.body \
+                   and "spec.subroutes.action.return.body" in ex.body \
+                   and "spec.subroutes.action.return.code" in ex.body
         except Exception as ex:
             pytest.fail(f"An unexpected exception is raised: {ex}")
         else:
