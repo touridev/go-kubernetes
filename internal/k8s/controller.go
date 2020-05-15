@@ -603,7 +603,7 @@ func (lbc *LoadBalancerController) GetManagedIngresses() ([]extensions.Ingress, 
 		if isMinion(&ing) {
 			master, err := lbc.FindMasterForMinion(&ing)
 			if err != nil {
-				glog.Errorf("Ignoring Ingress %v(Minion): %v", ing, err)
+				glog.Errorf("Ignoring Ingress %v(Minion): %v", ing.Name, err)
 				continue
 			}
 			if !lbc.configurator.HasIngress(master) {
@@ -612,7 +612,7 @@ func (lbc *LoadBalancerController) GetManagedIngresses() ([]extensions.Ingress, 
 			if _, exists := mergeableIngresses[master.Name]; !exists {
 				mergeableIngress, err := lbc.createMergableIngresses(master)
 				if err != nil {
-					glog.Errorf("Ignoring Ingress %v(Master): %v", master, err)
+					glog.Errorf("Ignoring Ingress %v(Master): %v", master.Name, err)
 					continue
 				}
 				mergeableIngresses[master.Name] = mergeableIngress
@@ -1294,7 +1294,7 @@ func (lbc *LoadBalancerController) createIngresses(ings []extensions.Ingress) (r
 			}
 			mergeableIng, err := lbc.createMergableIngresses(master)
 			if err != nil {
-				glog.Errorf("Ignoring Ingress %v(Master): %v", master, err)
+				glog.Errorf("Ignoring Ingress %v(Master): %v", master.Name, err)
 				continue
 			}
 
