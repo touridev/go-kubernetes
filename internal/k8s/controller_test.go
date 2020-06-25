@@ -1382,6 +1382,55 @@ func TestFindVirtualServerRoutesForService(t *testing.T) {
 	}
 }
 
+func TestFindOrphanedVirtualServerRoute(t *testing.T) {
+	vsr1 := conf_v1.VirtualServerRoute{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "vsr-1",
+			Namespace: "ns-1",
+		},
+	}
+
+	vsr2 := conf_v1.VirtualServerRoute{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "vsr-2",
+			Namespace: "ns-1",
+		},
+	}
+
+	vsr3 := conf_v1.VirtualServerRoute{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "vsr-3",
+			Namespace: "ns-2",
+		},
+	}
+
+	vsr4 := conf_v1.VirtualServerRoute{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "vsr-4",
+			Namespace: "ns-1",
+		},
+	}
+
+	vsr5 := conf_v1.VirtualServerRoute{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "vsr-5",
+			Namespace: "ns-3",
+		},
+	}
+
+	vsrs := []*conf_v1.VirtualServerRoute{&vsr1, &vsr2, &vsr3, &vsr4, &vsr5}
+
+	handledVSRs := []*conf_v1.VirtualServerRoute{&vsr3}
+
+	expected := []*conf_v1.VirtualServerRoute{&vsr1, &vsr2, &vsr4, &vsr5}
+
+	result := findOrphanedVirtualServerRoutes(vsrs, handledVSRs)
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("findOrphanedVirtualServerRoutes return %v but expected %v", result, expected)
+	}
+}
+
 func TestFindTransportServersForService(t *testing.T) {
 	ts1 := conf_v1alpha1.TransportServer{
 		ObjectMeta: meta_v1.ObjectMeta{
