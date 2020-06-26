@@ -442,7 +442,7 @@ func (lbc *LoadBalancerController) syncEndpoint(task task) {
 		var mergableIngressesSlice []*configs.MergeableIngresses
 
 		for i := range ings {
-			if !lbc.IsNginxIngress(&ings[i]) {
+			if !lbc.HasCorrectIngressClass(&ings[i]) {
 				continue
 			}
 			if isMinion(&ings[i]) {
@@ -647,7 +647,7 @@ func (lbc *LoadBalancerController) GetManagedIngresses() ([]extensions.Ingress, 
 	ings, _ := lbc.ingressLister.List()
 	for i := range ings.Items {
 		ing := ings.Items[i]
-		if !lbc.IsNginxIngress(&ing) {
+		if !lbc.HasCorrectIngressClass(&ing) {
 			continue
 		}
 		if isMinion(&ing) {
@@ -1476,6 +1476,11 @@ func (lbc *LoadBalancerController) updateVirtualServersStatusFromEvents() error 
 	for _, obj := range lbc.virtualServerLister.List() {
 		vs := obj.(*conf_v1.VirtualServer)
 
+		if !lbc.HasCorrectIngressClass(vs) {
+			glog.V(3).Infof("Ignoring VirtualServer %v based on class %v", vs.Name, vs.Spec.IngressClass)
+			continue
+		}
+
 		events, err := lbc.client.CoreV1().Events(vs.Namespace).List(context.TODO(),
 			meta_v1.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.name=%v,involvedObject.uid=%v", vs.Name, vs.UID)})
 		if err != nil {
@@ -1507,6 +1512,11 @@ func (lbc *LoadBalancerController) updateVirtualServerRoutesStatusFromEvents() e
 	var allErrs []error
 	for _, obj := range lbc.virtualServerRouteLister.List() {
 		vsr := obj.(*conf_v1.VirtualServerRoute)
+
+		if !lbc.HasCorrectIngressClass(vsr) {
+			glog.V(3).Infof("Ignoring VirtualServerRoute %v based on class %v", vsr.Name, vsr.Spec.IngressClass)
+			continue
+		}
 
 		events, err := lbc.client.CoreV1().Events(vsr.Namespace).List(context.TODO(),
 			meta_v1.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.name=%v,involvedObject.uid=%v", vsr.Name, vsr.UID)})
@@ -1599,7 +1609,7 @@ items:
 			continue
 		}
 
-		if !lbc.IsNginxIngress(&ing) {
+		if !lbc.HasCorrectIngressClass(&ing) {
 			continue
 		}
 
@@ -1651,7 +1661,7 @@ items:
 func (lbc *LoadBalancerController) EnqueueIngressForService(svc *api_v1.Service) {
 	ings := lbc.getIngressesForService(svc)
 	for _, ing := range ings {
-		if !lbc.IsNginxIngress(&ing) {
+		if !lbc.HasCorrectIngressClass(&ing) {
 			continue
 		}
 		if isMinion(&ing) {
@@ -1879,6 +1889,11 @@ func (lbc *LoadBalancerController) getVirtualServers() []*conf_v1.VirtualServer 
 	for _, obj := range lbc.virtualServerLister.List() {
 		vs := obj.(*conf_v1.VirtualServer)
 
+		if !lbc.HasCorrectIngressClass(vs) {
+			glog.V(3).Infof("Ignoring VirtualServer %v based on class %v", vs.Name, vs.Spec.IngressClass)
+			continue
+		}
+
 		err := validation.ValidateVirtualServer(vs, lbc.isNginxPlus)
 		if err != nil {
 			glog.V(3).Infof("Skipping invalid VirtualServer %s/%s: %v", vs.Namespace, vs.Name, err)
@@ -1896,6 +1911,11 @@ func (lbc *LoadBalancerController) getVirtualServerRoutes() []*conf_v1.VirtualSe
 
 	for _, obj := range lbc.virtualServerRouteLister.List() {
 		vsr := obj.(*conf_v1.VirtualServerRoute)
+
+		if !lbc.HasCorrectIngressClass(vsr) {
+			glog.V(3).Infof("Ignoring VirtualServerRoute %v based on class %v", vsr.Name, vsr.Spec.IngressClass)
+			continue
+		}
 
 		err := validation.ValidateVirtualServerRoute(vsr, lbc.isNginxPlus)
 		if err != nil {
@@ -2192,6 +2212,12 @@ func (lbc *LoadBalancerController) createVirtualServer(virtualServer *conf_v1.Vi
 		}
 
 		vsr := obj.(*conf_v1.VirtualServerRoute)
+
+		if !lbc.HasCorrectIngressClass(vsr) {
+			glog.Warningf("Ignoring VirtualServerRoute %v based on class %v", vsr.Name, vsr.Spec.IngressClass)
+			virtualServerRouteErrors = append(virtualServerRouteErrors, newVirtualServerRouteErrorFromVSR(vsr, errors.New("VirtualServerRoute with incorrect class name")))
+			continue
+		}
 
 		err = validation.ValidateVirtualServerRouteForVirtualServer(vsr, virtualServer.Spec.Host, r.Path, lbc.isNginxPlus)
 		if err != nil {
@@ -2510,16 +2536,27 @@ func (lbc *LoadBalancerController) getServiceForIngressBackend(backend *extensio
 	return nil, fmt.Errorf("service %s doesn't exist", svcKey)
 }
 
-// IsNginxIngress checks if resource ingress class annotation (if exists) is matching with ingress controller class
-// If annotation is absent and use-ingress-class-only enabled - ingress resource would ignore
-func (lbc *LoadBalancerController) IsNginxIngress(ing *extensions.Ingress) bool {
-	if class, exists := ing.Annotations[ingressClassKey]; exists {
-		if lbc.useIngressClassOnly {
-			return class == lbc.ingressClass
-		}
-		return class == lbc.ingressClass || class == ""
+// HasCorrectIngressClass checks if resource ingress class annotation (if exists) or ingressClass string for VS/VSR is matching with ingress controller class
+func (lbc *LoadBalancerController) HasCorrectIngressClass(obj interface{}) bool {
+	var class string
+	switch obj.(type) {
+	case *conf_v1.VirtualServer:
+		vs := obj.(*conf_v1.VirtualServer)
+		class = vs.Spec.IngressClass
+	case *conf_v1.VirtualServerRoute:
+		vsr := obj.(*conf_v1.VirtualServerRoute)
+		class = vsr.Spec.IngressClass
+	case *extensions.Ingress:
+		ing := obj.(*extensions.Ingress)
+		class = ing.Annotations[ingressClassKey]
+	default:
+		return false
 	}
-	return !lbc.useIngressClassOnly
+
+	if lbc.useIngressClassOnly {
+		return class == lbc.ingressClass
+	}
+	return class == lbc.ingressClass || class == ""
 }
 
 // isHealthCheckEnabled checks if health checks are enabled so we can only query pods if enabled.
@@ -2566,7 +2603,7 @@ func (lbc *LoadBalancerController) getMinionsForMaster(master *configs.IngressEx
 	var minionPaths = make(map[string]*extensions.Ingress)
 
 	for i := range ings.Items {
-		if !lbc.IsNginxIngress(&ings.Items[i]) {
+		if !lbc.HasCorrectIngressClass(&ings.Items[i]) {
 			continue
 		}
 		if !isMinion(&ings.Items[i]) {
@@ -2620,7 +2657,7 @@ func (lbc *LoadBalancerController) FindMasterForMinion(minion *extensions.Ingres
 	}
 
 	for i := range ings.Items {
-		if !lbc.IsNginxIngress(&ings.Items[i]) {
+		if !lbc.HasCorrectIngressClass(&ings.Items[i]) {
 			continue
 		}
 		if !lbc.configurator.HasIngress(&ings.Items[i]) {

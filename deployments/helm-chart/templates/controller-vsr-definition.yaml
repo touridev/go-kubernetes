@@ -58,6 +58,8 @@ spec:
         spec:
           type: object
           properties:
+            ingressClassName:
+              type: string
             host:
               type: string
             subroutes:

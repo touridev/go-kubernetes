@@ -57,6 +57,8 @@ spec:
           properties:
             host:
               type: string
+            ingressClassName:
+              type: string
             subroutes:
               type: array
               items:

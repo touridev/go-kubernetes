@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-func TestIsNginxIngress(t *testing.T) {
+func TestHasCorrectIngressClass(t *testing.T) {
 	ingressClass := "ing-ctrl"
 
 	var testsWithoutIngressClassOnly = []struct {
@@ -145,27 +145,133 @@ func TestIsNginxIngress(t *testing.T) {
 	}
 
 	for _, test := range testsWithoutIngressClassOnly {
-		if result := test.lbc.IsNginxIngress(test.ing); result != test.expected {
+		if result := test.lbc.HasCorrectIngressClass(test.ing); result != test.expected {
 			classAnnotation := "N/A"
 			if class, exists := test.ing.Annotations[ingressClassKey]; exists {
 				classAnnotation = class
 			}
-			t.Errorf("lbc.IsNginxIngress(ing), lbc.ingressClass=%v, lbc.useIngressClassOnly=%v, ing.Annotations['%v']=%v; got %v, expected %v",
+			t.Errorf("lbc.HasCorrectIngressClass(ing), lbc.ingressClass=%v, lbc.useIngressClassOnly=%v, ing.Annotations['%v']=%v; got %v, expected %v",
 				test.lbc.ingressClass, test.lbc.useIngressClassOnly, ingressClassKey, classAnnotation, result, test.expected)
 		}
 	}
 
 	for _, test := range testsWithIngressClassOnly {
-		if result := test.lbc.IsNginxIngress(test.ing); result != test.expected {
+		if result := test.lbc.HasCorrectIngressClass(test.ing); result != test.expected {
 			classAnnotation := "N/A"
 			if class, exists := test.ing.Annotations[ingressClassKey]; exists {
 				classAnnotation = class
 			}
-			t.Errorf("lbc.IsNginxIngress(ing), lbc.ingressClass=%v, lbc.useIngressClassOnly=%v, ing.Annotations['%v']=%v; got %v, expected %v",
+			t.Errorf("lbc.HasCorrectIngressClass(ing), lbc.ingressClass=%v, lbc.useIngressClassOnly=%v, ing.Annotations['%v']=%v; got %v, expected %v",
 				test.lbc.ingressClass, test.lbc.useIngressClassOnly, ingressClassKey, classAnnotation, result, test.expected)
 		}
 	}
 
+}
+
+func TestHasCorrectIngressClassVS(t *testing.T) {
+	ingressClass := "ing-ctrl"
+	lbcIngOnlyTrue := &LoadBalancerController{
+		ingressClass:        ingressClass,
+		useIngressClassOnly: true,
+		metricsCollector:    collectors.NewControllerFakeCollector(),
+	}
+
+	var testsWithIngressClassOnlyVS = []struct {
+		lbc      *LoadBalancerController
+		ing      *conf_v1.VirtualServer
+		expected bool
+	}{
+		{
+			lbcIngOnlyTrue,
+			&conf_v1.VirtualServer{
+				Spec: conf_v1.VirtualServerSpec{
+					IngressClass: "",
+				},
+			},
+			false,
+		},
+		{
+			lbcIngOnlyTrue,
+			&conf_v1.VirtualServer{
+				Spec: conf_v1.VirtualServerSpec{
+					IngressClass: "gce",
+				},
+			},
+			false,
+		},
+		{
+			lbcIngOnlyTrue,
+			&conf_v1.VirtualServer{
+				Spec: conf_v1.VirtualServerSpec{
+					IngressClass: ingressClass,
+				},
+			},
+			true,
+		},
+		{
+			lbcIngOnlyTrue,
+			&conf_v1.VirtualServer{},
+			false,
+		},
+	}
+
+	lbcIngOnlyFalse := &LoadBalancerController{
+		ingressClass:        ingressClass,
+		useIngressClassOnly: false,
+		metricsCollector:    collectors.NewControllerFakeCollector(),
+	}
+	var testsWithoutIngressClassOnlyVS = []struct {
+		lbc      *LoadBalancerController
+		ing      *conf_v1.VirtualServer
+		expected bool
+	}{
+		{
+			lbcIngOnlyFalse,
+			&conf_v1.VirtualServer{
+				Spec: conf_v1.VirtualServerSpec{
+					IngressClass: "",
+				},
+			},
+			true,
+		},
+		{
+			lbcIngOnlyFalse,
+			&conf_v1.VirtualServer{
+				Spec: conf_v1.VirtualServerSpec{
+					IngressClass: "gce",
+				},
+			},
+			false,
+		},
+		{
+			lbcIngOnlyFalse,
+			&conf_v1.VirtualServer{
+				Spec: conf_v1.VirtualServerSpec{
+					IngressClass: ingressClass,
+				},
+			},
+			true,
+		},
+		{
+			lbcIngOnlyFalse,
+			&conf_v1.VirtualServer{},
+			true,
+		},
+	}
+
+	for _, test := range testsWithIngressClassOnlyVS {
+		if result := test.lbc.HasCorrectIngressClass(test.ing); result != test.expected {
+			t.Errorf("lbc.HasCorrectIngressClass(ing), lbc.ingressClass=%v, lbc.useIngressClassOnly=%v, ingressClassKey=%v, ing.IngressClass=%v; got %v, expected %v",
+				test.lbc.ingressClass, test.lbc.useIngressClassOnly, ingressClassKey, test.ing.Spec.IngressClass, result, test.expected)
+		}
+	}
+
+	for _, test := range testsWithoutIngressClassOnlyVS {
+		if result := test.lbc.HasCorrectIngressClass(test.ing); result != test.expected {
+			t.Errorf("lbc.HasCorrectIngressClass(ing), lbc.ingressClass=%v, lbc.useIngressClassOnly=%v, ingressClassKey=%v, ing.IngressClass=%v; got %v, expected %v",
+				test.lbc.ingressClass, test.lbc.useIngressClassOnly, ingressClassKey, test.ing.Spec.IngressClass, result, test.expected)
+		}
+	}
 }
 
 func TestCreateMergableIngresses(t *testing.T) {
