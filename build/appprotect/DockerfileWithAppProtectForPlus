@@ -47,7 +47,7 @@ RUN set -x \
 	&& echo "Acquire::https::app-protect-sigs.nginx.com::SslCert     \"/etc/ssl/nginx/nginx-repo.crt\";" >> /etc/apt/apt.conf.d/90app-protect-sigs \
 	&& echo "Acquire::https::app-protect-sigs.nginx.com::SslKey      \"/etc/ssl/nginx/nginx-repo.key\";" >> /etc/apt/apt.conf.d/90app-protect-sigs \
 	&& apt-get update && apt-get install -y nginx-plus=$NGINX_PLUS_VERSION app-protect=$APPPROTECT_VERSION \ 
-	app-protect-attack-signatures${APPPROTECT_SIG_VERSION:+=$APPPROTECT_SIG_VERSION} \
+	&& apt-get install -y app-protect-attack-signatures${APPPROTECT_SIG_VERSION:+=$APPPROTECT_SIG_VERSION} \
 	&& setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx \
 	&& setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx-debug \
 	&& apt-get remove --purge --auto-remove -y gnupg1 wget\
@@ -90,7 +90,7 @@ RUN printf "MODULE = ALL;\nLOG_LEVEL = TS_CRIT;\nFILE = 2;\n" > /etc/app_protect
 		lock_factory \
 		bd_agent \
 		import_export_policy \
-	set_active \
+		set_active \
 	; do sed -i "/\[$v/a log_level=fatal" "/etc/app_protect/tools/asm_logging.conf" \
 	; done
 
