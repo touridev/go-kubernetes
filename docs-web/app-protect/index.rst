@@ -9,3 +9,4 @@ Ingress Controller with App Protect
 
    installation
    configuration
+   troubleshooting

@@ -25,17 +25,27 @@ $ kubectl create -f cafe.yaml
 ```
 
 ## 3. Configure Load Balancing
-
-1. Create a secret with an SSL certificate and a key:
+1. Create the syslog service and pod for the App Protect security logs:
+    ```
+    $ kubectl create -f syslog.yaml
+    ```
+2. Create a secret with an SSL certificate and a key:
     ```
     $ kubectl create -f cafe-secret.yaml
     ```
-2. Create the App Protect policy and log configuration:
+3. Create the App Protect policy and log configuration:
     ```
-    kubectl create -f dataguard-alarm.yaml
-    kubectl create -f logconf.yaml
+    $ kubectl create -f dataguard-alarm.yaml
+    $ kubectl create -f logconf.yaml
     ```
-3. Create an Ingress resource:
+4. Create an Ingress Resource:
+
+    Update the `appprotect.f5.com/app-protect-security-log-destination` annotation from `cafe-ingress.yaml` with the ClusterIP of the syslog service. For example, if the IP is `10.101.21.110`:
+    ```yaml
+    . . .
+    appprotect.f5.com/app-protect-security-log-destination: "syslog:server=10.101.21.110:514"
+    ```
+    Create the Ingress Resource:
     ```
     $ kubectl create -f cafe-ingress.yaml
     ```
@@ -61,10 +71,14 @@ certificate and the --resolve option to set the Host header of a request with ``
     ...
     ```
     Now, let's try to send a suspicious request:
-   ```
+    ```
     $ curl --resolve cafe.example.com:$IC_HTTPS_PORT:$IC_IP "https://cafe.example.com:$IC_HTTPS_PORT/tea/<script>" --insecure
     <html><head><title>Request Rejected</title></head><body>
     ...
     ```    
     As you can see, the suspicious request was blocked by App Protect
     
+2. To check the security logs in the syslog pod:
+    ```
+    $ kubectl exec -it <SYSLOG_POD> -- cat /var/log/messages
+    ```
