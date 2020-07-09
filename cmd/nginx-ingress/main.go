@@ -154,6 +154,10 @@ var (
 	spireAgentAddress = flag.String("spire-agent-address", "",
 		`Specifies the address of the running Spire agent. For use with NGINX Service Mesh only. If the flag is set,
 			but the Ingress Controller is not able to connect with the Spire Agent, the Ingress Controller will fail to start.`)
+
+	readyStatus = flag.Bool("ready-status", true, "Enables the readiness endpoint '/nginx-ready'. The endpoint returns a success code when NGINX has loaded all the config after the startup")
+
+	readyStatusPort = flag.Int("ready-status-port", 8081, "Set the port where the readiness endpoint is exposed. [1024 - 65535]")
 )
 
 func main() {
@@ -187,6 +191,11 @@ func main() {
 	metricsPortValidationError := validatePort(*prometheusMetricsListenPort)
 	if metricsPortValidationError != nil {
 		glog.Fatalf("Invalid value for prometheus-metrics-listen-port: %v", metricsPortValidationError)
+	}
+
+	readyStatusPortValidationError := validatePort(*readyStatusPort)
+	if readyStatusPortValidationError != nil {
+		glog.Fatalf("Invalid value for ready-status-port: %v", readyStatusPortValidationError)
 	}
 
 	allowedCIDRs, err := parseNginxStatusAllowCIDRs(*nginxStatusAllowCIDRs)
@@ -514,11 +523,21 @@ func main() {
 
 	lbc := k8s.NewLoadBalancerController(lbcInput)
 
+	if *readyStatus {
+		go func() {
+			port := fmt.Sprintf(":%v", *readyStatusPort)
+			s := http.NewServeMux()
+			s.HandleFunc("/nginx-ready", ready(lbc))
+			glog.Fatal(http.ListenAndServe(port, s))
+		}()
+	}
+
 	if *appProtect {
 		go handleTerminationWithAppProtect(lbc, nginxManager, nginxDone, aPAgentDone, aPPluginDone)
 	} else {
 		go handleTermination(lbc, nginxManager, nginxDone)
 	}
+
 	lbc.Run()
 
 	for {
@@ -707,4 +726,15 @@ func parseReloadTimeout(appProtectEnabled bool, timeout int) int {
 	}
 
 	return defaultTimeout
+}
+
+func ready(lbc *k8s.LoadBalancerController) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		if !lbc.IsNginxReady() {
+			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, "Ready")
+	}
 }

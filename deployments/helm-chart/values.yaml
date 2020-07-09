@@ -260,6 +260,13 @@ controller:
   ## The PriorityClass of the ingress controller pods.
   priorityClassName:
 
+  readyStatus:
+    ## Enables readiness endpoint "/nginx-ready". The endpoint returns a success code when NGINX has loaded all the config after startup.
+    enable: true
+
+    ## Set the port where the readiness endpoint is exposed.
+    port: 8081
+
 rbac:
   ## Configures RBAC.
   create: true

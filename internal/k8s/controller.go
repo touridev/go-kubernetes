@@ -145,6 +145,7 @@ type LoadBalancerController struct {
 	transportServerValidator      *validation.TransportServerValidator
 	spiffeController              *spiffeController
 	syncLock                      sync.Mutex
+	isNginxReady                  bool
 }
 
 var keyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
@@ -271,7 +272,6 @@ func NewLoadBalancerController(input NewLoadBalancerControllerInput) *LoadBalanc
 	}
 
 	lbc.updateIngressMetrics()
-
 	return lbc
 }
 
@@ -835,6 +835,11 @@ func (lbc *LoadBalancerController) sync(task task) {
 	case appProtectLogConf:
 		lbc.syncAppProtectLogConf(task)
 	}
+
+	if !lbc.isNginxReady && lbc.syncQueue.Len() == 0 {
+		lbc.isNginxReady = true
+		glog.V(3).Infof("NGINX is ready")
+	}
 }
 
 func (lbc *LoadBalancerController) syncPolicy(task task) {
@@ -935,6 +940,7 @@ func (lbc *LoadBalancerController) syncPolicy(task task) {
 			}
 		}
 	}
+
 }
 
 func (lbc *LoadBalancerController) syncTransportServer(task task) {
@@ -3254,4 +3260,9 @@ func (lbc *LoadBalancerController) findIngressesForAppProtectResource(namespace 
 		}
 	}
 	return apIngs
+}
+
+// IsNginxReady returns ready status of NGINX
+func (lbc *LoadBalancerController) IsNginxReady() bool {
+	return lbc.isNginxReady
 }

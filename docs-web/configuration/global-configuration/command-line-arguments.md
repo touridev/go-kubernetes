@@ -188,5 +188,15 @@ Below we describe the available command-line arguments:
    Requires :option:`-nginx-plus`
 
 	 - If the argument is set, but `nginx-plus` is set to false, the Ingress Controller will fail to start.
-	 
+
+.. option:: -ready-status
+
+ 	Enables the readiness endpoint "/nginx-ready". The endpoint returns a success code when NGINX has loaded all the config after the startup. (default true)
+
+.. option:: -ready-status-port
+
+	The HTTP port for the readiness endpoint.
+
+	Format: ``[1024 - 65535]`` (default 8081)
+
 ```
