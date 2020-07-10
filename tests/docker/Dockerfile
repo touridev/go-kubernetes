@@ -12,4 +12,4 @@ WORKDIR /workspace/tests
 RUN pip install -r requirements.txt
 RUN rm -rf '.pytest_cache'
 
-ENTRYPOINT [ "python3", "-m", "pytest"]
+ENTRYPOINT ["python3", "-m", "pytest"]
