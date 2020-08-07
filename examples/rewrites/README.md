@@ -13,7 +13,7 @@ nginx.org/rewrites: "serviceName=service1 rewrite=rewrite1[;serviceName=service2
 
 In the following example we load balance two applications that require URI rewriting:
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: cafe-ingress

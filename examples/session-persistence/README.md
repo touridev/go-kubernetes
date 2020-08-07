@@ -20,7 +20,7 @@ The syntax of the *cookieName*, *expires*, *domain*, *httponly*, *secure* and *p
 
 In the following example we enable session persistence for two services -- the *tea-svc* service and the *coffee-svc* service:
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: cafe-ingress-with-session-persistence

@@ -21,7 +21,7 @@ In the example below we configure TLS termination for two Ingress resources for 
 `foo-ingress` from the namespace `foo-namespace`:
 
  ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: foo-ingress
@@ -45,7 +45,7 @@ spec:
 `bar-ingress` from the namespace `bar-namespace`:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: bar-ingress

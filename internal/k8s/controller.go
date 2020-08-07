@@ -27,7 +27,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spiffe/go-spiffe/workload"
 
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -44,7 +44,7 @@ import (
 	"sort"
 
 	api_v1 "k8s.io/api/core/v1"
-	extensions "k8s.io/api/extensions/v1beta1"
+	networking "k8s.io/api/networking/v1beta1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	conf_v1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1"
@@ -343,11 +343,11 @@ func (lbc *LoadBalancerController) addServiceHandler(handlers cache.ResourceEven
 func (lbc *LoadBalancerController) addIngressHandler(handlers cache.ResourceEventHandlerFuncs) {
 	lbc.ingressLister.Store, lbc.ingressController = cache.NewInformer(
 		cache.NewListWatchFromClient(
-			lbc.client.ExtensionsV1beta1().RESTClient(),
+			lbc.client.NetworkingV1beta1().RESTClient(),
 			"ingresses",
 			lbc.namespace,
 			fields.Everything()),
-		&extensions.Ingress{},
+		&networking.Ingress{},
 		lbc.resync,
 		handlers,
 	)
@@ -730,9 +730,9 @@ func (lbc *LoadBalancerController) syncConfig(task task) {
 }
 
 // GetManagedIngresses gets Ingress resources that the IC is currently responsible for
-func (lbc *LoadBalancerController) GetManagedIngresses() ([]extensions.Ingress, map[string]*configs.MergeableIngresses) {
+func (lbc *LoadBalancerController) GetManagedIngresses() ([]networking.Ingress, map[string]*configs.MergeableIngresses) {
 	mergeableIngresses := make(map[string]*configs.MergeableIngresses)
-	var managedIngresses []extensions.Ingress
+	var managedIngresses []networking.Ingress
 	ings, _ := lbc.ingressLister.List()
 	for i := range ings.Items {
 		ing := ings.Items[i]
@@ -766,7 +766,7 @@ func (lbc *LoadBalancerController) GetManagedIngresses() ([]extensions.Ingress, 
 	return managedIngresses, mergeableIngresses
 }
 
-func (lbc *LoadBalancerController) ingressesToIngressExes(ings []extensions.Ingress) []*configs.IngressEx {
+func (lbc *LoadBalancerController) ingressesToIngressExes(ings []networking.Ingress) []*configs.IngressEx {
 	var ingExes []*configs.IngressEx
 	for i := range ings {
 		ingEx, err := lbc.createIngress(&ings[i])
@@ -1305,7 +1305,7 @@ func (lbc *LoadBalancerController) syncIngMinion(task task) {
 	}
 	glog.V(2).Infof("Adding or Updating Minion: %v\n", key)
 
-	minion := obj.(*extensions.Ingress)
+	minion := obj.(*networking.Ingress)
 
 	master, err := lbc.FindMasterForMinion(minion)
 	if err != nil {
@@ -1536,7 +1536,7 @@ func (lbc *LoadBalancerController) isSpecialSecret(secretName string) bool {
 	return secretName == lbc.defaultServerSecret || secretName == lbc.wildcardTLSSecret
 }
 
-func (lbc *LoadBalancerController) handleRegularSecretDeletion(key string, ings []extensions.Ingress, virtualServers []*conf_v1.VirtualServer) {
+func (lbc *LoadBalancerController) handleRegularSecretDeletion(key string, ings []networking.Ingress, virtualServers []*conf_v1.VirtualServer) {
 	eventType := api_v1.EventTypeWarning
 	title := "Missing Secret"
 	message := fmt.Sprintf("Secret %v was removed", key)
@@ -1568,7 +1568,7 @@ func (lbc *LoadBalancerController) handleRegularSecretDeletion(key string, ings 
 	lbc.updateStatusForVirtualServers(state, title, message, virtualServers)
 }
 
-func (lbc *LoadBalancerController) handleSecretUpdate(secret *api_v1.Secret, ings []extensions.Ingress, virtualServers []*conf_v1.VirtualServer) {
+func (lbc *LoadBalancerController) handleSecretUpdate(secret *api_v1.Secret, ings []networking.Ingress, virtualServers []*conf_v1.VirtualServer) {
 	secretNsName := secret.Namespace + "/" + secret.Name
 
 	err := lbc.ValidateSecret(secret)
@@ -1642,7 +1642,7 @@ func (lbc *LoadBalancerController) handleSpecialSecretUpdate(secret *api_v1.Secr
 	lbc.recorder.Eventf(secret, api_v1.EventTypeNormal, "Updated", "the special Secret %v was updated", secretNsName)
 }
 
-func (lbc *LoadBalancerController) emitEventForIngresses(eventType string, title string, message string, ings []extensions.Ingress) {
+func (lbc *LoadBalancerController) emitEventForIngresses(eventType string, title string, message string, ings []networking.Ingress) {
 	for _, ing := range ings {
 		lbc.recorder.Eventf(&ing, eventType, title, message)
 		if isMinion(&ing) {
@@ -1769,7 +1769,7 @@ func (lbc *LoadBalancerController) updateStatusForVirtualServers(state string, r
 	}
 }
 
-func (lbc *LoadBalancerController) createIngresses(ings []extensions.Ingress) (regular []configs.IngressEx, mergeable []configs.MergeableIngresses) {
+func (lbc *LoadBalancerController) createIngresses(ings []networking.Ingress) (regular []configs.IngressEx, mergeable []configs.MergeableIngresses) {
 	for i := range ings {
 		if isMaster(&ings[i]) {
 			mergeableIng, err := lbc.createMergableIngresses(&ings[i])
@@ -1807,7 +1807,7 @@ func (lbc *LoadBalancerController) createIngresses(ings []extensions.Ingress) (r
 	return regular, mergeable
 }
 
-func (lbc *LoadBalancerController) findIngressesForSecret(secretNamespace string, secretName string) (ings []extensions.Ingress, error error) {
+func (lbc *LoadBalancerController) findIngressesForSecret(secretNamespace string, secretName string) (ings []networking.Ingress, error error) {
 	allIngs, err := lbc.ingressLister.List()
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't get the list of Ingress resources: %v", err)
@@ -1906,7 +1906,7 @@ func (lbc *LoadBalancerController) EnqueueTransportServerForService(service *api
 	}
 }
 
-func (lbc *LoadBalancerController) getIngressesForService(svc *api_v1.Service) []extensions.Ingress {
+func (lbc *LoadBalancerController) getIngressesForService(svc *api_v1.Service) []networking.Ingress {
 	ings, err := lbc.ingressLister.GetServiceIngress(svc)
 	if err != nil {
 		glog.V(3).Infof("For service %v: %v", svc.Name, err)
@@ -1915,8 +1915,8 @@ func (lbc *LoadBalancerController) getIngressesForService(svc *api_v1.Service) [
 	return ings
 }
 
-func (lbc *LoadBalancerController) getIngressForEndpoints(obj interface{}) []extensions.Ingress {
-	var ings []extensions.Ingress
+func (lbc *LoadBalancerController) getIngressForEndpoints(obj interface{}) []networking.Ingress {
+	var ings []networking.Ingress
 	endp := obj.(*api_v1.Endpoints)
 	svcKey := endp.GetNamespace() + "/" + endp.GetName()
 	svcObj, svcExists, err := lbc.svcLister.GetByKey(svcKey)
@@ -2279,7 +2279,7 @@ func (lbc *LoadBalancerController) getAndValidateSecret(secretKey string) (*api_
 	return secret, nil
 }
 
-func (lbc *LoadBalancerController) createIngress(ing *extensions.Ingress) (*configs.IngressEx, error) {
+func (lbc *LoadBalancerController) createIngress(ing *networking.Ingress) (*configs.IngressEx, error) {
 	ingEx := &configs.IngressEx{
 		Ingress: ing,
 	}
@@ -2418,7 +2418,7 @@ func (lbc *LoadBalancerController) createIngress(ing *extensions.Ingress) (*conf
 	return ingEx, nil
 }
 
-func (lbc *LoadBalancerController) getAppProtectLogConfAndDst(ing *extensions.Ingress) (logConf *unstructured.Unstructured, logDst string, err error) {
+func (lbc *LoadBalancerController) getAppProtectLogConfAndDst(ing *networking.Ingress) (logConf *unstructured.Unstructured, logDst string, err error) {
 	logConfNsN := ParseResourceReferenceAnnotation(ing.Namespace, ing.Annotations[configs.AppProtectLogConfAnnotation])
 
 	if _, exists := ing.Annotations[configs.AppProtectLogConfDstAnnotation]; !exists {
@@ -2451,7 +2451,7 @@ func (lbc *LoadBalancerController) getAppProtectLogConfAndDst(ing *extensions.In
 	return logConf, logDst, nil
 }
 
-func (lbc *LoadBalancerController) getAppProtectPolicy(ing *extensions.Ingress) (apPolicy *unstructured.Unstructured, err error) {
+func (lbc *LoadBalancerController) getAppProtectPolicy(ing *networking.Ingress) (apPolicy *unstructured.Unstructured, err error) {
 	polNsN := ParseResourceReferenceAnnotation(ing.Namespace, ing.Annotations[configs.AppProtectPolicyAnnotation])
 
 	apPolicyObj, exists, err := lbc.appProtectPolicyLister.GetByKey(polNsN)
@@ -2707,7 +2707,7 @@ func (lbc *LoadBalancerController) getEndpointsForUpstream(namespace string, ups
 		return nil, false, fmt.Errorf("Error getting service %v: %v", upstreamService, err)
 	}
 
-	backend := &extensions.IngressBackend{
+	backend := &networking.IngressBackend{
 		ServiceName: upstreamService,
 		ServicePort: intstr.FromInt(int(upstreamPort)),
 	}
@@ -2785,7 +2785,7 @@ func getEndpointsBySubselectedPods(targetPort int32, pods []*api_v1.Pod, svcEps 
 	return endps
 }
 
-func (lbc *LoadBalancerController) getHealthChecksForIngressBackend(backend *extensions.IngressBackend, namespace string) *api_v1.Probe {
+func (lbc *LoadBalancerController) getHealthChecksForIngressBackend(backend *networking.IngressBackend, namespace string) *api_v1.Probe {
 	svc, err := lbc.getServiceForIngressBackend(backend, namespace)
 	if err != nil {
 		glog.V(3).Infof("Error getting service %v: %v", backend.ServiceName, err)
@@ -2834,13 +2834,13 @@ func compareContainerPortAndServicePort(containerPort api_v1.ContainerPort, svcP
 	return false
 }
 
-func (lbc *LoadBalancerController) getExternalEndpointsForIngressBackend(backend *extensions.IngressBackend, svc *api_v1.Service) []string {
+func (lbc *LoadBalancerController) getExternalEndpointsForIngressBackend(backend *networking.IngressBackend, svc *api_v1.Service) []string {
 	endpoint := fmt.Sprintf("%s:%d", svc.Spec.ExternalName, int32(backend.ServicePort.IntValue()))
 	endpoints := []string{endpoint}
 	return endpoints
 }
 
-func (lbc *LoadBalancerController) getEndpointsForIngressBackend(backend *extensions.IngressBackend, svc *api_v1.Service) (result []string, isExternal bool, err error) {
+func (lbc *LoadBalancerController) getEndpointsForIngressBackend(backend *networking.IngressBackend, svc *api_v1.Service) (result []string, isExternal bool, err error) {
 	endps, err := lbc.endpointLister.GetServiceEndpoints(svc)
 	if err != nil {
 		if svc.Spec.Type == api_v1.ServiceTypeExternalName {
@@ -2934,14 +2934,14 @@ func (lbc *LoadBalancerController) getTargetPort(svcPort *api_v1.ServicePort, sv
 }
 
 func (lbc *LoadBalancerController) getServiceForUpstream(namespace string, upstreamService string, upstreamPort uint16) (*api_v1.Service, error) {
-	backend := &extensions.IngressBackend{
+	backend := &networking.IngressBackend{
 		ServiceName: upstreamService,
 		ServicePort: intstr.FromInt(int(upstreamPort)),
 	}
 	return lbc.getServiceForIngressBackend(backend, namespace)
 }
 
-func (lbc *LoadBalancerController) getServiceForIngressBackend(backend *extensions.IngressBackend, namespace string) (*api_v1.Service, error) {
+func (lbc *LoadBalancerController) getServiceForIngressBackend(backend *networking.IngressBackend, namespace string) (*api_v1.Service, error) {
 	svcKey := namespace + "/" + backend.ServiceName
 	svcObj, svcExists, err := lbc.svcLister.GetByKey(svcKey)
 	if err != nil {
@@ -2965,8 +2965,8 @@ func (lbc *LoadBalancerController) HasCorrectIngressClass(obj interface{}) bool 
 	case *conf_v1.VirtualServerRoute:
 		vsr := obj.(*conf_v1.VirtualServerRoute)
 		class = vsr.Spec.IngressClass
-	case *extensions.Ingress:
-		ing := obj.(*extensions.Ingress)
+	case *networking.Ingress:
+		ing := obj.(*networking.Ingress)
 		class = ing.Annotations[ingressClassKey]
 	default:
 		return false
@@ -2979,7 +2979,7 @@ func (lbc *LoadBalancerController) HasCorrectIngressClass(obj interface{}) bool 
 }
 
 // isHealthCheckEnabled checks if health checks are enabled so we can only query pods if enabled.
-func (lbc *LoadBalancerController) isHealthCheckEnabled(ing *extensions.Ingress) bool {
+func (lbc *LoadBalancerController) isHealthCheckEnabled(ing *networking.Ingress) bool {
 	if healthCheckEnabled, exists, err := configs.GetMapKeyAsBool(ing.Annotations, "nginx.com/health-checks", ing); exists {
 		if err != nil {
 			glog.Error(err)
@@ -3019,7 +3019,7 @@ func (lbc *LoadBalancerController) getMinionsForMaster(master *configs.IngressEx
 	})
 
 	var minions []*configs.IngressEx
-	var minionPaths = make(map[string]*extensions.Ingress)
+	var minionPaths = make(map[string]*networking.Ingress)
 
 	for i := range ings.Items {
 		if !lbc.HasCorrectIngressClass(&ings.Items[i]) {
@@ -3040,7 +3040,7 @@ func (lbc *LoadBalancerController) getMinionsForMaster(master *configs.IngressEx
 			continue
 		}
 
-		uniquePaths := []extensions.HTTPIngressPath{}
+		uniquePaths := []networking.HTTPIngressPath{}
 		for _, path := range ings.Items[i].Spec.Rules[0].HTTP.Paths {
 			if val, ok := minionPaths[path.Path]; ok {
 				glog.Errorf("Ingress Resource %v/%v with the 'nginx.org/mergeable-ingress-type' annotation set to 'minion' cannot contain the same path as another ingress resource, %v/%v.",
@@ -3069,10 +3069,10 @@ func (lbc *LoadBalancerController) getMinionsForMaster(master *configs.IngressEx
 }
 
 // FindMasterForMinion returns a master for a given minion
-func (lbc *LoadBalancerController) FindMasterForMinion(minion *extensions.Ingress) (*extensions.Ingress, error) {
+func (lbc *LoadBalancerController) FindMasterForMinion(minion *networking.Ingress) (*networking.Ingress, error) {
 	ings, err := lbc.ingressLister.List()
 	if err != nil {
-		return &extensions.Ingress{}, err
+		return &networking.Ingress{}, err
 	}
 
 	for i := range ings.Items {
@@ -3095,7 +3095,7 @@ func (lbc *LoadBalancerController) FindMasterForMinion(minion *extensions.Ingres
 	return nil, err
 }
 
-func (lbc *LoadBalancerController) createMergableIngresses(master *extensions.Ingress) (*configs.MergeableIngresses, error) {
+func (lbc *LoadBalancerController) createMergableIngresses(master *networking.Ingress) (*configs.MergeableIngresses, error) {
 	mergeableIngresses := configs.MergeableIngresses{}
 
 	if len(master.Spec.Rules) != 1 {
@@ -3103,7 +3103,7 @@ func (lbc *LoadBalancerController) createMergableIngresses(master *extensions.In
 		return &mergeableIngresses, err
 	}
 
-	var empty extensions.HTTPIngressRuleValue
+	var empty networking.HTTPIngressRuleValue
 	if master.Spec.Rules[0].HTTP != nil {
 		if master.Spec.Rules[0].HTTP != &empty {
 			if len(master.Spec.Rules[0].HTTP.Paths) != 0 {
@@ -3114,8 +3114,8 @@ func (lbc *LoadBalancerController) createMergableIngresses(master *extensions.In
 	}
 
 	// Makes sure there is an empty path assigned to a master, to allow for lbc.createIngress() to pass
-	master.Spec.Rules[0].HTTP = &extensions.HTTPIngressRuleValue{
-		Paths: []extensions.HTTPIngressPath{},
+	master.Spec.Rules[0].HTTP = &networking.HTTPIngressRuleValue{
+		Paths: []networking.HTTPIngressPath{},
 	}
 
 	masterIngEx, err := lbc.createIngress(master)
@@ -3196,7 +3196,7 @@ func (lbc *LoadBalancerController) syncAppProtectPolicy(task task) {
 	lbc.recorder.Eventf(policy, api_v1.EventTypeNormal, "AddedOrUpdated", "AppProtectPolicy %v was added or updated", key)
 }
 
-func (lbc *LoadBalancerController) handleAppProtectPolicyUpdate(pol *unstructured.Unstructured, ings []extensions.Ingress) error {
+func (lbc *LoadBalancerController) handleAppProtectPolicyUpdate(pol *unstructured.Unstructured, ings []networking.Ingress) error {
 	regular, mergeable := lbc.createIngresses(ings)
 	polNsName := pol.GetNamespace() + "/" + pol.GetName()
 
@@ -3217,7 +3217,7 @@ func (lbc *LoadBalancerController) handleAppProtectPolicyUpdate(pol *unstructure
 	return nil
 }
 
-func (lbc *LoadBalancerController) handleAppProtectPolicyDeletion(key string, ings []extensions.Ingress) error {
+func (lbc *LoadBalancerController) handleAppProtectPolicyDeletion(key string, ings []networking.Ingress) error {
 	regular, mergeable := lbc.createIngresses(ings)
 
 	eventType := api_v1.EventTypeNormal
@@ -3285,7 +3285,7 @@ func (lbc *LoadBalancerController) syncAppProtectLogConf(task task) {
 	lbc.recorder.Eventf(logConf, api_v1.EventTypeNormal, "AddedOrUpdated", "AppProtectLogConfig  %v was added or updated", key)
 }
 
-func (lbc *LoadBalancerController) handleAppProtectLogConfUpdate(logConf *unstructured.Unstructured, ings []extensions.Ingress) error {
+func (lbc *LoadBalancerController) handleAppProtectLogConfUpdate(logConf *unstructured.Unstructured, ings []networking.Ingress) error {
 	logConfNsName := logConf.GetNamespace() + "/" + logConf.GetName()
 
 	eventType := api_v1.EventTypeNormal
@@ -3306,7 +3306,7 @@ func (lbc *LoadBalancerController) handleAppProtectLogConfUpdate(logConf *unstru
 	return nil
 }
 
-func (lbc *LoadBalancerController) handleAppProtectLogConfDeletion(key string, ings []extensions.Ingress) error {
+func (lbc *LoadBalancerController) handleAppProtectLogConfDeletion(key string, ings []networking.Ingress) error {
 	eventType := api_v1.EventTypeNormal
 	title := "Updated"
 	message := fmt.Sprintf("Configuration was updated due to deleted App Protect Log Configuration %v", key)
@@ -3325,7 +3325,7 @@ func (lbc *LoadBalancerController) handleAppProtectLogConfDeletion(key string, i
 	return nil
 }
 
-func (lbc *LoadBalancerController) findIngressesForAppProtectResource(namespace string, name string, annotationRef string) (apIngs []extensions.Ingress) {
+func (lbc *LoadBalancerController) findIngressesForAppProtectResource(namespace string, name string, annotationRef string) (apIngs []networking.Ingress) {
 	ings, mIngs := lbc.GetManagedIngresses()
 	for i := range ings {
 		if pol, exists := ings[i].Annotations[annotationRef]; exists {

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/networking/v1beta1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -124,6 +124,44 @@ func TestPathOrDefaultReturnActual(t *testing.T) {
 	path := "/path/to/resource"
 	if pathOrDefault(path) != path {
 		t.Errorf("pathOrDefault(%q) should return %q", path, path)
+	}
+}
+
+func TestGenerateIngressPath(t *testing.T) {
+	exact := v1beta1.PathTypeExact
+	prefix := v1beta1.PathTypePrefix
+	impSpec := v1beta1.PathTypeImplementationSpecific
+	tests := []struct {
+		pathType *v1beta1.PathType
+		path     string
+		expected string
+	}{
+		{
+			pathType: &exact,
+			path:     "/path/to/resource",
+			expected: "= /path/to/resource",
+		},
+		{
+			pathType: &prefix,
+			path:     "/path/to/resource",
+			expected: "/path/to/resource",
+		},
+		{
+			pathType: &impSpec,
+			path:     "/path/to/resource",
+			expected: "/path/to/resource",
+		},
+		{
+			pathType: nil,
+			path:     "/path/to/resource",
+			expected: "/path/to/resource",
+		},
+	}
+	for _, test := range tests {
+		result := generateIngressPath(test.path, test.pathType)
+		if result != test.expected {
+			t.Errorf("generateIngressPath(%v, %v) returned %v, but expected %v", test.path, test.pathType, result, test.expected)
+		}
 	}
 }
 

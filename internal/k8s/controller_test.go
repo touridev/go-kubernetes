@@ -18,7 +18,7 @@ import (
 	conf_v1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1"
 	conf_v1alpha1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1alpha1"
 	v1 "k8s.io/api/core/v1"
-	extensions "k8s.io/api/extensions/v1beta1"
+	networking "k8s.io/api/networking/v1beta1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -31,7 +31,7 @@ func TestHasCorrectIngressClass(t *testing.T) {
 
 	var testsWithoutIngressClassOnly = []struct {
 		lbc      *LoadBalancerController
-		ing      *extensions.Ingress
+		ing      *networking.Ingress
 		expected bool
 	}{
 		{
@@ -40,7 +40,7 @@ func TestHasCorrectIngressClass(t *testing.T) {
 				useIngressClassOnly: false,
 				metricsCollector:    collectors.NewControllerFakeCollector(),
 			},
-			&extensions.Ingress{
+			&networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Annotations: map[string]string{ingressClassKey: ""},
 				},
@@ -53,7 +53,7 @@ func TestHasCorrectIngressClass(t *testing.T) {
 				useIngressClassOnly: false,
 				metricsCollector:    collectors.NewControllerFakeCollector(),
 			},
-			&extensions.Ingress{
+			&networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Annotations: map[string]string{ingressClassKey: "gce"},
 				},
@@ -66,7 +66,7 @@ func TestHasCorrectIngressClass(t *testing.T) {
 				useIngressClassOnly: false,
 				metricsCollector:    collectors.NewControllerFakeCollector(),
 			},
-			&extensions.Ingress{
+			&networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Annotations: map[string]string{ingressClassKey: ingressClass},
 				},
@@ -79,7 +79,7 @@ func TestHasCorrectIngressClass(t *testing.T) {
 				useIngressClassOnly: false,
 				metricsCollector:    collectors.NewControllerFakeCollector(),
 			},
-			&extensions.Ingress{
+			&networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Annotations: map[string]string{},
 				},
@@ -90,7 +90,7 @@ func TestHasCorrectIngressClass(t *testing.T) {
 
 	var testsWithIngressClassOnly = []struct {
 		lbc      *LoadBalancerController
-		ing      *extensions.Ingress
+		ing      *networking.Ingress
 		expected bool
 	}{
 		{
@@ -99,7 +99,7 @@ func TestHasCorrectIngressClass(t *testing.T) {
 				useIngressClassOnly: true,
 				metricsCollector:    collectors.NewControllerFakeCollector(),
 			},
-			&extensions.Ingress{
+			&networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Annotations: map[string]string{ingressClassKey: ""},
 				},
@@ -112,7 +112,7 @@ func TestHasCorrectIngressClass(t *testing.T) {
 				useIngressClassOnly: true,
 				metricsCollector:    collectors.NewControllerFakeCollector(),
 			},
-			&extensions.Ingress{
+			&networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Annotations: map[string]string{ingressClassKey: "gce"},
 				},
@@ -125,7 +125,7 @@ func TestHasCorrectIngressClass(t *testing.T) {
 				useIngressClassOnly: true,
 				metricsCollector:    collectors.NewControllerFakeCollector(),
 			},
-			&extensions.Ingress{
+			&networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Annotations: map[string]string{ingressClassKey: ingressClass},
 				},
@@ -138,7 +138,7 @@ func TestHasCorrectIngressClass(t *testing.T) {
 				useIngressClassOnly: true,
 				metricsCollector:    collectors.NewControllerFakeCollector(),
 			},
-			&extensions.Ingress{
+			&networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Annotations: map[string]string{},
 				},
@@ -332,15 +332,15 @@ func TestCreateMergableIngressesInvalidMaster(t *testing.T) {
 	cafeMaster, _, _, lbc := getMergableDefaults()
 
 	// Test Error when Master has a Path
-	cafeMaster.Spec.Rules = []extensions.IngressRule{
+	cafeMaster.Spec.Rules = []networking.IngressRule{
 		{
 			Host: "ok.com",
-			IngressRuleValue: extensions.IngressRuleValue{
-				HTTP: &extensions.HTTPIngressRuleValue{
-					Paths: []extensions.HTTPIngressPath{
+			IngressRuleValue: networking.IngressRuleValue{
+				HTTP: &networking.HTTPIngressRuleValue{
+					Paths: []networking.HTTPIngressPath{
 						{
 							Path: "/coffee",
-							Backend: extensions.IngressBackend{
+							Backend: networking.IngressBackend{
 								ServiceName: "coffee-svc",
 								ServicePort: intstr.IntOrString{
 									StrVal: "80",
@@ -368,8 +368,8 @@ func TestFindMasterForMinion(t *testing.T) {
 	cafeMaster, coffeeMinion, teaMinion, lbc := getMergableDefaults()
 
 	// Makes sure there is an empty path assigned to a master, to allow for lbc.createIngress() to pass
-	cafeMaster.Spec.Rules[0].HTTP = &extensions.HTTPIngressRuleValue{
-		Paths: []extensions.HTTPIngressPath{},
+	cafeMaster.Spec.Rules[0].HTTP = &networking.HTTPIngressRuleValue{
+		Paths: []networking.HTTPIngressPath{},
 	}
 
 	err := lbc.ingressLister.Add(&cafeMaster)
@@ -434,11 +434,11 @@ func TestFindMasterForMinionInvalidMinion(t *testing.T) {
 	cafeMaster, coffeeMinion, _, lbc := getMergableDefaults()
 
 	// Makes sure there is an empty path assigned to a master, to allow for lbc.createIngress() to pass
-	cafeMaster.Spec.Rules[0].HTTP = &extensions.HTTPIngressRuleValue{
-		Paths: []extensions.HTTPIngressPath{},
+	cafeMaster.Spec.Rules[0].HTTP = &networking.HTTPIngressRuleValue{
+		Paths: []networking.HTTPIngressPath{},
 	}
 
-	coffeeMinion.Spec.Rules = []extensions.IngressRule{
+	coffeeMinion.Spec.Rules = []networking.IngressRule{
 		{
 			Host: "ok.com",
 		},
@@ -467,8 +467,8 @@ func TestGetMinionsForMaster(t *testing.T) {
 	cafeMaster, coffeeMinion, teaMinion, lbc := getMergableDefaults()
 
 	// Makes sure there is an empty path assigned to a master, to allow for lbc.createIngress() to pass
-	cafeMaster.Spec.Rules[0].HTTP = &extensions.HTTPIngressRuleValue{
-		Paths: []extensions.HTTPIngressPath{},
+	cafeMaster.Spec.Rules[0].HTTP = &networking.HTTPIngressRuleValue{
+		Paths: []networking.HTTPIngressPath{},
 	}
 
 	err := lbc.ingressLister.Add(&cafeMaster)
@@ -525,11 +525,11 @@ func TestGetMinionsForMasterInvalidMinion(t *testing.T) {
 	cafeMaster, coffeeMinion, teaMinion, lbc := getMergableDefaults()
 
 	// Makes sure there is an empty path assigned to a master, to allow for lbc.createIngress() to pass
-	cafeMaster.Spec.Rules[0].HTTP = &extensions.HTTPIngressRuleValue{
-		Paths: []extensions.HTTPIngressPath{},
+	cafeMaster.Spec.Rules[0].HTTP = &networking.HTTPIngressRuleValue{
+		Paths: []networking.HTTPIngressPath{},
 	}
 
-	teaMinion.Spec.Rules = []extensions.IngressRule{
+	teaMinion.Spec.Rules = []networking.IngressRule{
 		{
 			Host: "ok.com",
 		},
@@ -589,13 +589,13 @@ func TestGetMinionsForMasterConflictingPaths(t *testing.T) {
 	cafeMaster, coffeeMinion, teaMinion, lbc := getMergableDefaults()
 
 	// Makes sure there is an empty path assigned to a master, to allow for lbc.createIngress() to pass
-	cafeMaster.Spec.Rules[0].HTTP = &extensions.HTTPIngressRuleValue{
-		Paths: []extensions.HTTPIngressPath{},
+	cafeMaster.Spec.Rules[0].HTTP = &networking.HTTPIngressRuleValue{
+		Paths: []networking.HTTPIngressPath{},
 	}
 
-	coffeeMinion.Spec.Rules[0].HTTP.Paths = append(coffeeMinion.Spec.Rules[0].HTTP.Paths, extensions.HTTPIngressPath{
+	coffeeMinion.Spec.Rules[0].HTTP.Paths = append(coffeeMinion.Spec.Rules[0].HTTP.Paths, networking.HTTPIngressPath{
 		Path: "/tea",
-		Backend: extensions.IngressBackend{
+		Backend: networking.IngressBackend{
 			ServiceName: "tea-svc",
 			ServicePort: intstr.IntOrString{
 				StrVal: "80",
@@ -655,8 +655,8 @@ func TestGetMinionsForMasterConflictingPaths(t *testing.T) {
 	}
 }
 
-func getMergableDefaults() (cafeMaster, coffeeMinion, teaMinion extensions.Ingress, lbc LoadBalancerController) {
-	cafeMaster = extensions.Ingress{
+func getMergableDefaults() (cafeMaster, coffeeMinion, teaMinion networking.Ingress, lbc LoadBalancerController) {
+	cafeMaster = networking.Ingress{
 		TypeMeta: meta_v1.TypeMeta{},
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "cafe-master",
@@ -666,16 +666,16 @@ func getMergableDefaults() (cafeMaster, coffeeMinion, teaMinion extensions.Ingre
 				"nginx.org/mergeable-ingress-type": "master",
 			},
 		},
-		Spec: extensions.IngressSpec{
-			Rules: []extensions.IngressRule{
+		Spec: networking.IngressSpec{
+			Rules: []networking.IngressRule{
 				{
 					Host: "ok.com",
 				},
 			},
 		},
-		Status: extensions.IngressStatus{},
+		Status: networking.IngressStatus{},
 	}
-	coffeeMinion = extensions.Ingress{
+	coffeeMinion = networking.Ingress{
 		TypeMeta: meta_v1.TypeMeta{},
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "coffee-minion",
@@ -685,16 +685,16 @@ func getMergableDefaults() (cafeMaster, coffeeMinion, teaMinion extensions.Ingre
 				"nginx.org/mergeable-ingress-type": "minion",
 			},
 		},
-		Spec: extensions.IngressSpec{
-			Rules: []extensions.IngressRule{
+		Spec: networking.IngressSpec{
+			Rules: []networking.IngressRule{
 				{
 					Host: "ok.com",
-					IngressRuleValue: extensions.IngressRuleValue{
-						HTTP: &extensions.HTTPIngressRuleValue{
-							Paths: []extensions.HTTPIngressPath{
+					IngressRuleValue: networking.IngressRuleValue{
+						HTTP: &networking.HTTPIngressRuleValue{
+							Paths: []networking.HTTPIngressPath{
 								{
 									Path: "/coffee",
-									Backend: extensions.IngressBackend{
+									Backend: networking.IngressBackend{
 										ServiceName: "coffee-svc",
 										ServicePort: intstr.IntOrString{
 											StrVal: "80",
@@ -707,9 +707,9 @@ func getMergableDefaults() (cafeMaster, coffeeMinion, teaMinion extensions.Ingre
 				},
 			},
 		},
-		Status: extensions.IngressStatus{},
+		Status: networking.IngressStatus{},
 	}
-	teaMinion = extensions.Ingress{
+	teaMinion = networking.Ingress{
 		TypeMeta: meta_v1.TypeMeta{},
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "tea-minion",
@@ -719,13 +719,13 @@ func getMergableDefaults() (cafeMaster, coffeeMinion, teaMinion extensions.Ingre
 				"nginx.org/mergeable-ingress-type": "minion",
 			},
 		},
-		Spec: extensions.IngressSpec{
-			Rules: []extensions.IngressRule{
+		Spec: networking.IngressSpec{
+			Rules: []networking.IngressRule{
 				{
 					Host: "ok.com",
-					IngressRuleValue: extensions.IngressRuleValue{
-						HTTP: &extensions.HTTPIngressRuleValue{
-							Paths: []extensions.HTTPIngressPath{
+					IngressRuleValue: networking.IngressRuleValue{
+						HTTP: &networking.HTTPIngressRuleValue{
+							Paths: []networking.HTTPIngressPath{
 								{
 									Path: "/tea",
 								},
@@ -735,7 +735,7 @@ func getMergableDefaults() (cafeMaster, coffeeMinion, teaMinion extensions.Ingre
 				},
 			},
 		},
-		Status: extensions.IngressStatus{},
+		Status: networking.IngressStatus{},
 	}
 
 	ingExMap := make(map[string]*configs.IngressEx)
@@ -761,11 +761,11 @@ func getMergableDefaults() (cafeMaster, coffeeMinion, teaMinion extensions.Ingre
 		metricsCollector: collectors.NewControllerFakeCollector(),
 	}
 	lbc.svcLister, _ = cache.NewInformer(
-		cache.NewListWatchFromClient(lbc.client.ExtensionsV1beta1().RESTClient(), "services", "default", fields.Everything()),
-		&extensions.Ingress{}, time.Duration(1), nil)
+		cache.NewListWatchFromClient(lbc.client.NetworkingV1beta1().RESTClient(), "services", "default", fields.Everything()),
+		&networking.Ingress{}, time.Duration(1), nil)
 	lbc.ingressLister.Store, _ = cache.NewInformer(
-		cache.NewListWatchFromClient(lbc.client.ExtensionsV1beta1().RESTClient(), "ingresses", "default", fields.Everything()),
-		&extensions.Ingress{}, time.Duration(1), nil)
+		cache.NewListWatchFromClient(lbc.client.NetworkingV1beta1().RESTClient(), "ingresses", "default", fields.Everything()),
+		&networking.Ingress{}, time.Duration(1), nil)
 
 	return
 }
@@ -1007,7 +1007,7 @@ func TestGetServicePortForIngressPort(t *testing.T) {
 func TestFindIngressesForSecret(t *testing.T) {
 	testCases := []struct {
 		secret         v1.Secret
-		ingress        extensions.Ingress
+		ingress        networking.Ingress
 		expectedToFind bool
 		desc           string
 	}{
@@ -1018,13 +1018,13 @@ func TestFindIngressesForSecret(t *testing.T) {
 					Namespace: "namespace-1",
 				},
 			},
-			ingress: extensions.Ingress{
+			ingress: networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "my-ingress",
 					Namespace: "namespace-1",
 				},
-				Spec: extensions.IngressSpec{
-					TLS: []extensions.IngressTLS{
+				Spec: networking.IngressSpec{
+					TLS: []networking.IngressTLS{
 						{
 							SecretName: "my-tls-secret",
 						},
@@ -1041,13 +1041,13 @@ func TestFindIngressesForSecret(t *testing.T) {
 					Namespace: "namespace-1",
 				},
 			},
-			ingress: extensions.Ingress{
+			ingress: networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "my-ingress",
 					Namespace: "namespace-2",
 				},
-				Spec: extensions.IngressSpec{
-					TLS: []extensions.IngressTLS{
+				Spec: networking.IngressSpec{
+					TLS: []networking.IngressTLS{
 						{
 							SecretName: "my-tls-secret",
 						},
@@ -1064,7 +1064,7 @@ func TestFindIngressesForSecret(t *testing.T) {
 					Namespace: "namespace-1",
 				},
 			},
-			ingress: extensions.Ingress{
+			ingress: networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "my-ingress",
 					Namespace: "namespace-1",
@@ -1083,7 +1083,7 @@ func TestFindIngressesForSecret(t *testing.T) {
 					Namespace: "namespace-1",
 				},
 			},
-			ingress: extensions.Ingress{
+			ingress: networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "my-ingress",
 					Namespace: "namespace-2",
@@ -1123,8 +1123,8 @@ func TestFindIngressesForSecret(t *testing.T) {
 			}
 
 			lbc.ingressLister.Store, _ = cache.NewInformer(
-				cache.NewListWatchFromClient(lbc.client.ExtensionsV1beta1().RESTClient(), "ingresses", "default", fields.Everything()),
-				&extensions.Ingress{}, time.Duration(1), nil)
+				cache.NewListWatchFromClient(lbc.client.NetworkingV1beta1().RESTClient(), "ingresses", "default", fields.Everything()),
+				&networking.Ingress{}, time.Duration(1), nil)
 
 			lbc.secretLister.Store, lbc.secretController = cache.NewInformer(
 				cache.NewListWatchFromClient(lbc.client.CoreV1().RESTClient(), "secrets", "default", fields.Everything()),
@@ -1177,7 +1177,7 @@ func TestFindIngressesForSecret(t *testing.T) {
 func TestFindIngressesForSecretWithMinions(t *testing.T) {
 	testCases := []struct {
 		secret         v1.Secret
-		ingress        extensions.Ingress
+		ingress        networking.Ingress
 		expectedToFind bool
 		desc           string
 	}{
@@ -1188,7 +1188,7 @@ func TestFindIngressesForSecretWithMinions(t *testing.T) {
 					Namespace: "default",
 				},
 			},
-			ingress: extensions.Ingress{
+			ingress: networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "cafe-ingress-tea-minion",
 					Namespace: "default",
@@ -1198,16 +1198,16 @@ func TestFindIngressesForSecretWithMinions(t *testing.T) {
 						configs.JWTKeyAnnotation:           "my-jwk-secret",
 					},
 				},
-				Spec: extensions.IngressSpec{
-					Rules: []extensions.IngressRule{
+				Spec: networking.IngressSpec{
+					Rules: []networking.IngressRule{
 						{
 							Host: "cafe.example.com",
-							IngressRuleValue: extensions.IngressRuleValue{
-								HTTP: &extensions.HTTPIngressRuleValue{
-									Paths: []extensions.HTTPIngressPath{
+							IngressRuleValue: networking.IngressRuleValue{
+								HTTP: &networking.HTTPIngressRuleValue{
+									Paths: []networking.HTTPIngressPath{
 										{
 											Path: "/tea",
-											Backend: extensions.IngressBackend{
+											Backend: networking.IngressBackend{
 												ServiceName: "tea-svc",
 												ServicePort: intstr.FromString("80"),
 											},
@@ -1229,7 +1229,7 @@ func TestFindIngressesForSecretWithMinions(t *testing.T) {
 					Namespace: "namespace-1",
 				},
 			},
-			ingress: extensions.Ingress{
+			ingress: networking.Ingress{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "cafe-ingress-tea-minion",
 					Namespace: "default",
@@ -1239,16 +1239,16 @@ func TestFindIngressesForSecretWithMinions(t *testing.T) {
 						configs.JWTKeyAnnotation:           "my-jwk-secret",
 					},
 				},
-				Spec: extensions.IngressSpec{
-					Rules: []extensions.IngressRule{
+				Spec: networking.IngressSpec{
+					Rules: []networking.IngressRule{
 						{
 							Host: "cafe.example.com",
-							IngressRuleValue: extensions.IngressRuleValue{
-								HTTP: &extensions.HTTPIngressRuleValue{
-									Paths: []extensions.HTTPIngressPath{
+							IngressRuleValue: networking.IngressRuleValue{
+								HTTP: &networking.HTTPIngressRuleValue{
+									Paths: []networking.HTTPIngressPath{
 										{
 											Path: "/tea",
-											Backend: extensions.IngressBackend{
+											Backend: networking.IngressBackend{
 												ServiceName: "tea-svc",
 												ServicePort: intstr.FromString("80"),
 											},
@@ -1265,7 +1265,7 @@ func TestFindIngressesForSecretWithMinions(t *testing.T) {
 		},
 	}
 
-	master := extensions.Ingress{
+	master := networking.Ingress{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "cafe-ingress-master",
 			Namespace: "default",
@@ -1274,13 +1274,13 @@ func TestFindIngressesForSecretWithMinions(t *testing.T) {
 				"nginx.org/mergeable-ingress-type": "master",
 			},
 		},
-		Spec: extensions.IngressSpec{
-			Rules: []extensions.IngressRule{
+		Spec: networking.IngressSpec{
+			Rules: []networking.IngressRule{
 				{
 					Host: "cafe.example.com",
-					IngressRuleValue: extensions.IngressRuleValue{
-						HTTP: &extensions.HTTPIngressRuleValue{ // HTTP must not be nil for Master
-							Paths: []extensions.HTTPIngressPath{},
+					IngressRuleValue: networking.IngressRuleValue{
+						HTTP: &networking.HTTPIngressRuleValue{ // HTTP must not be nil for Master
+							Paths: []networking.HTTPIngressPath{},
 						},
 					},
 				},
@@ -1314,8 +1314,8 @@ func TestFindIngressesForSecretWithMinions(t *testing.T) {
 			}
 
 			lbc.ingressLister.Store, _ = cache.NewInformer(
-				cache.NewListWatchFromClient(lbc.client.ExtensionsV1beta1().RESTClient(), "ingresses", "default", fields.Everything()),
-				&extensions.Ingress{}, time.Duration(1), nil)
+				cache.NewListWatchFromClient(lbc.client.NetworkingV1beta1().RESTClient(), "ingresses", "default", fields.Everything()),
+				&networking.Ingress{}, time.Duration(1), nil)
 
 			lbc.secretLister.Store, lbc.secretController = cache.NewInformer(
 				cache.NewListWatchFromClient(lbc.client.CoreV1().RESTClient(), "secrets", "default", fields.Everything()),

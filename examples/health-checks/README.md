@@ -15,7 +15,7 @@ The Ingress controller provides the following annotations for configuring active
 
 In the following example we enable active health checks in the cafe-ingress Ingress:
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: cafe-ingress

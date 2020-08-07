@@ -7,7 +7,7 @@ nginx.org/websocket-services: "service1[,service2,...]"
 
 In the following example we load balance three applications, one of which is using WebSocket:
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: cafe-ingress

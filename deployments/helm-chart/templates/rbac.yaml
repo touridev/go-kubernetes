@@ -62,7 +62,7 @@ rules:
   - patch
   - list
 - apiGroups:
-  - extensions
+  - networking.k8s.io
   resources:
   - ingresses
   verbs:
@@ -71,7 +71,7 @@ rules:
   - watch
 {{- if .Values.controller.reportIngressStatus.enable }}
 - apiGroups:
-  - extensions
+  - networking.k8s.io
   resources:
   - ingresses/status
   verbs:

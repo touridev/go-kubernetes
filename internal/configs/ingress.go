@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	api_v1 "k8s.io/api/core/v1"
-	extensions "k8s.io/api/extensions/v1beta1"
+	networking "k8s.io/api/networking/v1beta1"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -20,7 +20,7 @@ const appProtectLogConfKey = "logconf"
 
 // IngressEx holds an Ingress along with the resources that are referenced in this Ingress.
 type IngressEx struct {
-	Ingress           *extensions.Ingress
+	Ingress           *networking.Ingress
 	TLSSecrets        map[string]*api_v1.Secret
 	JWTKey            JWTKey
 	Endpoints         map[string][]string
@@ -184,7 +184,7 @@ func generateNginxCfg(ingEx *IngressEx, pems map[string]string, apResources map[
 			ssl := isSSLEnabled(sslServices[path.Backend.ServiceName], cfgParams, staticParams)
 			proxySSLName := generateProxySSLName(path.Backend.ServiceName, ingEx.Ingress.Namespace)
 			loc := createLocation(pathOrDefault(path.Path), upstreams[upsName], &cfgParams, wsServices[path.Backend.ServiceName], rewrites[path.Backend.ServiceName],
-				ssl, grpcServices[path.Backend.ServiceName], proxySSLName)
+				ssl, grpcServices[path.Backend.ServiceName], proxySSLName, path.PathType)
 			if isMinion && ingEx.JWTKey.Name != "" {
 				loc.JWTAuth = &version1.JWTAuth{
 					Key:   jwtKeyFileName,
@@ -211,9 +211,10 @@ func generateNginxCfg(ingEx *IngressEx, pems map[string]string, apResources map[
 			upsName := getNameForUpstream(ingEx.Ingress, emptyHost, ingEx.Ingress.Spec.Backend)
 			ssl := isSSLEnabled(sslServices[ingEx.Ingress.Spec.Backend.ServiceName], cfgParams, staticParams)
 			proxySSLName := generateProxySSLName(ingEx.Ingress.Spec.Backend.ServiceName, ingEx.Ingress.Namespace)
+			pathtype := networking.PathTypePrefix
 
 			loc := createLocation(pathOrDefault("/"), upstreams[upsName], &cfgParams, wsServices[ingEx.Ingress.Spec.Backend.ServiceName], rewrites[ingEx.Ingress.Spec.Backend.ServiceName],
-				ssl, grpcServices[ingEx.Ingress.Spec.Backend.ServiceName], proxySSLName)
+				ssl, grpcServices[ingEx.Ingress.Spec.Backend.ServiceName], proxySSLName, &pathtype)
 			locations = append(locations, loc)
 
 			if cfgParams.HealthCheckEnabled {
@@ -252,9 +253,20 @@ func generateNginxCfg(ingEx *IngressEx, pems map[string]string, apResources map[
 	}
 }
 
-func createLocation(path string, upstream version1.Upstream, cfg *ConfigParams, websocket bool, rewrite string, ssl bool, grpc bool, proxySSLName string) version1.Location {
+func generateIngressPath(path string, pathType *networking.PathType) string {
+	if pathType == nil {
+		return path
+	}
+	if *pathType == networking.PathTypeExact {
+		path = "= " + path
+	}
+
+	return path
+}
+
+func createLocation(path string, upstream version1.Upstream, cfg *ConfigParams, websocket bool, rewrite string, ssl bool, grpc bool, proxySSLName string, pathType *networking.PathType) version1.Location {
 	loc := version1.Location{
-		Path:                 path,
+		Path:                 generateIngressPath(path, pathType),
 		Upstream:             upstream,
 		ProxyConnectTimeout:  cfg.ProxyConnectTimeout,
 		ProxyReadTimeout:     cfg.ProxyReadTimeout,
@@ -287,7 +299,7 @@ func upstreamRequiresQueue(name string, ingEx *IngressEx, cfg *ConfigParams) (n 
 	return 0, 0
 }
 
-func createUpstream(ingEx *IngressEx, name string, backend *extensions.IngressBackend, stickyCookie string, cfg *ConfigParams,
+func createUpstream(ingEx *IngressEx, name string, backend *networking.IngressBackend, stickyCookie string, cfg *ConfigParams,
 	isPlus bool, isResolverConfigured bool) version1.Upstream {
 	var ups version1.Upstream
 
@@ -365,11 +377,11 @@ func pathOrDefault(path string) string {
 	return path
 }
 
-func getNameForUpstream(ing *extensions.Ingress, host string, backend *extensions.IngressBackend) string {
+func getNameForUpstream(ing *networking.Ingress, host string, backend *networking.IngressBackend) string {
 	return fmt.Sprintf("%v-%v-%v-%v-%v", ing.Namespace, ing.Name, host, backend.ServiceName, backend.ServicePort.String())
 }
 
-func getNameForRedirectLocation(ing *extensions.Ingress) string {
+func getNameForRedirectLocation(ing *networking.Ingress) string {
 	return fmt.Sprintf("@login_url_%v-%v", ing.Namespace, ing.Name)
 }
 

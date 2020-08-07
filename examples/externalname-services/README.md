@@ -40,7 +40,7 @@ spec:
 In the following Ingress resource we use my-service:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: example-ingress

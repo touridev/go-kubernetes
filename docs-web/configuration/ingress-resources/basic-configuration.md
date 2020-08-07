@@ -2,7 +2,7 @@
 
 The example below shows a basic Ingress resource definition. It load balances requests for two services -- coffee and tea -- comprising a hypothetical *cafe* app hosted at `cafe.example.com`:
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: cafe-ingress
@@ -32,13 +32,37 @@ Here is a breakdown of what this Ingress resource definition means:
     * In the `hosts` field, we apply the certificate and key to our `cafe.example.com` host.
 * In the `spec.rules` field, we define a host with domain name `cafe.example.com`.
 * In the `paths` field, we define two path‑based rules:
-  * The rule with the path `/tea` instructs NGINX to distribute the requests with the `/tea` URI among the pods of the *tea* service, which is deployed with the name `tea‑svc` in the cluster.
+  * The rule with the path `/tea` instructs NGINX to distribute the requests with the  `/tea` URI among the pods of the *tea* service, which is deployed with the name `tea‑svc` in the cluster.
   * The rule with the path `/coffee` instructs NGINX to distribute the requests with the `/coffee` URI among the pods of the *coffee* service, which is deployed with the name `coffee‑svc` in the cluster.
   * Both rules instruct NGINX to distribute the requests to `port 80` of the corresponding service (the `servicePort` field).
 
 > For complete instructions on deploying the Ingress and Secret resources in the cluster, see the [complete-example](https://github.com/nginxinc/kubernetes-ingress/tree/master/examples/complete-example) in our GitHub repo.
 
 > To learn more about the Ingress resource, see the [Ingress resource documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/) in the Kubernetes docs.
+
+## New Features Available in Kubernetes 1.18 and Above
+
+Starting from Kubernetes 1.18, you can use the following new features:
+
+* The host field supports wildcard domain names, such as `*.example.com`.
+* The path supports different matching rules with the new field `PathType`, which takes the following values: `Prefix` for prefix-based matching, `Exact` for exact matching and `ImplementationSpecific`, which is the default type and is the same as `Prefix`. For example:
+  ```yaml
+    - path: /tea
+      pathType: Prefix
+      backend:
+        serviceName: tea-svc
+        servicePort: 80
+    - path: /tea/green
+      pathType: Exact
+      backend:
+        serviceName: tea-svc
+        servicePort: 80
+    - path: /coffee
+      pathType: ImplementationSpecific # default
+      backend:
+        serviceName: coffee-svc
+        servicePort: 80
+  ```
 
 ## Restrictions
 

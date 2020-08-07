@@ -14,11 +14,11 @@ import (
 	v1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1"
 	k8s_nginx "github.com/nginxinc/kubernetes-ingress/pkg/client/clientset/versioned"
 	api_v1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	extensionsv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
+	networkingv1beta1 "k8s.io/client-go/kubernetes/typed/networking/v1beta1"
 )
 
 // statusUpdater reports Ingress, VirtualServer and VirtualServerRoute status information via the kubernetes
@@ -98,7 +98,7 @@ func (su *statusUpdater) updateIngressWithStatus(ing v1beta1.Ingress, status []a
 	}
 
 	ingCopy.Status.LoadBalancer.Ingress = status
-	clientIngress := su.client.ExtensionsV1beta1().Ingresses(ingCopy.Namespace)
+	clientIngress := su.client.NetworkingV1beta1().Ingresses(ingCopy.Namespace)
 	_, err = clientIngress.UpdateStatus(context.TODO(), ingCopy, metav1.UpdateOptions{})
 	if err != nil {
 		glog.V(3).Infof("error setting ingress status: %v", err)
@@ -135,7 +135,7 @@ func (su *statusUpdater) BulkUpdateIngressStatus(ings []v1beta1.Ingress) error {
 // retryStatusUpdate fetches a fresh copy of the Ingress from the k8s API, checks if it still needs to be
 // updated, and then attempts to update. We often need to fetch fresh copies due to the
 // k8s API using ResourceVersion to stop updates on stale items.
-func (su *statusUpdater) retryStatusUpdate(clientIngress extensionsv1beta1.IngressInterface, ingCopy *v1beta1.Ingress) error {
+func (su *statusUpdater) retryStatusUpdate(clientIngress networkingv1beta1.IngressInterface, ingCopy *v1beta1.Ingress) error {
 	apiIng, err := clientIngress.Get(context.TODO(), ingCopy.Name, metav1.GetOptions{})
 	if err != nil {
 		glog.V(3).Infof("error getting ingress resource: %v", err)

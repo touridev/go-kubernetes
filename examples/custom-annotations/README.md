@@ -81,7 +81,7 @@ Customize the template for Ingress resources to include the logic to handle and 
 
 1. Create a file with the following Ingress resource (`cafe-ingress.yaml`) and use the custom annotations to enable rate-limiting:
     ```yaml
-    apiVersion: extensions/v1beta1
+    apiVersion: networking.k8s.io/v1beta1
     kind: Ingress
     metadata:
       name: cafe-ingress
