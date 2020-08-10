@@ -28,8 +28,8 @@ The table below categorizes some potential problems with the Ingress Controller 
      - APLogConf or APPolicy is invalid.
    * - NGINX.
      - The Ingress Controller NGINX verification timeouts while starting for the first time or while reloading after a change.
-     - Check the logs for ``Unable to fetch version: X`` message.
-     - Too many Ingress Resources with App Protect enabled. Check the `NGINX fails to start/reload section <#nginx-fails-to-start-or-reload>`_ of the Known Issues. 
+     - Check the logs for ``Unable to fetch version: X`` message. Check the Availability of APPolicy External References.
+     - Too many Ingress Resources with App Protect enabled. Check the `NGINX fails to start/reload section <#nginx-fails-to-start-or-reload>`_ of the Known Issues.     
 ```
 
 ## Troubleshooting Methods
@@ -76,7 +76,23 @@ Events:
   Normal  AddedOrUpdated  2m25s  nginx-ingress-controller  AppProtectPolicy default/dataguard-alarm was added or updated
 ```
 Note that in the events section, we have a `Normal` event with the `AddedOrUpdated` reason, which informs us that the configuration was successfully applied.
- 
+
+### Check the Availability of APPolicy External References.
+
+NOTE: This method only applies if you're using [external references](https://docs.nginx.com/nginx-app-protect/configuration/#external-references) in NGINX App Protect policies.
+
+To check what servers host the external references of a policy: 
+```
+kubectl get appolicy mypolicy -o jsonpath='{.items[*].spec.policy.*.link}' | tr ' ' '\n'
+
+http://192.168.100.100/resources/headersettings.txt
+```
+
+You can check the total time a http request takes, in multiple ways eg. using curl:
+```
+curl -w '%{time_total}' http://192.168.100.100/resources/headersettings.txt
+```
+
 ## Run App Protect in Debug Mode
 
 When you set the Ingress Controller to use debug mode, the setting also applies to the App Protect module.  See  [Running NGINX in the Debug Mode](/nginx-ingress-controller/troubleshooting/#running-nginx-in-the-debug-mode) for instructions.
@@ -103,3 +119,6 @@ This timeout should be more than enough to verify configurations. However, when 
 - You are running the Ingress Controller for the first time in a cluster where the Ingress Resources with App Protect enabled are already present.
 
 You can increase this timeout by setting the `nginx-reload-timeout` [cli-argument](/nginx-ingress-controller/configuration/global-configuration/command-line-arguments/#cmdoption-nginx-reload-timeout).
+
+If you are using external references in your Nginx App Protect policies, verify if the servers hosting the referenced resources are available and that their response time is as short as possible (see the Check the Availability of APPolicy External References section). If the references are not available during the Ingress Controller startup, the pod will fail to start. In case the resources are not available during a reload, the reload will fail, and NGINX Plus will use the previous correct configuration.
+

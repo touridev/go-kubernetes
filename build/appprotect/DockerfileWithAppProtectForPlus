@@ -117,6 +117,10 @@ COPY internal/configs/version1/nginx-plus.ingress.tmpl \
 # and use it as a certificate and key for the default server
 # ADD default.pem /etc/nginx/secrets/default
 
+# Uncomment the lines below if you want to install a custom CA certificate
+# COPY build/appprotect/*.crt  /usr/local/share/ca-certificates/
+# RUN update-ca-certificates
+
 USER nginx
 
 ENTRYPOINT ["/nginx-ingress"]

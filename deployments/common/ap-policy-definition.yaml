@@ -6,13 +6,13 @@ metadata:
   creationTimestamp: null
   name: appolicies.appprotect.f5.com
 spec:
-  preserveUnknownFields: false
   group: appprotect.f5.com
   names:
     kind: APPolicy
     listKind: APPolicyList
     plural: appolicies
     singular: appolicy
+  preserveUnknownFields: false
   scope: Namespaced
   validation:
     openAPIV3Schema:
@@ -35,10 +35,30 @@ spec:
           properties:
             modifications:
               items:
-                properties: {}
+                properties:
+                  action:
+                    type: string
+                  description:
+                    type: string
+                  entity:
+                    properties:
+                      name:
+                        type: string
+                    type: object
+                  entityChanges:
+                    properties:
+                      type:
+                        type: string
+                    type: object
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
               type: array
+            modificationsReference:
+              properties:
+                link:
+                  pattern: ^http
+                  type: string
+              type: object
             policy:
               description: Defines the App Protect policy
               properties:
@@ -144,6 +164,7 @@ spec:
                             enum:
                             - VIOL_XML_SOAP_ATTACHMENT
                             - VIOL_DATA_GUARD
+                            - VIOL_THREAT_CAMPAIGN
                             - VIOL_LOGIN_URL_EXPIRED
                             - VIOL_LOGIN_URL_BYPASSED
                             - VIOL_REQUEST_MAX_LENGTH
@@ -238,6 +259,12 @@ spec:
                         type: object
                       type: array
                   type: object
+                blockingSettingReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
                 caseInsensitive:
                   type: boolean
                 character-sets:
@@ -265,10 +292,28 @@ spec:
                         type: string
                     type: object
                   type: array
+                characterSetReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
                 cookie-settings:
                   properties:
                     maximumCookieHeaderLength:
                       pattern: any|\d+
+                      type: string
+                  type: object
+                cookieReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
+                cookieSettingsReference:
+                  properties:
+                    link:
+                      pattern: ^http
                       type: string
                   type: object
                 cookies:
@@ -331,6 +376,12 @@ spec:
                     usSocialSecurityNumbers:
                       type: boolean
                   type: object
+                dataGuardReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
                 description:
                   type: string
                 enablePassiveMode:
@@ -340,6 +391,12 @@ spec:
                   - transparent
                   - blocking
                   type: string
+                filetypeReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
                 filetypes:
                   items:
                     properties:
@@ -392,10 +449,28 @@ spec:
                     trustXff:
                       type: boolean
                   type: object
+                generalReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
                 header-settings:
                   properties:
                     maximumHttpHeaderLength:
                       pattern: any|\d+
+                      type: string
+                  type: object
+                headerReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
+                headerSettingsReference:
+                  properties:
+                    link:
+                      pattern: ^http
                       type: string
                   type: object
                 headers:
@@ -467,6 +542,24 @@ spec:
                         type: boolean
                     type: object
                   type: array
+                jsonProfileReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
+                jsonValidationFileReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
+                methodReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
                 methods:
                   items:
                     properties:
@@ -476,6 +569,12 @@ spec:
                   type: array
                 name:
                   type: string
+                parameterReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
                 parameters:
                   items:
                     properties:
@@ -549,7 +648,7 @@ spec:
                         - redirect
                         type: string
                       ajaxCustomContent:
-                        type: boolean
+                        type: string
                       ajaxEnabled:
                         type: boolean
                       ajaxPopupMessage:
@@ -588,6 +687,12 @@ spec:
                         type: string
                     type: object
                   type: array
+                responsePageReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
                 sensitive-parameters:
                   items:
                     properties:
@@ -595,6 +700,12 @@ spec:
                         type: string
                     type: object
                   type: array
+                sensitiveParameterReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
                 server-technologies:
                   items:
                     properties:
@@ -676,9 +787,35 @@ spec:
                         type: string
                     type: object
                   type: array
+                serverTechnologyReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
                 signature-sets:
                   items:
-                    properties: {}
+                    properties:
+                      alarm:
+                        type: boolean
+                      block:
+                        type: boolean
+                      name:
+                        enum:
+                        - Command Execution Signatures
+                        - Cross Site Scripting Signatures
+                        - Directory Indexing Signatures
+                        - Information Leakage Signatures
+                        - OS Command Injection Signatures
+                        - Path Traversal Signatures
+                        - Predictable Resource Location Signatures
+                        - Remote File Include Signatures
+                        - SQL Injection Signatures
+                        - XPath Injection Signatures
+                        - Buffer Overflow Signatures
+                        - Denial of Service Signatures
+                        - Vulnerability Scanner Signatures
+                        type: string
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                   type: array
@@ -697,6 +834,24 @@ spec:
                       - medium
                       type: string
                   type: object
+                signatureReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
+                signatureSetReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
+                signatureSettingReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
                 signatures:
                   items:
                     properties:
@@ -711,6 +866,12 @@ spec:
                 template:
                   properties:
                     name:
+                      type: string
+                  type: object
+                urlReference:
+                  properties:
+                    link:
+                      pattern: ^http
                       type: string
                   type: object
                 urls:
@@ -750,6 +911,12 @@ spec:
                         type: string
                     type: object
                   type: array
+                whitelistIpReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
                 xml-profiles:
                   items:
                     properties:
@@ -820,6 +987,18 @@ spec:
                         type: boolean
                     type: object
                   type: array
+                xmlProfileReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
+                xmlValidationFileReference:
+                  properties:
+                    link:
+                      pattern: ^http
+                      type: string
+                  type: object
               type: object
           type: object
       type: object
