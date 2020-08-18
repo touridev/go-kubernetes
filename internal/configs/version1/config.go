@@ -195,6 +195,7 @@ type MainConfig struct {
 	AppProtectPhysicalMemoryThresholds string
 	InternalRouteServer                bool
 	InternalRouteServerName            string
+	LatencyMetrics                     bool
 }
 
 // NewUpstreamWithDefaultServer creates an upstream with the default server.
