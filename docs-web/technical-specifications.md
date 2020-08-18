@@ -11,7 +11,7 @@ We provide the following Docker images, which include NGINX/NGINX Plus bundled w
 
 ### Images with NGINX 
 
-All images include NGINX 1.19.1.
+All images include NGINX 1.19.2.
 The supported architecture is x86-64.
 
 ```eval_rst
@@ -25,24 +25,24 @@ The supported architecture is x86-64.
       - DockerHub image
     * - Debian-based image
       - ``Dockerfile``
-      - ``nginx:1.19.1``, which is based on ``debian:buster-slim``
+      - ``nginx:1.19.2``, which is based on ``debian:buster-slim``
       - 
-      - ``nginx/nginx-ingress:1.8.0``
+      - ``nginx/nginx-ingress:1.8.1``
     * - Alpine-based image
       - ``DockerfileForAlpine``
-      - ``nginx:1.19.1-alpine``, which is based on ``alpine:3.10``
+      - ``nginx:1.19.2-alpine``, which is based on ``alpine:3.10``
       - 
-      - ``nginx/nginx-ingress:1.8.0-alpine``
+      - ``nginx/nginx-ingress:1.8.1-alpine``
     * - Debian-based image with Opentracing
       - ``DockerfileWithOpentracing``
-      - ``nginx:1.19.1``, which is based on ``debian:buster-slim``
+      - ``nginx:1.19.2``, which is based on ``debian:buster-slim``
       - OpenTracing API for C++ 1.5.1, NGINX plugin for OpenTracing, C++ OpenTracing binding for Jaeger 0.4.2 
       - 
     * - Ubi-based image
       - ``openshift/Dockerfile``
       - ``registry.access.redhat.com/ubi8/ubi:8.1``
       - 
-      - ``nginx/nginx-ingress:1.8.0-ubi``
+      - ``nginx/nginx-ingress:1.8.1-ubi``
 ```
 \* -- Dockerfile paths are relative to the ``build`` folder of the Ingress Controller git repo.
 
