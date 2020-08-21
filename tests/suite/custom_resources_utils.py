@@ -22,7 +22,6 @@ def create_crd(api_extensions_v1_beta1: ApiextensionsV1beta1Api, body) -> None:
         api_extensions_v1_beta1.create_custom_resource_definition(body)
     except ApiException as api_ex:
         raise api_ex
-        # ApiException(f"An unexpected exception occurred: {api_ex}", reason=api_ex.reason)
     except Exception as ex:
         # https://github.com/kubernetes-client/python/issues/376
         if ex.args[0] == "Invalid value for `conditions`, must not be `None`":
@@ -83,8 +82,8 @@ def read_crd(custom_objects: CustomObjectsApi, namespace, plural, name) -> objec
         pprint(response)
         return response
 
-    except ApiException as ex:
-        logging.exception(f"Exception occured: {ex} while getting reading CRD")
+    except ApiException:
+        logging.exception(f"Exception occured while getting reading CRD")
         raise
 
 
@@ -104,14 +103,12 @@ def read_ap_crd(custom_objects: CustomObjectsApi, namespace, plural, name) -> ob
         )
         return response
 
-    except ApiException as ex:
-        logging.exception(f"Exception occured: {ex} while getting reading CRD")
+    except ApiException:
+        logging.exception(f"Exception occured while getting reading CRD")
         raise
 
 
-def create_policy_from_yaml(
-    custom_objects: CustomObjectsApi, yaml_manifest, namespace
-) -> str:
+def create_policy_from_yaml(custom_objects: CustomObjectsApi, yaml_manifest, namespace) -> str:
     """
     Create a Policy based on yaml file.
 
@@ -129,10 +126,8 @@ def create_policy_from_yaml(
         )
         print(f"Policy created with name '{dep['metadata']['name']}'")
         return dep["metadata"]["name"]
-    except ApiException as ex:
-        logging.exception(
-            f"Exception: {ex} occured while creating Policy: {dep['metadata']['name']}"
-        )
+    except ApiException:
+        logging.exception(f"Exception occured while creating Policy: {dep['metadata']['name']}")
         raise
 
 
@@ -179,8 +174,8 @@ def read_policy(custom_objects: CustomObjectsApi, namespace, name) -> object:
         pprint(response)
         return response
 
-    except ApiException as ex:
-        logging.exception(f"Exception occured: {ex} while getting reading Policy")
+    except ApiException:
+        logging.exception(f"Exception occured while getting reading Policy")
         raise
 
 
@@ -222,9 +217,11 @@ def create_ap_logconf_from_yaml(custom_objects: CustomObjectsApi, yaml_manifest,
     print("Create Ap logconf:")
     with open(yaml_manifest) as f:
         dep = yaml.safe_load(f)
-    custom_objects.create_namespaced_custom_object("appprotect.f5.com", "v1beta1", namespace, "aplogconfs", dep)
+    custom_objects.create_namespaced_custom_object(
+        "appprotect.f5.com", "v1beta1", namespace, "aplogconfs", dep
+    )
     print(f"AP logconf created with name '{dep['metadata']['name']}'")
-    return dep['metadata']['name']
+    return dep["metadata"]["name"]
 
 
 def create_ap_policy_from_yaml(custom_objects: CustomObjectsApi, yaml_manifest, namespace) -> str:
@@ -238,9 +235,11 @@ def create_ap_policy_from_yaml(custom_objects: CustomObjectsApi, yaml_manifest, 
     print("Create AP Policy:")
     with open(yaml_manifest) as f:
         dep = yaml.safe_load(f)
-    custom_objects.create_namespaced_custom_object("appprotect.f5.com", "v1beta1", namespace, "appolicies", dep)
+    custom_objects.create_namespaced_custom_object(
+        "appprotect.f5.com", "v1beta1", namespace, "appolicies", dep
+    )
     print(f"AP Policy created with name '{dep['metadata']['name']}'")
-    return dep['metadata']['name']
+    return dep["metadata"]["name"]
 
 
 def delete_ap_logconf(custom_objects: CustomObjectsApi, name, namespace) -> None:
@@ -253,10 +252,17 @@ def delete_ap_logconf(custom_objects: CustomObjectsApi, name, namespace) -> None
     """
     print(f"Delete AP logconf: {name}")
     delete_options = client.V1DeleteOptions()
-    custom_objects.delete_namespaced_custom_object("appprotect.f5.com",
-                                                   "v1beta1", namespace, "aplogconfs", name, delete_options)
-    ensure_item_removal(custom_objects.get_namespaced_custom_object,
-                        "appprotect.f5.com", "v1beta1", namespace, "aplogconfs", name)
+    custom_objects.delete_namespaced_custom_object(
+        "appprotect.f5.com", "v1beta1", namespace, "aplogconfs", name, delete_options
+    )
+    ensure_item_removal(
+        custom_objects.get_namespaced_custom_object,
+        "appprotect.f5.com",
+        "v1beta1",
+        namespace,
+        "aplogconfs",
+        name,
+    )
     print(f"AP logconf was removed with name: {name}")
 
 
@@ -270,10 +276,17 @@ def delete_ap_policy(custom_objects: CustomObjectsApi, name, namespace) -> None:
     """
     print(f"Delete a AP policy: {name}")
     delete_options = client.V1DeleteOptions()
-    custom_objects.delete_namespaced_custom_object("appprotect.f5.com",
-                                                   "v1beta1", namespace, "appolicies", name, delete_options)
-    ensure_item_removal(custom_objects.get_namespaced_custom_object,
-                        "appprotect.f5.com", "v1beta1", namespace, "appolicies", name)
+    custom_objects.delete_namespaced_custom_object(
+        "appprotect.f5.com", "v1beta1", namespace, "appolicies", name, delete_options
+    )
+    ensure_item_removal(
+        custom_objects.get_namespaced_custom_object,
+        "appprotect.f5.com",
+        "v1beta1",
+        namespace,
+        "appolicies",
+        name,
+    )
     print(f"AP policy was removed with name: {name}")
 
 
@@ -324,8 +337,8 @@ def patch_virtual_server_from_yaml(
             "k8s.nginx.org", "v1", namespace, "virtualservers", name, dep
         )
         print(f"VirtualServer updated with name '{dep['metadata']['name']}'")
-    except ApiException as ex:
-        logging.exception(f"Failed with exception {ex} while patching VirtualServer: {name}")
+    except ApiException:
+        logging.exception(f"Failed with exception while patching VirtualServer: {name}")
         raise
 
 
@@ -367,8 +380,8 @@ def patch_v_s_route_from_yaml(
             "k8s.nginx.org", "v1", namespace, "virtualserverroutes", name, dep
         )
         print(f"VirtualServerRoute updated with name '{dep['metadata']['name']}'")
-    except ApiException as ex:
-        logging.exception(f"Failed with exception {ex} while patching VirtualServerRoute: {name}")
+    except ApiException:
+        logging.exception(f"Failed with exception while patching VirtualServerRoute: {name}")
         raise
 
 
