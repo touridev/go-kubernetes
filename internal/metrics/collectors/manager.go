@@ -8,7 +8,7 @@ import (
 
 // ManagerCollector is an interface for the metrics of the Nginx Manager
 type ManagerCollector interface {
-	IncNginxReloadCount()
+	IncNginxReloadCount(isEndPointUpdate bool)
 	IncNginxReloadErrors()
 	UpdateLastReloadTime(ms time.Duration)
 	Register(registry *prometheus.Registry) error
@@ -17,7 +17,7 @@ type ManagerCollector interface {
 // LocalManagerMetricsCollector implements NginxManagerCollector interface and prometheus.Collector interface
 type LocalManagerMetricsCollector struct {
 	// Metrics
-	reloadsTotal     prometheus.Counter
+	reloadsTotal     *prometheus.CounterVec
 	reloadsError     prometheus.Counter
 	lastReloadStatus prometheus.Gauge
 	lastReloadTime   prometheus.Gauge
@@ -26,13 +26,14 @@ type LocalManagerMetricsCollector struct {
 // NewLocalManagerMetricsCollector creates a new LocalManagerMetricsCollector
 func NewLocalManagerMetricsCollector(constLabels map[string]string) *LocalManagerMetricsCollector {
 	nc := &LocalManagerMetricsCollector{
-		reloadsTotal: prometheus.NewCounter(
+		reloadsTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name:        "nginx_reloads_total",
 				Namespace:   metricsNamespace,
 				Help:        "Number of successful NGINX reloads",
 				ConstLabels: constLabels,
 			},
+			[]string{"reason"},
 		),
 		reloadsError: prometheus.NewCounter(
 			prometheus.CounterOpts{
@@ -59,12 +60,20 @@ func NewLocalManagerMetricsCollector(constLabels map[string]string) *LocalManage
 			},
 		),
 	}
+	nc.reloadsTotal.WithLabelValues("other")
+	nc.reloadsTotal.WithLabelValues("endpoints")
 	return nc
 }
 
 // IncNginxReloadCount increments the counter of successful NGINX reloads and sets the last reload status to true
-func (nc *LocalManagerMetricsCollector) IncNginxReloadCount() {
-	nc.reloadsTotal.Inc()
+func (nc *LocalManagerMetricsCollector) IncNginxReloadCount(isEndPointUpdate bool) {
+	var label string
+	if isEndPointUpdate {
+		label = "endpoints"
+	} else {
+		label = "other"
+	}
+	nc.reloadsTotal.WithLabelValues(label).Inc()
 	nc.updateLastReloadStatus(true)
 }
 
@@ -121,7 +130,7 @@ func NewManagerFakeCollector() *ManagerFakeCollector {
 func (nc *ManagerFakeCollector) Register(registry *prometheus.Registry) error { return nil }
 
 // IncNginxReloadCount implements a fake IncNginxReloadCount
-func (nc *ManagerFakeCollector) IncNginxReloadCount() {}
+func (nc *ManagerFakeCollector) IncNginxReloadCount(isEndPointUpdate bool) {}
 
 // IncNginxReloadErrors implements a fake IncNginxReloadErrors
 func (nc *ManagerFakeCollector) IncNginxReloadErrors() {}

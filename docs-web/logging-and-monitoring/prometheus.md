@@ -26,7 +26,7 @@ The Ingress Controller exports the following metrics:
 * NGINX/NGINX Plus metrics. Please see this [doc](https://github.com/nginxinc/nginx-prometheus-exporter#exported-metrics) to find more information about the exported metrics.
 
 * Ingress Controller metrics
-  * `controller_nginx_reloads_total`. Number of successful NGINX reloads.
+  * `controller_nginx_reloads_total`. Number of successful NGINX reloads. This includes the label `reason` with 2 possible values `endpoints` (the reason for the reload was an endpoints update) and `other` (the reload was caused by something other than an endpoint update like an ingress update).
   * `controller_nginx_reload_errors_total`. Number of unsuccessful NGINX reloads.
   * `controller_nginx_last_reload_status`. Status of the last NGINX reload, 0 meaning down and 1 up.
   * `controller_nginx_last_reload_milliseconds`. Duration in milliseconds of the last NGINX reload.

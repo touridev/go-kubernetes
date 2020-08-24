@@ -97,7 +97,7 @@ func (*FakeManager) Start(done chan error) {
 }
 
 // Reload provides a fake implementation of Reload.
-func (*FakeManager) Reload() error {
+func (*FakeManager) Reload(isEndpointsUpdate bool) error {
 	glog.V(3).Infof("Reloading nginx")
 	return nil
 }

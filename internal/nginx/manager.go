@@ -15,6 +15,12 @@ import (
 	"github.com/nginxinc/nginx-plus-go-client/client"
 )
 
+// ReloadForEndpointsUpdate means that is caused by an endpoints update.
+const ReloadForEndpointsUpdate = true
+
+// ReloadForOtherUpdate means that a reload is caused by an update for a resource(s) other than endpoints.
+const ReloadForOtherUpdate = false
+
 // TLSSecretFileMode defines the default filemode for files with TLS Secrets.
 const TLSSecretFileMode = 0600
 
@@ -61,7 +67,7 @@ type Manager interface {
 	CreateDHParam(content string) (string, error)
 	CreateOpenTracingTracerConfig(content string) error
 	Start(done chan error)
-	Reload() error
+	Reload(isEndpointsUpdate bool) error
 	Quit()
 	UpdateConfigVersionFile(openTracing bool)
 	SetPlusClients(plusClient *client.NginxClient, plusConfigVersionCheckClient *http.Client)
@@ -268,7 +274,7 @@ func (lm *LocalManager) Start(done chan error) {
 }
 
 // Reload reloads NGINX.
-func (lm *LocalManager) Reload() error {
+func (lm *LocalManager) Reload(isEndpointsUpdate bool) error {
 	// write a new config version
 	lm.configVersion++
 	lm.UpdateConfigVersionFile(lm.OpenTracing)
@@ -287,7 +293,7 @@ func (lm *LocalManager) Reload() error {
 		return fmt.Errorf("could not get newest config version: %v", err)
 	}
 
-	lm.metricsCollector.IncNginxReloadCount()
+	lm.metricsCollector.IncNginxReloadCount(isEndpointsUpdate)
 
 	t2 := time.Now()
 	lm.metricsCollector.UpdateLastReloadTime(t2.Sub(t1))
