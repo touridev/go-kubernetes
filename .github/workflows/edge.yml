@@ -1,8 +1,17 @@
-name: Nightly
+name: Continuous Integration
 
 on:
-  schedule:
-    - cron:  '0 4 * * *'
+  push:
+    branches:
+      - 'master'
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
 
 defaults:
   run:
@@ -12,6 +21,7 @@ env:
   DOCKER_BUILDKIT: 1
   GOLANG_VERSION: 1.15
   PYTHON_VERSION: 3.8
+  K8S_VERSION: 1.19.0
   K8S_TIMEOUT: 1m
   HELM_CHART_DIR: deployments/helm-chart
   HELM_CHART_VERSION: 0.0.0-edge
@@ -140,6 +150,9 @@ jobs:
     name: Smoke Tests
     runs-on: ${{ matrix.os }}
     needs: [build, binary, unit-tests]
+    if: 
+      github.event.pull_request.opened || 
+      github.event.pull_request.merged
     strategy:
       matrix:
         include:
@@ -148,121 +161,64 @@ jobs:
             file: Dockerfile
             image: nginx-ingress
             tag: ${{ github.sha }}
-            marker: ''
+            marker: 'ingresses'
             type: oss
-            k8s: 1.19.0
           - os: ubuntu-18.04
             path: build
             file: Dockerfile
             image: nginx-ingress
             tag: ${{ github.sha }}
-            marker: ''
+            marker: 'vsr'
             type: oss
-            k8s: 1.18.8
           - os: ubuntu-18.04
             path: build
             file: Dockerfile
             image: nginx-ingress
             tag: ${{ github.sha }}
-            marker: ''
+            marker: 'vs'
             type: oss
-            k8s: 1.17.5
           - os: ubuntu-18.04
             path: build
             file: Dockerfile
             image: nginx-ingress
             tag: ${{ github.sha }}
-            marker: ''
+            marker: 'policies'
             type: oss
-            k8s: 1.16.9
-          - os: ubuntu-18.04
-            path: build
-            file: Dockerfile
-            image: nginx-ingress
-            tag: ${{ github.sha }}
-            marker: ''
-            type: oss
-            k8s: 1.15.11
           - os: ubuntu-18.04
             path: build
             file: DockerfileForPlus
             image: nginx-plus-ingress
             tag: ${{ github.sha }}
-            marker: ''
+            marker: 'ingresses'
             type: plus
-            k8s: 1.19.0
           - os: ubuntu-18.04
             path: build
             file: DockerfileForPlus
             image: nginx-plus-ingress
             tag: ${{ github.sha }}
-            marker: ''
+            marker: 'vsr'
             type: plus
-            k8s: 1.18.8
           - os: ubuntu-18.04
             path: build
             file: DockerfileForPlus
             image: nginx-plus-ingress
             tag: ${{ github.sha }}
-            marker: ''
+            marker: 'vs'
             type: plus
-            k8s: 1.17.5
           - os: ubuntu-18.04
             path: build
             file: DockerfileForPlus
             image: nginx-plus-ingress
             tag: ${{ github.sha }}
-            marker: ''
+            marker: 'policies'
             type: plus
-            k8s: 1.16.9
-          - os: ubuntu-18.04
-            path: build
-            file: DockerfileForPlus
-            image: nginx-plus-ingress
-            tag: ${{ github.sha }}
-            marker: ''
-            type: plus
-            k8s: 1.15.11
           - os: ubuntu-18.04
             path: build/appprotect
             file: DockerfileWithAppProtectForPlus
             image: nginx-plus-ingress
             tag: ${{ github.sha }}-ap
-            marker: '-m appprotect'
+            marker: 'appprotect'
             type: plus-ap
-            k8s: 1.19.0
-          - os: ubuntu-18.04
-            path: build/appprotect
-            file: DockerfileWithAppProtectForPlus
-            image: nginx-plus-ingress
-            tag: ${{ github.sha }}-ap
-            marker: '-m appprotect'
-            type: plus-ap
-            k8s: 1.18.8
-          - os: ubuntu-18.04
-            path: build/appprotect
-            file: DockerfileWithAppProtectForPlus
-            image: nginx-plus-ingress
-            tag: ${{ github.sha }}-ap
-            marker: '-m appprotect'
-            type: plus-ap
-            k8s: 1.17.5
-          - os: ubuntu-18.04
-            path: build/appprotect
-            file: DockerfileWithAppProtectForPlus
-            image: nginx-plus-ingress
-            tag: ${{ github.sha }}-ap
-            marker: '-m appprotect'
-            type: plus-ap
-            k8s: 1.16.9
-          - os: ubuntu-18.04
-            path: build/appprotect
-            file: DockerfileWithAppProtectForPlus
-            image: nginx-plus-ingress
-            tag: ${{ github.sha }}-ap
-            marker: '-m appprotect'
-            type: plus-ap
-            k8s: 1.15.11
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
@@ -296,11 +252,11 @@ jobs:
           nodes:
             - role: control-plane
             - role: worker
-              image: kindest/node:v${{ matrix.k8s }}
+              image: kindest/node:v${{ env.K8S_VERSION }}
             - role: worker
-              image: kindest/node:v${{ matrix.k8s }}
+              image: kindest/node:v${{ env.K8S_VERSION }}
             - role: worker
-              image: kindest/node:v${{ matrix.k8s }}
+              image: kindest/node:v${{ env.K8S_VERSION }}
           EOF
       - name: Deploy Kubernetes
         id: k8s
@@ -308,11 +264,11 @@ jobs:
           kind create cluster --name ${{ github.run_id }} --config kind-config.yaml --kubeconfig kube-${{ github.run_id }} --wait ${{ env.K8S_TIMEOUT }}
           kind load docker-image ${{ matrix.image }}:${{ matrix.tag }} --name ${{ github.run_id }}
           echo ::set-output name=cluster_ip::$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${{ github.run_id }}-control-plane)
-          echo ::set-output name=cluster::$(echo 'nginx-${{ matrix.type }}')
+          echo ::set-output name=cluster::$(echo 'nginx-${{ matrix.type }}-${{ matrix.marker }}')
       - name: Setup Kubeconfig
         run: |
           sed -i 's|server:.*|server: https://${{ steps.k8s.outputs.cluster_ip }}:6443|' kube-${{ github.run_id }}
-      - name: Smoke Tests v${{ matrix.k8s }}
+      - name: Run Smoke Tests
         run: |
           touch tests-${{ steps.k8s.outputs.cluster }}.html
           docker run --rm \
@@ -327,13 +283,14 @@ jobs:
           --service=nodeport --node-ip=${{ steps.k8s.outputs.cluster_ip }} \
           --html=tests-${{ steps.k8s.outputs.cluster }}.html \
           --self-contained-html \
-          ${{ matrix.marker }}
+          -m ${{ matrix.marker }}
         working-directory: ./tests
       - name: Upload Test Results
         uses: actions/upload-artifact@v2
         with:
-          name: test-results-${{ steps.k8s.outputs.cluster }}-${{ matrix.k8s }}
+          name: test-results-${{ steps.k8s.outputs.cluster }}
           path: ${{ github.workspace }}/tests/tests-${{ steps.k8s.outputs.cluster }}.html
+        if: always()
 
   helm-tests:
     name: Helm Tests
@@ -342,6 +299,9 @@ jobs:
     env:
       NGINX_HTTP_PORT: 32000
       NGINX_HTTPS_PORT: 32001
+    if: 
+      github.event.pull_request.opened || 
+      github.event.pull_request.merged
     strategy:
       matrix:
         include:
@@ -361,13 +321,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       - name: Fetch N+ Certificates
+        if: matrix.type == 'plus'
         env:
           CRT: ${{ secrets.NGINX_CRT }}
           KEY: ${{ secrets.NGINX_KEY }}
         run: |
           echo "${CRT}" | base64 --decode > nginx-repo.crt
           echo "${KEY}" | base64 --decode > nginx-repo.key
-        if: matrix.type == 'plus'
       - name: Build ${{ matrix.image }} Container
         run: |
           make container BUILD_IN_CONTAINER=1 DOCKERFILEPATH=${{ matrix.path }} \
@@ -375,7 +335,7 @@ jobs:
       - name: Deploy Kubernetes
         id: k8s
         run: |
-          kind create cluster --name ${{ github.run_id }} --wait ${{ env.K8S_TIMEOUT }}
+          kind create cluster --name ${{ github.run_id }} --image=kindest/node:v${{ env.K8S_VERSION }} --wait ${{ env.K8S_TIMEOUT }}
           kind load docker-image ${{ matrix.image }}:${{ matrix.tag }} --name ${{ github.run_id }}
       - name: Install Chart
         run: >
@@ -397,10 +357,96 @@ jobs:
       - name: Test HTTPS
         run: curl -ks https://localhost:8443 | grep -i nginx
 
+  release-docker:
+    name: Release Images
+    runs-on: ${{ matrix.os }}
+    needs: [smoke-tests, helm-tests]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-18.04
+            file: build/Dockerfile
+            image: nginx-ingress
+            tag: edge
+          - os: ubuntu-18.04
+            file: build/DockerfileForAlpine
+            image: nginx-ingress
+            tag: edge-alpine
+          - os: ubuntu-18.04
+            file: build/openshift/Dockerfile
+            image: nginx-ingress
+            tag: edge-ubi
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Push to Dockerhub
+        uses: docker/build-push-action@v1
+        with:
+          repository: nginx/nginx-ingress
+          dockerfile: ${{ matrix.file }}
+          path: '.'
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          tag_with_ref: false
+          tags: ${{ matrix.tag }}
+          push: true
+
+  package-helm:
+    name: Package Helm Chart
+    runs-on: ubuntu-18.04
+    needs: [smoke-tests, helm-tests, release-docker]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Lint
+        run: |
+          sed -i "s|edge|${{ env.HELM_CHART_VERSION }}|g" deployments/helm-chart/Chart.yaml
+          helm lint ${{ env.HELM_CHART_DIR }} || true
+      - name: Package
+        run: |
+          helm package --version ${{ env.HELM_CHART_VERSION }} ${{ env.HELM_CHART_DIR }}
+      - name: Upload Chart
+        uses: actions/upload-artifact@v2
+        with:
+          name: nginx-ingress-${{ env.HELM_CHART_VERSION }}.tgz
+          path: ${{ github.workspace }}/nginx-ingress-${{ env.HELM_CHART_VERSION }}.tgz
+
+  release-helm:
+    name: Release Helm Chart
+    runs-on: ubuntu-18.04
+    needs: [smoke-tests, helm-tests, release-docker, package-helm]
+    env:
+      GIT_COMMITTER_NAME: NGINX Kubernetes Team
+      GIT_COMMITTER_EMAIL: kubernetes@nginx.com
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+        with:
+          repository: nginxinc/helm-charts
+          fetch-depth: 1
+          token: ${{ secrets.NGINX_PAT }}
+      - name: Remove previous Chart
+        run: rm -f ${{ github.workspace }}/edge/nginx-ingress-${{ env.HELM_CHART_VERSION }}.tgz
+      - name: Retrieve latest Helm Chart
+        uses: actions/download-artifact@v2
+        with:
+          name: nginx-ingress-${{ env.HELM_CHART_VERSION }}.tgz
+          path: ${{ github.workspace }}/edge/nginx-ingress-${{ env.HELM_CHART_VERSION }}.tgz
+      - name: Push Helm Chart
+        run: |
+          helm repo index edge --url https://helm.nginx.com/edge
+          git add -A
+          git commit -m "NGINX Ingress Controller - Edge Release (latest)"
+          git push -u origin master
+
   job-failure:
     name: Report Failures
     runs-on: ubuntu-18.04
-    if: failure()
+    if: 
+      failure() && github.ref == 'refs/heads/master'
     steps:
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@master
@@ -408,7 +454,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_COLOR: '#3278BD'
           SLACK_ICON_EMOJI: ':github:'
-          SLACK_TITLE: Pipeline Failure (Nightly)
+          SLACK_TITLE: Pipeline Failure
           SLACK_MESSAGE: 'The pipeline has failed, please check the logs.'
           SLACK_FOOTER: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
           SLACK_USERNAME: GitHub-Actions
