@@ -77,7 +77,7 @@ Events:
 ```
 Note that in the events section, we have a `Normal` event with the `AddedOrUpdated` reason, which informs us that the configuration was successfully applied.
 
-### Replace the polcy
+### Replace the policy
 
 NOTE: This method only applies if using [external references](https://docs.nginx.com/nginx-app-protect/configuration/#external-references) 
 If items on the external reference change but the spec of the ApPolicy remains unchanged (even when re-applying the policy), kubernetes will not detect the update.
