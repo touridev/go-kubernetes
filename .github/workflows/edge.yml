@@ -500,7 +500,7 @@ jobs:
                 },
                 {
                   title: 'Commit Message',
-                  value: '${{ github.event.head_commit.message }}',
+                  value: `${{ github.event.head_commit.message }}`,
                   short: false
                 },
                 {
