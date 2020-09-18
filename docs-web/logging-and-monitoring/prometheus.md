@@ -34,6 +34,7 @@ The Ingress Controller exports the following metrics:
   * `controller_ingress_resources_total`. Number of handled Ingress resources. This metric includes the label type, that groups the Ingress resources by their type (regular, [minion or master](/nginx-ingress-controller/configuration/ingress-resources/cross-namespace-configuration)). **Note**: The metric doesn't count minions without a master.
   * `controller_virtualserver_resources_total`. Number of handled VirtualServer resources.
   * `controller_virtualserverroute_resources_total`. Number of handled VirtualServerRoute resources. **Note**: The metric counts only VirtualServerRoutes that have a reference from a VirtualServer.
+  * `controller_upstream_server_response_latency_ms_count`. Bucketed response times from when NGINX establishes a connection to an upstream server to when the last byte of the response body is received by NGINX. **Note** The metric for the upstream isn't available until traffic is sent to the upstream.
 
 **Note**: all metrics have the namespace nginx_ingress. For example, nginx_ingress_controller_nginx_reloads_total.
 

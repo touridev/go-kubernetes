@@ -300,10 +300,10 @@ func (l *LatencyFakeCollector) DeleteUpstreamServerPeerLabels([]string) {}
 // UpdateUpstreamServerLabels implements a fake UpdateUpstreamServerLabels
 func (l *LatencyFakeCollector) UpdateUpstreamServerLabels(map[string][]string) {}
 
-// UpdateUpstreamServerLabels implements a fake DeleteUpstreamServerLabels
+// DeleteUpstreamServerLabels implements a fake DeleteUpstreamServerLabels
 func (l *LatencyFakeCollector) DeleteUpstreamServerLabels([]string) {}
 
-// NewControllerFakeCollector creates a fake collector that implements the LatencyCollector interface
+// NewLatencyFakeCollector creates a fake collector that implements the LatencyCollector interface
 func NewLatencyFakeCollector() *LatencyFakeCollector {
 	return &LatencyFakeCollector{}
 }
