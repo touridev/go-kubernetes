@@ -28,11 +28,11 @@ jobs:
         run: make binary BUILD_IN_CONTAINER=0
         env:
           GOFLAGS: '-mod=vendor -gcflags=-trimpath=${{ github.workspace }} -asmflags=-trimpath=${{ github.workspace }}'
-      - name: Upload Binary
-        uses: actions/upload-artifact@v2
+      - name: Store Artifacts in Cache 
+        uses: actions/cache@v2
         with:
-          name: nginx-ingress
           path: ${{ github.workspace }}/nginx-ingress
+          key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
 
   unit-tests:
     name: Unit Tests
@@ -111,11 +111,11 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
-      - name: Retrieve Binary
-        uses: actions/download-artifact@v2
+      - name: Fetch Cached Artifacts
+        uses: actions/cache@v2
         with:
-          name: nginx-ingress
           path: ${{ github.workspace }}/nginx-ingress
+          key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
       - name: Fetch N+ Certificates
         env:
           CRT: ${{ secrets.NGINX_CRT }}
@@ -154,7 +154,10 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache
           target: ${{ matrix.target }}
           tags: ${{ matrix.image }}:${{ github.sha }}
-          push: false
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+            IC_VERSION=${{ env.VERSION }}-${{ github.sha }}
+            VERSION=${{ env.VERSION }}
 
   smoke-tests:
     name: Smoke Tests
@@ -358,8 +361,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: [build, binary, unit-tests]
     env:
-      NGINX_HTTP_PORT: 32000
-      NGINX_HTTPS_PORT: 32001
+      NGINX_HTTP_PORT: 8080
+      NGINX_HTTPS_PORT: 8443
+      HELM_TEST_RETRIES: 5
     strategy:
       matrix:
         include:
@@ -378,6 +382,11 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
+      - name: Fetch Cached Artifacts
+        uses: actions/cache@v2
+        with:
+          path: ${{ github.workspace }}/nginx-ingress
+          key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
       - name: Fetch N+ Certificates
         env:
           CRT: ${{ secrets.NGINX_CRT }}
@@ -386,11 +395,31 @@ jobs:
           echo "${CRT}" | base64 --decode > nginx-repo.crt
           echo "${KEY}" | base64 --decode > nginx-repo.key
         if: matrix.type == 'plus'
-      - name: Build ${{ matrix.image }} Container
-        run: |
-          make container BUILD_IN_CONTAINER=1 \
-          DOCKERFILEPATH=${{ matrix.path }} DOCKERFILE=${{ matrix.file }} \
-          PREFIX=${{ matrix.image }} TAG=${{ matrix.tag }} GIT_COMMIT=${{ github.sha }}
+      - name: Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          driver-opts: network=host
+      - name: Docker build cache
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+      - name: Build Docker Image ${{ matrix.image }}
+        uses: docker/build-push-action@v2
+        with:
+          file: ${{ matrix.path }}/${{ matrix.file }}
+          context: .
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+          target: local
+          tags: ${{ matrix.image }}:${{ matrix.tag }}
+          build-args: |
+            GIT_COMMIT=${{ matrix.tag }}
+            IC_VERSION=${{ env.VERSION }}-${{ matrix.tag }}
+            VERSION=${{ env.VERSION }}
+          load: true
       - name: Deploy Kubernetes
         id: k8s
         run: |
@@ -409,12 +438,28 @@ jobs:
         working-directory: ${{ github.workspace }}/deployments/helm-chart
       - name: Expose Test Ingresses
         run: |
-          kubectl port-forward service/${{ matrix.type }}-nginx-ingress 8080:80 &
-          kubectl port-forward service/${{ matrix.type }}-nginx-ingress 8443:443 &
+          kubectl port-forward service/${{ matrix.type }}-nginx-ingress ${{ env.NGINX_HTTP_PORT }}:80 &
+          kubectl port-forward service/${{ matrix.type }}-nginx-ingress ${{ env.NGINX_HTTPS_PORT }}:443 &
       - name: Test HTTP
-        run: curl -s http://localhost:8080 | grep -i nginx
+        run: |
+          counter=0
+          max_attempts=${{ env.HELM_TEST_RETRIES }}
+          until [ $(curl --write-out %{http_code} -s --output /dev/null http://localhost:${{ env.NGINX_HTTP_PORT }}) -eq 404 ]; do
+            if [ ${counter} -eq ${max_attempts} ]; then
+              exit 1
+            fi
+            printf '.'; counter=$(($counter+1)); sleep 5;
+          done
       - name: Test HTTPS
-        run: curl -ks https://localhost:8443 | grep -i nginx
+        run: |
+          counter=0
+          max_attempts=${{ env.HELM_TEST_RETRIES }}
+          until [ $(curl --write-out %{http_code} -ks --output /dev/null https://localhost:${{ env.NGINX_HTTPS_PORT }}) -eq 404 ]; do
+            if [ ${counter} -eq ${max_attempts} ]; then
+              exit 1
+            fi
+            printf '.'; counter=$(($counter+1)); sleep 5;
+          done
 
   notify:
     name: Notify
