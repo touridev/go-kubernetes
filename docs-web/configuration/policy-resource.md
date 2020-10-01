@@ -20,6 +20,8 @@ This document is the reference documentation for the Policy resource. An example
       - [RateLimit Merging Behavior](#ratelimit-merging-behavior)
     - [JWT](#jwt)
       - [JWT Merging Behavior](#jwt-merging-behavior)
+    - [IngressMTLS](#ingressmtls)
+      - [IngressMTLS Merging Behavior](#ingressmtls-merging-behavior)
   - [Using Policy](#using-policy)
     - [Validation](#validation)
       - [Structural Validation](#structural-validation)
@@ -59,9 +61,13 @@ spec:
      - The rate limit policy controls the rate of processing requests per a defined key.
      - `rateLimit <#ratelimit>`_
      - No*
-   * - ``JWT``
+   * - ``jwt``
      - The JWT policy configures NGINX Plus to authenticate client requests using JSON Web Tokens.
      - `jwt <#jwt>`_
+     - No*
+   * - ``ingressMTLS``
+     - The IngressMTLS policy configures client certificate verification.
+     - `ingressMTLS <#ingressmtls>`_
      - No*
 ```
 
@@ -243,6 +249,58 @@ policies:
 - name: jwt-policy-two
 ```
 In this example the Ingress Controller will use the configuration from the first policy reference `jwt-policy-one`, and ignores `jwt-policy-two`.
+
+### IngressMTLS
+
+The IngressMTLS policy configures client certificate verification.
+
+For example, the following policy will verify a client certificate using the CA certificate specified in the `ingress-mtls-secret`:
+```yaml
+ingressMTLS:
+  clientCertSecret: ingress-mtls-secret
+  verifyClient: on
+  verifyDepth: 1
+```
+
+A VirtualServer that references an IngressMTLS policy must:
+* Enable [TLS termination](/nginx-ingress-controller/configuration/virtualserver-and-virtualserverroute-resources/#virtualserver-tls).
+* Reference the policy in the VirtualServer [`spec`](/nginx-ingress-controller/configuration/virtualserver-and-virtualserverroute-resources/#virtualserver-specification). It is not allowed to reference an IngressMTLS policy in a [`route `](/nginx-ingress-controller/configuration/virtualserver-and-virtualserverroute-resources/#virtualserver-route) or in a VirtualServerRoute [`subroute`](/nginx-ingress-controller/configuration/virtualserver-and-virtualserverroute-resources/#virtualserverroute-subroute).
+
+If the conditions above are not met, NGINX will send `500` error response to clients.
+
+> Note: The feature is implemented using the NGINX [ngx_http_ssl_module](https://nginx.org/en/docs/http/ngx_http_ssl_module.html).
+
+```eval_rst
+.. list-table::
+   :header-rows: 1
+
+   * - Field
+     - Description
+     - Type
+     - Required
+   * - ``clientCertSecret``
+     - The name of the Kubernetes secret that stores the CA certificate. It must be in the same namespace as the Policy resource. The certificate must be stored in the secret under the key ``ca.crt``, otherwise the secret will be rejected as invalid.
+     - ``string``
+     - Yes
+   * - ``verifyClient``
+     - Verification for the client. Possible values are ``on``, ``off``, ``optional``, ``optional_no_ca``. The default is ``on``.
+     - ``string``
+     - No
+   * - ``verifyDepth``
+     - Sets the verification depth in the client certificates chain. The default is ``1``.
+     - ``int``
+     - No
+```
+
+#### IngressMTLS Merging Behavior
+
+A VirtualServer can reference only a single IngressMTLS policy. Every subsequent reference will be ignored. For example, here we reference two policies:
+```yaml
+policies:
+- name: ingress-mtls-policy-one
+- name: ingress-mtls-policy-two
+```
+In this example the Ingress Controller will use the configuration from the first policy reference `ingress-mtls-policy-one`, and ignores `ingress-mtls-policy-two`.
 
 ## Using Policy
 
