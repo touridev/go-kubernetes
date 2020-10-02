@@ -275,7 +275,7 @@ For example, the following policy will verify a client certificate using the CA 
 ```yaml
 ingressMTLS:
   clientCertSecret: ingress-mtls-secret
-  verifyClient: on
+  verifyClient: "on"
   verifyDepth: 1
 ```
 
@@ -314,7 +314,7 @@ We use the `requestHeaders` of the [Action.Proxy](/nginx-ingress-controller/conf
      - ``string``
      - Yes
    * - ``verifyClient``
-     - Verification for the client. Possible values are ``on``, ``off``, ``optional``, ``optional_no_ca``. The default is ``on``.
+     - Verification for the client. Possible values are ``"on"``, ``"off"``, ``"optional"``, ``"optional_no_ca"``. The default is ``"on"``.
      - ``string``
      - No
    * - ``verifyDepth``
