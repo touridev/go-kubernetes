@@ -3,7 +3,7 @@ name: Edge
 on:
   push:
     branches:
-      - 'master'
+      - master
   pull_request:
     branches:
       - master
@@ -65,7 +65,7 @@ jobs:
         with:
           go-version: '${{ env.GOLANG_VERSION }}'
       - name: Run Tests
-        run: make test
+        run: go test ./...
 
   build:
     name: Build Docker Images
@@ -299,8 +299,6 @@ jobs:
           apiVersion: kind.x-k8s.io/v1alpha4
           nodes:
             - role: control-plane
-            - role: worker
-            - role: worker
             - role: worker
           EOF
       - name: Deploy Kubernetes
