@@ -816,7 +816,7 @@ redirect:
      - Type
      - Required
    * - ``url``
-     - The URL to redirect the request to. Supported NGINX variables: ``$scheme``\ , ``$http_x_forwarded_proto``\ , ``$request_uri``\ , ``$host``. Variables must be inclosed in curly braces. For example: ``${host}${request_uri}``.
+     - The URL to redirect the request to. Supported NGINX variables: ``$scheme``\ , ``$http_x_forwarded_proto``\ , ``$request_uri``\ , ``$host``. Variables must be enclosed in curly braces. For example: ``${host}${request_uri}``.
      - ``string``
      - Yes
    * - ``code``
@@ -854,7 +854,7 @@ return:
      - ``string``
      - No
    * - ``body``
-     - The body of the response. Supports NGINX variables*. Variables must be inclosed in curly brackets. For example: ``Request is ${request_uri}\n``.
+     - The body of the response. Supports NGINX variables*. Variables must be enclosed in curly brackets. For example: ``Request is ${request_uri}\n``.
      - ``string``
      - Yes
 ```
@@ -874,10 +874,14 @@ proxy:
     set:
     - name: My-Header
       value: Value
+    - name: Client-Cert
+      value: ${ssl_client_escaped_cert}
   responseHeaders:
     add:
     - name: My-Header
       value: Value
+    - name: IC-Nginx-Version
+      value: ${nginx_version}
       always: true
     hide:
     - x-internal-version
@@ -933,9 +937,37 @@ The RequestHeaders field modifies the headers of the request to the proxied upst
      - No
    * - ``set``
      - Allows redefining or appending fields to present request headers passed to the proxied upstream servers. See the `proxy_set_header <http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_set_header>`_ directive for more information.
-     - `[]header <#header>`_
+     - `[]header <#action-proxy-requestheaders-set-header>`_
      - No
 ```
+
+### Action.Proxy.RequestHeaders.Set.Header
+
+The header defines an HTTP Header:
+```yaml
+name: My-Header 
+value: My-Value
+```
+
+```eval_rst
+.. list-table::
+   :header-rows: 1
+
+   * - Field
+     - Description
+     - Type
+     - Required
+   * - ``name``
+     - The name of the header.
+     - ``string``
+     - Yes
+   * - ``value``
+     - The value of the header. Supports NGINX variables*. Variables must be enclosed in curly brackets. For example: ``${scheme}``.
+     - ``string``
+     - No
+```
+
+\* -- Supported NGINX variables: `$request_uri`, `$request_method`, `$request_body`, `$scheme`, `$http_`, `$args`, `$arg_`, `$cookie_`, `$host`, `$request_time`, `$request_length`, `$nginx_version`, `$pid`, `$connection`, `$remote_addr`, `$remote_port`, `$time_iso8601`, `$time_local`, `$server_addr`, `$server_port`, `$server_name`, `$server_protocol`, `$connections_active`, `$connections_reading`, `$connections_writing`, `$connections_waiting`, `$ssl_cipher`, `$ssl_ciphers`, `$ssl_client_cert`, `$ssl_client_escaped_cert`, `$ssl_client_fingerprint`, `$ssl_client_i_dn`, `$ssl_client_i_dn_legacy`, `$ssl_client_raw_cert`, `$ssl_client_s_dn`, `$ssl_client_s_dn_legacy`, `$ssl_client_serial`, `$ssl_client_v_end`, `$ssl_client_v_remain`, `$ssl_client_v_start`, `$ssl_client_verify`, `$ssl_curves`, `$ssl_early_data`, `$ssl_protocol`, `$ssl_server_name`, `$ssl_session_id`, `$ssl_session_reused`, `$jwt_claim_` (NGINX Plus only) and `$jwt_header_` (NGINX Plus only).
 
 ### Action.Proxy.ResponseHeaders
 
@@ -975,8 +1007,8 @@ The ResponseHeaders field modifies the headers of the response to the client.
 
 The addHeader defines an HTTP Header with an optional `always` field:
 ```yaml
-name: Host
-value: example.com
+name: My-Header 
+value: My-Value 
 always: true
 ```
 
@@ -993,16 +1025,18 @@ always: true
      - ``string``
      - Yes
    * - ``value``
-     - The value of the header.
+     - The value of the header. Supports NGINX variables*. Variables must be enclosed in curly brackets. For example: ``${scheme}``.
      - ``string``
      - No
    * - ``always``
-     - If set to true, add the header regardless of the response status code*. Default is false. See the `add_header <http://nginx.org/en/docs/http/ngx_http_headers_module.html#add_header>`_ directive for more information.
+     - If set to true, add the header regardless of the response status code**. Default is false. See the `add_header <http://nginx.org/en/docs/http/ngx_http_headers_module.html#add_header>`_ directive for more information.
      - ``bool``
      - No
 ```
 
-\* -- If `always` is false, the response header is added only if the response status code is any of `200`, `201`, `204`, `206`, `301`, `302`, `303`, `304`, `307` or `308`.
+\* -- Supported NGINX variables: `$request_uri`, `$request_method`, `$request_body`, `$scheme`, `$http_`, `$args`, `$arg_`, `$cookie_`, `$host`, `$request_time`, `$request_length`, `$nginx_version`, `$pid`, `$connection`, `$remote_addr`, `$remote_port`, `$time_iso8601`, `$time_local`, `$server_addr`, `$server_port`, `$server_name`, `$server_protocol`, `$connections_active`, `$connections_reading`, `$connections_writing`, `$connections_waiting`, `$ssl_cipher`, `$ssl_ciphers`, `$ssl_client_cert`, `$ssl_client_escaped_cert`, `$ssl_client_fingerprint`, `$ssl_client_i_dn`, `$ssl_client_i_dn_legacy`, `$ssl_client_raw_cert`, `$ssl_client_s_dn`, `$ssl_client_s_dn_legacy`, `$ssl_client_serial`, `$ssl_client_v_end`, `$ssl_client_v_remain`, `$ssl_client_v_start`, `$ssl_client_verify`, `$ssl_curves`, `$ssl_early_data`, `$ssl_protocol`, `$ssl_server_name`, `$ssl_session_id`, `$ssl_session_reused`, `$jwt_claim_` (NGINX Plus only) and `$jwt_header_` (NGINX Plus only).
+
+\*\* -- If `always` is false, the response header is added only if the response status code is any of `200`, `201`, `204`, `206`, `301`, `302`, `303`, `304`, `307` or `308`.
 
 ### Split
 
@@ -1219,7 +1253,7 @@ redirect:
      - ``int``
      - No
    * - ``url``
-     - The URL to redirect the request to. Supported NGINX variables: ``$scheme``\ and ``$http_x_forwarded_proto``\. Variables must be inclosed in curly braces. For example: ``${scheme}``.
+     - The URL to redirect the request to. Supported NGINX variables: ``$scheme``\ and ``$http_x_forwarded_proto``\. Variables must be enclosed in curly braces. For example: ``${scheme}``.
      - ``string``
      - Yes
 ```
@@ -1259,7 +1293,7 @@ return:
      - ``string``
      - No
    * - ``body``
-     - The body of the response. Supported NGINX variable: ``$upstream_status`` \ . Variables must be inclosed in curly braces. For example: ``${upstream_status}``.
+     - The body of the response. Supported NGINX variable: ``$upstream_status`` \ . Variables must be enclosed in curly braces. For example: ``${upstream_status}``.
      - ``string``
      - Yes
    * - ``headers``
@@ -1290,7 +1324,7 @@ value: ${upstream_status}
      - ``string``
      - Yes
    * - ``value``
-     - The value of the header. Supported NGINX variable: ``$upstream_status`` \ . Variables must be inclosed in curly braces. For example: ``${upstream_status}``.
+     - The value of the header. Supported NGINX variable: ``$upstream_status`` \ . Variables must be enclosed in curly braces. For example: ``${upstream_status}``.
      - ``string``
      - No
 ```
