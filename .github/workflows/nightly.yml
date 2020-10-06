@@ -14,6 +14,7 @@ env:
   K8S_TIMEOUT: 90s
   HELM_CHART_DIR: deployments/helm-chart
   HELM_CHART_VERSION: 0.0.0-edge
+  VERSION: nightly
 
 jobs:
 
@@ -162,10 +163,6 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache
           target: ${{ matrix.target }}
           tags: ${{ matrix.image }}:${{ github.sha }}
-          build-args: |
-            GIT_COMMIT=${{ github.sha }}
-            IC_VERSION=${{ env.VERSION }}-${{ github.sha }}
-            VERSION=${{ env.VERSION }}
 
   smoke-tests:
     name: Smoke Tests
@@ -350,7 +347,7 @@ jobs:
           kind create cluster --name ${{ github.run_id }} --image=kindest/node:v${{ matrix.k8s }} --config kind-config.yaml --kubeconfig kube-${{ github.run_id }} --wait ${{ env.K8S_TIMEOUT }}
           kind load docker-image ${{ matrix.image }}:${{ matrix.tag }} --name ${{ github.run_id }}
           echo ::set-output name=cluster_ip::$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${{ github.run_id }}-control-plane)
-          echo ::set-output name=cluster::$(echo 'nginx-${{ matrix.type }}-${{ matrix.marker }}')
+          echo ::set-output name=cluster::$(echo 'nginx-${{ matrix.type }}')
       - name: Setup Kubeconfig
         run: |
           sed -i 's|server:.*|server: https://${{ steps.k8s.outputs.cluster_ip }}:6443|' kube-${{ github.run_id }}
@@ -374,7 +371,7 @@ jobs:
       - name: Upload Test Results
         uses: actions/upload-artifact@v2
         with:
-          name: test-results-${{ steps.k8s.outputs.cluster }}
+          name: test-results-${{ steps.k8s.outputs.cluster }}-${{ matrix.k8s }}
           path: ${{ github.workspace }}/tests/tests-${{ steps.k8s.outputs.cluster }}.html
         if: always()
 
@@ -437,10 +434,6 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache
           target: local
           tags: ${{ matrix.image }}:${{ matrix.tag }}
-          build-args: |
-            GIT_COMMIT=${{ matrix.tag }}
-            IC_VERSION=${{ env.VERSION }}-${{ matrix.tag }}
-            VERSION=${{ env.VERSION }}
           load: true
       - name: Deploy Kubernetes
         id: k8s
@@ -510,7 +503,7 @@ jobs:
               icon_emoji: ':octocat:',
               mention: 'channel',
               attachments: [{
-                title: '${{ steps.commit.outputs.repo }} ${{ github.workflow }} pipeline has failed',
+                title: '[${{ steps.commit.outputs.repo }}] ${{ github.workflow }} pipeline has failed',
                 color: '${{ steps.check.outputs.status }}' == 'failure' ? 'danger' : 'warning',
                 fields: [{
                   title: 'Commit Hash',
