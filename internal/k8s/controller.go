@@ -2082,6 +2082,11 @@ func (lbc *LoadBalancerController) createVirtualServerEx(virtualServer *conf_v1.
 			glog.Warningf("Error getting policy for VirtualServer %s/%s: %v", virtualServer.Namespace, virtualServer.Name, err)
 		}
 		policies = append(policies, vsRoutePolicies...)
+
+		err = lbc.addJWTSecrets(vsRoutePolicies, virtualServerEx.JWTKeys)
+		if err != nil {
+			glog.Warningf("Error getting JWT secrets for VirtualServer %v/%v: %v", virtualServer.Namespace, virtualServer.Name, err)
+		}
 	}
 
 	for _, vsr := range virtualServerRoutes {
