@@ -45,8 +45,8 @@ const WildcardSecretName = "wildcard"
 // JWTKeyKey is the key of the data field of a Secret where the JWK must be stored.
 const JWTKeyKey = "jwk"
 
-// IngressMTLSKey is the key of the data field of a Secret where the cert must be stored.
-const IngressMTLSKey = "ca.crt"
+// CAKey is the key of the data field of a Secret where the cert must be stored.
+const CAKey = "ca.crt"
 
 // SPIFFE filenames and modes
 const (
@@ -413,13 +413,14 @@ func (cnf *Configurator) addOrUpdateVirtualServer(virtualServerEx *VirtualServer
 		tlsPemFileName = cnf.addOrUpdateTLSSecret(virtualServerEx.TLSSecret)
 	}
 	if virtualServerEx.IngressMTLSCert != nil {
-		ingressMTLSFileName = cnf.addOrUpdateIngressMTLSecret(virtualServerEx.IngressMTLSCert)
+		ingressMTLSFileName = cnf.addOrUpdateCASecret(virtualServerEx.IngressMTLSCert)
 	}
 
 	jwtKeys := cnf.addOrUpdateJWKSecretsForVirtualServer(virtualServerEx.JWTKeys)
+	egressMTLSSecrets := cnf.addOrUpdateEgressMTLSecretsForVirtualServer(virtualServerEx.EgressTLSSecrets)
 
 	vsc := newVirtualServerConfigurator(cnf.cfgParams, cnf.isPlus, cnf.IsResolverConfigured(), cnf.staticCfgParams)
-	vsCfg, warnings := vsc.GenerateVirtualServerConfig(virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName)
+	vsCfg, warnings := vsc.GenerateVirtualServerConfig(virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName, egressMTLSSecrets)
 	content, err := cnf.templateExecutorV2.ExecuteVirtualServerTemplate(&vsCfg)
 	if err != nil {
 		return warnings, fmt.Errorf("Error generating VirtualServer config: %v: %v", name, err)
@@ -585,7 +586,7 @@ func (cnf *Configurator) updateJWKSecret(ingEx *IngressEx) string {
 	return cnf.nginxManager.GetFilenameForSecret(ingEx.Ingress.Namespace + "-" + ingEx.JWTKey.Name)
 }
 
-func (cnf *Configurator) addOrUpdateIngressMTLSecret(secret *api_v1.Secret) string {
+func (cnf *Configurator) addOrUpdateCASecret(secret *api_v1.Secret) string {
 	name := objectMetaToFileName(&secret.ObjectMeta)
 	data := GenerateCAFileContent(secret)
 	return cnf.nginxManager.CreateSecret(name, data, nginx.TLSSecretFileMode)
@@ -620,9 +621,9 @@ func (cnf *Configurator) AddOrUpdateJWKSecret(secret *api_v1.Secret, virtualServ
 	return allWarnings, nil
 }
 
-// AddOrUpdateIngressMTLSSecret adds a IngressMTLS secret to the filesystem or updates it if it already exists.
-func (cnf *Configurator) AddOrUpdateIngressMTLSSecret(secret *api_v1.Secret, virtualServerExes []*VirtualServerEx) (Warnings, error) {
-	cnf.addOrUpdateIngressMTLSecret(secret)
+// AddOrUpdateCASecret adds a CA secret to the filesystem or updates it if it already exists.
+func (cnf *Configurator) AddOrUpdateCASecret(secret *api_v1.Secret, virtualServerExes []*VirtualServerEx) (Warnings, error) {
+	cnf.addOrUpdateCASecret(secret)
 
 	allWarnings := newWarnings()
 
@@ -658,6 +659,25 @@ func (cnf *Configurator) addOrUpdateJWKSecretsForVirtualServer(jwtKeys map[strin
 	}
 
 	return jwkSecrets
+}
+
+func (cnf *Configurator) addOrUpdateEgressMTLSecretsForVirtualServer(egressMTLSsecrets map[string]*api_v1.Secret) map[string]string {
+
+	secrets := make(map[string]string)
+	var filename string
+
+	for v, k := range egressMTLSsecrets {
+		if _, exists := k.Data[api_v1.TLSCertKey]; exists {
+			filename = cnf.addOrUpdateTLSSecret(k)
+		}
+		if _, exists := k.Data[CAKey]; exists {
+			filename = cnf.addOrUpdateCASecret(k)
+
+		}
+		secrets[v] = filename
+	}
+
+	return secrets
 }
 
 // AddOrUpdateResources adds or updates configuration for resources.
@@ -735,7 +755,7 @@ func GenerateCertAndKeyFileContent(secret *api_v1.Secret) []byte {
 func GenerateCAFileContent(secret *api_v1.Secret) []byte {
 	var res bytes.Buffer
 
-	res.Write(secret.Data[IngressMTLSKey])
+	res.Write(secret.Data[CAKey])
 
 	return res.Bytes()
 }

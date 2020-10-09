@@ -37,7 +37,7 @@ func TestGetSecretKind(t *testing.T) {
 					"ca.crt": nil,
 				},
 			},
-			expected: IngressMTLS,
+			expected: CA,
 		}, {
 			secret: &v1.Secret{
 				ObjectMeta: meta_v1.ObjectMeta{
@@ -105,7 +105,7 @@ func TestValidateTLSSecretFail(t *testing.T) {
 	}
 }
 
-func TestValidateIngressMTLSSecretFail(t *testing.T) {
+func TesValidateCASecretFail(t *testing.T) {
 
 	s := &v1.Secret{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -118,9 +118,9 @@ func TestValidateIngressMTLSSecretFail(t *testing.T) {
 	}
 	e := errors.New("Secret doesn't have ca.crt")
 
-	err := ValidateIngressMTLSSecret(s)
+	err := ValidateCASecret(s)
 	if err.Error() != e.Error() {
-		t.Errorf("ValidateIngressMTLSSecret() return %v but expected %v", err, e)
+		t.Errorf("ValidateCASecret() return %v but expected %v", err, e)
 	}
 }
 

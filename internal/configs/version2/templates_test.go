@@ -194,6 +194,17 @@ var virtualServerCfg = VirtualServerConfig{
 						Always: true,
 					},
 				},
+				EgressMTLS: &EgressMTLS{
+					Certificate:    "egress-mtls-secret.pem",
+					CertificateKey: "egress-mtls-secret.pem",
+					VerifyServer:   true,
+					VerifyDepth:    1,
+					Ciphers:        "DEFAULT",
+					Protocols:      "TLSv1.3",
+					TrustedCert:    "trusted-cert.pem",
+					SessionReuse:   true,
+					ServerName:     true,
+				},
 			},
 			{
 				Path:                     "@loc0",

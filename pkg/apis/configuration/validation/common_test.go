@@ -10,6 +10,10 @@ func createPointerFromInt(n int) *int {
 	return &n
 }
 
+func createPointerFromBool(b bool) *bool {
+	return &b
+}
+
 func TestValidateVariable(t *testing.T) {
 	var validVars = map[string]bool{
 		"scheme":                 true,

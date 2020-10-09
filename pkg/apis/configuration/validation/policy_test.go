@@ -597,3 +597,85 @@ func TestValidateIngressMTLSVerifyClient(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateEgressMTLS(t *testing.T) {
+	tests := []struct {
+		eg  *v1alpha1.EgressMTLS
+		msg string
+	}{
+		{
+			eg: &v1alpha1.EgressMTLS{
+				TLSSecret: "mtls-secret",
+			},
+			msg: "tls secret",
+		},
+		{
+			eg: &v1alpha1.EgressMTLS{
+				TrustedCertSecret: "tls-secret",
+				VerifyServer:      true,
+				VerifyDepth:       createPointerFromInt(2),
+				ServerName:        false,
+			},
+			msg: "verify server set to true",
+		},
+		{
+			eg: &v1alpha1.EgressMTLS{
+				VerifyServer: false,
+			},
+			msg: "verify server set to false",
+		},
+		{
+			eg: &v1alpha1.EgressMTLS{
+				SSLName: "foo.com",
+			},
+			msg: "ssl name",
+		},
+	}
+	for _, test := range tests {
+		allErrs := validateEgressMTLS(test.eg, field.NewPath("egressMTLS"))
+		if len(allErrs) != 0 {
+			t.Errorf("validateEgressMTLS() returned errors %v for valid input for the case of %v", allErrs, test.msg)
+		}
+	}
+}
+
+func TestValidateEgressMTLSInvalid(t *testing.T) {
+	tests := []struct {
+		eg  *v1alpha1.EgressMTLS
+		msg string
+	}{
+		{
+			eg: &v1alpha1.EgressMTLS{
+				VerifyServer: true,
+			},
+			msg: "verify server set to true",
+		},
+		{
+			eg: &v1alpha1.EgressMTLS{
+				TrustedCertSecret: "-foo-",
+			},
+			msg: "invalid secret name",
+		},
+		{
+			eg: &v1alpha1.EgressMTLS{
+				TrustedCertSecret: "ingress-mtls-secret",
+				VerifyServer:      true,
+				VerifyDepth:       createPointerFromInt(-1),
+			},
+			msg: "invalid depth",
+		},
+		{
+			eg: &v1alpha1.EgressMTLS{
+				SSLName: "foo.com;",
+			},
+			msg: "invalid name",
+		},
+	}
+
+	for _, test := range tests {
+		allErrs := validateEgressMTLS(test.eg, field.NewPath("egressMTLS"))
+		if len(allErrs) == 0 {
+			t.Errorf("validateEgressMTLS() returned no errors for invalid input for the case of %v", test.msg)
+		}
+	}
+}

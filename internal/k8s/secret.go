@@ -9,16 +9,16 @@ import (
 // JWTKeyKey is the key of the data field of a Secret where the JWK must be stored.
 const JWTKeyKey = "jwk"
 
-// ingressMTLSKey is the key of the data field of a Secret where the certificate authority must be stored.
-const IngressMTLSKey = "ca.crt"
+// CAKey is the key of the data field of a Secret where the certificate authority must be stored.
+const CAKey = "ca.crt"
 
 const (
 	// TLS Secret
 	TLS = iota + 1
 	// JWK Secret
 	JWK
-	// IgressMTLS Secret
-	IngressMTLS
+	// CA Secret
+	CA
 )
 
 // ValidateTLSSecret validates the secret. If it is valid, the function returns nil.
@@ -49,10 +49,10 @@ func ValidateJWKSecret(secret *v1.Secret) error {
 	return nil
 }
 
-// ValidateIngressMTLSSecret validates the secret. If it is valid, the function returns nil.
-func ValidateIngressMTLSSecret(secret *v1.Secret) error {
-	if _, exists := secret.Data[IngressMTLSKey]; !exists {
-		return fmt.Errorf("Secret doesn't have %v", IngressMTLSKey)
+// ValidateCASecret validates the secret. If it is valid, the function returns nil.
+func ValidateCASecret(secret *v1.Secret) error {
+	if _, exists := secret.Data[CAKey]; !exists {
+		return fmt.Errorf("Secret doesn't have %v", CAKey)
 	}
 
 	return nil
@@ -66,8 +66,8 @@ func GetSecretKind(secret *v1.Secret) (int, error) {
 	if err := ValidateJWKSecret(secret); err == nil {
 		return JWK, nil
 	}
-	if err := ValidateIngressMTLSSecret(secret); err == nil {
-		return IngressMTLS, nil
+	if err := ValidateCASecret(secret); err == nil {
+		return CA, nil
 	}
 
 	return 0, fmt.Errorf("Unknown Secret")

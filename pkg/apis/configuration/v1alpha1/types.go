@@ -120,6 +120,7 @@ type PolicySpec struct {
 	RateLimit     *RateLimit     `json:"rateLimit"`
 	JWTAuth       *JWTAuth       `json:"jwt"`
 	IngressMTLS   *IngressMTLS   `json:"ingressMTLS"`
+	EgressMTLS    *EgressMTLS    `json:"egressMTLS"`
 }
 
 // AccessControl defines an access policy based on the source IP of a request.
@@ -153,6 +154,19 @@ type IngressMTLS struct {
 	ClientCertSecret string `json:"clientCertSecret"`
 	VerifyClient     string `json:"verifyClient"`
 	VerifyDepth      *int   `json:"verifyDepth"`
+}
+
+// EgressMTLS defines an Egress MTLS policy.
+type EgressMTLS struct {
+	TLSSecret         string `json:"tlsSecret"`
+	VerifyServer      bool   `json:"verifyServer"`
+	VerifyDepth       *int   `json:"verifyDepth"`
+	Protocols         string `json:"protocols"`
+	SessionReuse      *bool  `json:"sessionReuse"`
+	Ciphers           string `json:"ciphers"`
+	TrustedCertSecret string `json:"trustedCertSecret"`
+	ServerName        bool   `json:"serverName"`
+	SSLName           string `json:"sslName"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

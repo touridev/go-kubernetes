@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/nginxinc/kubernetes-ingress/internal/configs/version2"
 	"github.com/nginxinc/kubernetes-ingress/internal/nginx"
 	conf_v1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1"
@@ -12,6 +13,10 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
+
+func createPointerFromBool(b bool) *bool {
+	return &b
+}
 
 func TestVirtualServerExString(t *testing.T) {
 	tests := []struct {
@@ -599,7 +604,8 @@ func TestGenerateVirtualServerConfig(t *testing.T) {
 	ingressMTLSFileName := ""
 	vsc := newVirtualServerConfigurator(&baseCfgParams, isPlus, isResolverConfigured, &StaticConfigParams{TLSPassthrough: true})
 	jwtKeys := make(map[string]string)
-	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName)
+	egressMTLSSecrets := make(map[string]string)
+	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName, egressMTLSSecrets)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("GenerateVirtualServerConfig returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -704,8 +710,9 @@ func TestGenerateVirtualServerConfigWithSpiffeCerts(t *testing.T) {
 	staticConfigParams := &StaticConfigParams{TLSPassthrough: true, NginxServiceMesh: true}
 	vsc := newVirtualServerConfigurator(&baseCfgParams, isPlus, isResolverConfigured, staticConfigParams)
 	jwtKeys := make(map[string]string)
+	egressMTLSSecrets := make(map[string]string)
 	ingressMTLSFileName := ""
-	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName)
+	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName, egressMTLSSecrets)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("GenerateVirtualServerConfig returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -974,8 +981,9 @@ func TestGenerateVirtualServerConfigForVirtualServerWithSplits(t *testing.T) {
 	tlsPemFileName := ""
 	vsc := newVirtualServerConfigurator(&baseCfgParams, isPlus, isResolverConfigured, &StaticConfigParams{})
 	jwtKeys := make(map[string]string)
+	egressMTLSSecrets := make(map[string]string)
 	ingressMTLSFileName := ""
-	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName)
+	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName, egressMTLSSecrets)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("GenerateVirtualServerConfig returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -1277,8 +1285,9 @@ func TestGenerateVirtualServerConfigForVirtualServerWithMatches(t *testing.T) {
 	tlsPemFileName := ""
 	vsc := newVirtualServerConfigurator(&baseCfgParams, isPlus, isResolverConfigured, &StaticConfigParams{})
 	jwtKeys := make(map[string]string)
+	egressMTLSSecrets := make(map[string]string)
 	ingressMTLSFileName := ""
-	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName)
+	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName, egressMTLSSecrets)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("GenerateVirtualServerConfig returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -1750,8 +1759,9 @@ func TestGenerateVirtualServerConfigForVirtualServerWithReturns(t *testing.T) {
 	tlsPemFileName := ""
 	vsc := newVirtualServerConfigurator(&baseCfgParams, isPlus, isResolverConfigured, &StaticConfigParams{})
 	jwtKeys := make(map[string]string)
+	egressMTLSSecrets := make(map[string]string)
 	ingressMTLSFileName := ""
-	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName)
+	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName, egressMTLSSecrets)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("GenerateVirtualServerConfig returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -1770,12 +1780,13 @@ func TestGeneratePolicies(t *testing.T) {
 	tlsPemFileName := "/etc/nginx/secrets/default-tls-secret"
 
 	tests := []struct {
-		policyRefs []conf_v1.PolicyReference
-		policies   map[string]*conf_v1alpha1.Policy
-		jwtKeys    map[string]string
-		context    string
-		expected   policiesCfg
-		msg        string
+		policyRefs        []conf_v1.PolicyReference
+		policies          map[string]*conf_v1alpha1.Policy
+		jwtKeys           map[string]string
+		egressMTLSSecrets map[string]string
+		context           string
+		expected          policiesCfg
+		msg               string
 	}{
 		{
 			policyRefs: []conf_v1.PolicyReference{
@@ -2009,15 +2020,55 @@ func TestGeneratePolicies(t *testing.T) {
 			},
 			msg: "ingressMTLS reference",
 		},
+		{
+			policyRefs: []conf_v1.PolicyReference{
+				{
+					Name:      "egress-mtls-policy",
+					Namespace: "default",
+				},
+			},
+			policies: map[string]*conf_v1alpha1.Policy{
+				"default/egress-mtls-policy": {
+					Spec: conf_v1alpha1.PolicySpec{
+						EgressMTLS: &conf_v1alpha1.EgressMTLS{
+							TLSSecret:         "egress-mtls-secret",
+							ServerName:        true,
+							SessionReuse:      createPointerFromBool(false),
+							TrustedCertSecret: "egress-trusted-ca-secret",
+						},
+					},
+				},
+			},
+			jwtKeys: nil,
+			egressMTLSSecrets: map[string]string{
+				"default/egress-mtls-secret":       "/etc/nginx/secrets/default-egress-mtls-secret",
+				"default/egress-trusted-ca-secret": "/etc/nginx/secrets/default-egress-trusted-ca-secret",
+			},
+			context: "route",
+			expected: policiesCfg{
+				EgressMTLS: &version2.EgressMTLS{
+					Certificate:    "/etc/nginx/secrets/default-egress-mtls-secret",
+					CertificateKey: "/etc/nginx/secrets/default-egress-mtls-secret",
+					Ciphers:        "DEFAULT",
+					Protocols:      "TLSv1 TLSv1.1 TLSv1.2",
+					ServerName:     true,
+					SessionReuse:   false,
+					VerifyDepth:    1,
+					VerifyServer:   false,
+					TrustedCert:    "/etc/nginx/secrets/default-egress-trusted-ca-secret",
+					SSLName:        "$proxy_host",
+				},
+			},
+			msg: "egressMTLS reference",
+		},
 	}
 
 	vsc := newVirtualServerConfigurator(&ConfigParams{}, false, false, &StaticConfigParams{})
 
 	for _, test := range tests {
-		result := vsc.generatePolicies(owner, ownerNamespace, vsNamespace, vsName, test.policyRefs, test.policies, test.jwtKeys, ingressMTLSCertPath, test.context, tlsPemFileName)
-		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generatePolicies() returned \n%+v but expected \n%+v for the case of %s", result, test.expected,
-				test.msg)
+		result := vsc.generatePolicies(owner, ownerNamespace, vsNamespace, vsName, test.policyRefs, test.policies, test.jwtKeys, ingressMTLSCertPath, test.context, tlsPemFileName, test.egressMTLSSecrets)
+		if diff := cmp.Diff(test.expected, result); diff != "" {
+			t.Errorf("generatePolicies() '%v' mismatch (-want +got):\n%s", test.msg, diff)
 		}
 		if len(vsc.warnings) > 0 {
 			t.Errorf("generatePolicies() returned unexpected warnings %v for the case of %s", vsc.warnings, test.msg)
@@ -2038,8 +2089,10 @@ func TestGeneratePoliciesFails(t *testing.T) {
 		policyRefs          []conf_v1.PolicyReference
 		policies            map[string]*conf_v1alpha1.Policy
 		jwtKeys             map[string]string
+		egressMTLSSecrets   map[string]string
 		ingressMTLSFileName string
 		tlsPemFileName      string
+		trustedCAFileName   string
 		context             string
 		expected            policiesCfg
 		expectedWarnings    Warnings
@@ -2357,7 +2410,7 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					`IngressMTLS policy is not allowed in the route context`,
 				},
 			},
-			msg: "ingress mtls reference missing secret",
+			msg: "ingress mtls in the wrong context",
 		},
 		{
 			policyRefs: []conf_v1.PolicyReference{
@@ -2390,15 +2443,133 @@ func TestGeneratePoliciesFails(t *testing.T) {
 			},
 			msg: "ingress mtls missing TLS config",
 		},
+		{
+			policyRefs: []conf_v1.PolicyReference{
+				{
+					Name:      "egress-mtls-policy",
+					Namespace: "default",
+				},
+				{
+					Name:      "egress-mtls-policy2",
+					Namespace: "default",
+				},
+			},
+			policies: map[string]*conf_v1alpha1.Policy{
+				"default/egress-mtls-policy": {
+					Spec: conf_v1alpha1.PolicySpec{
+						EgressMTLS: &conf_v1alpha1.EgressMTLS{
+							TLSSecret: "egress-mtls-secret",
+						},
+					},
+				},
+				"default/egress-mtls-policy2": {
+					Spec: conf_v1alpha1.PolicySpec{
+						EgressMTLS: &conf_v1alpha1.EgressMTLS{
+							TLSSecret: "egress-mtls-secret2",
+						},
+					},
+				},
+			},
+			jwtKeys: nil,
+			context: "route",
+			egressMTLSSecrets: map[string]string{
+				"default/egress-mtls-secret": "/etc/nginx/secrets/default-egress-mtls-secret",
+			},
+			expected: policiesCfg{
+				EgressMTLS: &version2.EgressMTLS{
+					Certificate:    "/etc/nginx/secrets/default-egress-mtls-secret",
+					CertificateKey: "/etc/nginx/secrets/default-egress-mtls-secret",
+					VerifyServer:   false,
+					VerifyDepth:    1,
+					Ciphers:        "DEFAULT",
+					Protocols:      "TLSv1 TLSv1.1 TLSv1.2",
+					SessionReuse:   true,
+					SSLName:        "$proxy_host",
+				},
+			},
+			expectedWarnings: map[runtime.Object][]string{
+				nil: {
+					`Multiple egressMTLS policies in the same context is not valid. EgressMTLS policy "default/egress-mtls-policy2" will be ignored`,
+				},
+			},
+			msg: "multi egress mtls",
+		},
+		{
+			policyRefs: []conf_v1.PolicyReference{
+				{
+					Name:      "egress-mtls-policy",
+					Namespace: "default",
+				},
+			},
+			policies: map[string]*conf_v1alpha1.Policy{
+				"default/egress-mtls-policy": {
+					Spec: conf_v1alpha1.PolicySpec{
+						EgressMTLS: &conf_v1alpha1.EgressMTLS{
+							TrustedCertSecret: "egress-tusted-secret",
+							SSLName:           "foo.com",
+						},
+					},
+				},
+			},
+			jwtKeys: nil,
+			context: "route",
+			egressMTLSSecrets: map[string]string{
+				"default/egress-mtls-secret": "/etc/nginx/secrets/default-egress-mtls-secret",
+			},
+			expected: policiesCfg{
+				ErrorReturn: &version2.Return{
+					Code: 500,
+				},
+			},
+			expectedWarnings: map[runtime.Object][]string{
+				nil: {
+					`EgressMTLS policy "default/egress-mtls-policy" references a Secret which does not exist`,
+				},
+			},
+			msg: "egress mtls referencing missing CA secret",
+		},
+		{
+			policyRefs: []conf_v1.PolicyReference{
+				{
+					Name:      "egress-mtls-policy",
+					Namespace: "default",
+				},
+			},
+			policies: map[string]*conf_v1alpha1.Policy{
+				"default/egress-mtls-policy": {
+					Spec: conf_v1alpha1.PolicySpec{
+						EgressMTLS: &conf_v1alpha1.EgressMTLS{
+							TLSSecret: "egress-mtls-secret",
+							SSLName:   "foo.com",
+						},
+					},
+				},
+			},
+			jwtKeys: nil,
+			context: "route",
+			egressMTLSSecrets: map[string]string{
+				"default/egress-trusted-secret": "/etc/nginx/secrets/default-egress-trusted-secret",
+			},
+			expected: policiesCfg{
+				ErrorReturn: &version2.Return{
+					Code: 500,
+				},
+			},
+			expectedWarnings: map[runtime.Object][]string{
+				nil: {
+					`EgressMTLS policy "default/egress-mtls-policy" references a Secret which does not exist`,
+				},
+			},
+			msg: "egress mtls referencing missing tls secret",
+		},
 	}
 
 	for _, test := range tests {
 		vsc := newVirtualServerConfigurator(&ConfigParams{}, false, false, &StaticConfigParams{})
 
-		result := vsc.generatePolicies(owner, ownerNamespace, vsNamespace, vsName, test.policyRefs, test.policies, test.jwtKeys, test.ingressMTLSFileName, test.context, test.tlsPemFileName)
-		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generatePolicies() returned \n%+v but expected \n%+v for the case of %s", result, test.expected,
-				test.msg)
+		result := vsc.generatePolicies(owner, ownerNamespace, vsNamespace, vsName, test.policyRefs, test.policies, test.jwtKeys, test.ingressMTLSFileName, test.context, test.tlsPemFileName, test.egressMTLSSecrets)
+		if diff := cmp.Diff(test.expected, result); diff != "" {
+			t.Errorf("generatePolicies() '%v' mismatch (-want +got):\n%s", test.msg, diff)
 		}
 		if !reflect.DeepEqual(vsc.warnings, test.expectedWarnings) {
 			t.Errorf("generatePolicies() returned warnings of \n%v but expected \n%v for the case of %s", vsc.warnings, test.expectedWarnings, test.msg)

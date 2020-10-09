@@ -47,8 +47,13 @@ func validatePolicySpec(spec *v1alpha1.PolicySpec, fieldPath *field.Path, isPlus
 		fieldCount++
 	}
 
+	if spec.EgressMTLS != nil {
+		allErrs = append(allErrs, validateEgressMTLS(spec.EgressMTLS, fieldPath.Child("egressMTLS"))...)
+		fieldCount++
+	}
+
 	if fieldCount != 1 {
-		msg := "must specify exactly one of: `accessControl`, `rateLimit`, `ingressMTLS`"
+		msg := "must specify exactly one of: `accessControl`, `rateLimit`, `ingressMTLS`, `egressMTLS`"
 		if isPlus {
 			msg = fmt.Sprint(msg, ", `jwt`")
 		}
@@ -143,7 +148,36 @@ func validateIngressMTLS(ingressMTLS *v1alpha1.IngressMTLS, fieldPath *field.Pat
 		allErrs = append(allErrs, validatePositiveIntOrZero(*ingressMTLS.VerifyDepth, fieldPath.Child("verifyDepth"))...)
 	}
 	return allErrs
+}
 
+func validateEgressMTLS(egressMTLS *v1alpha1.EgressMTLS, fieldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	allErrs = append(allErrs, validateSecretName(egressMTLS.TLSSecret, fieldPath.Child("tlsSecret"))...)
+
+	if egressMTLS.VerifyServer && egressMTLS.TrustedCertSecret == "" {
+		return append(allErrs, field.Required(fieldPath.Child("trustedCertSecret"), "must be set when verifyServer is 'true'"))
+	}
+	allErrs = append(allErrs, validateSecretName(egressMTLS.TrustedCertSecret, fieldPath.Child("trustedCertSecret"))...)
+
+	if egressMTLS.VerifyDepth != nil {
+		allErrs = append(allErrs, validatePositiveIntOrZero(*egressMTLS.VerifyDepth, fieldPath.Child("verifyDepth"))...)
+	}
+
+	allErrs = append(allErrs, validateSSLName(egressMTLS.SSLName, fieldPath.Child("sslName"))...)
+
+	return allErrs
+}
+
+func validateSSLName(name string, fieldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if name != "" {
+		for _, msg := range validation.IsDNS1123Subdomain(name) {
+			allErrs = append(allErrs, field.Invalid(fieldPath, name, msg))
+		}
+	}
+	return allErrs
 }
 
 var validateVerifyClientKeyParameters = map[string]bool{
