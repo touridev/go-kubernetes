@@ -40,7 +40,7 @@ update-codegen:
 	./hack/update-codegen.sh
 
 update-crds:
-	./hack/update-crds.sh
+	controller-gen schemapatch:manifests=./deployments/common/ paths=./pkg/apis/configuration/... output:dir=./deployments/common
 
 certificate-and-key:
 ifeq ($(GENERATE_DEFAULT_CERT_AND_KEY),1)

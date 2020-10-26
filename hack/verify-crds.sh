@@ -20,13 +20,7 @@ cleanup
 mkdir -p "${TMP_DIFFROOT}"
 cp -a "${DIFFROOT}"/* "${TMP_DIFFROOT}"
 
-VERSION=v0.2.5
-CONTROLLER_GEN_BASENAME=controller-gen-$(uname -s | tr '[:upper:]' '[:lower:]')-amd64
-CONTROLLER_GEN=${CONTROLLER_GEN_BASENAME}-${VERSION}
-test -x "hack/${CONTROLLER_GEN}" || curl -f -L -o "hack/${CONTROLLER_GEN}" "https://github.com/openshift/kubernetes-sigs-controller-tools/releases/download/${VERSION}/${CONTROLLER_GEN_BASENAME}"
-chmod +x "hack/${CONTROLLER_GEN}"
-
-hack/${CONTROLLER_GEN} schemapatch:manifests=./deployments/common/ paths="./pkg/apis/configuration/..." output:dir=${TMP_DIFFROOT}
+controller-gen schemapatch:manifests=./deployments/common/ paths="./pkg/apis/configuration/..." output:dir=${TMP_DIFFROOT}
 echo "diffing ${DIFFROOT} against potentially updated crds"
 ret=0
 diff -Naupr "${DIFFROOT}" "${TMP_DIFFROOT}" || ret=$?
