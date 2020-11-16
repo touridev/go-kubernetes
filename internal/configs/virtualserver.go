@@ -176,7 +176,17 @@ type virtualServerConfigurator struct {
 }
 
 func (vsc *virtualServerConfigurator) addWarningf(obj runtime.Object, msgFmt string, args ...interface{}) {
-	vsc.warnings[obj] = append(vsc.warnings[obj], fmt.Sprintf(msgFmt, args...))
+	vsc.addWarning(obj, fmt.Sprintf(msgFmt, args...))
+}
+
+func (vsc *virtualServerConfigurator) addWarning(obj runtime.Object, msg string) {
+	vsc.warnings[obj] = append(vsc.warnings[obj], msg)
+}
+
+func (vsc *virtualServerConfigurator) addWarnings(obj runtime.Object, msgs []string) {
+	for _, msg := range msgs {
+		vsc.addWarning(obj, msg)
+	}
 }
 
 func (vsc *virtualServerConfigurator) clearWarnings() {
@@ -490,18 +500,148 @@ type policiesCfg struct {
 	ErrorReturn     *version2.Return
 }
 
-// TODO refactor generatePolicies
-func (vsc *virtualServerConfigurator) generatePolicies(owner runtime.Object, ownerNamespace string, vsNamespace string,
-	vsName string, policyRefs []conf_v1.PolicyReference, policies map[string]*conf_v1alpha1.Policy, jwtKeys map[string]string, ingressMTLSPemFileName string, context string, tlsPemFileName string, egressMTLSSecrets map[string]string) policiesCfg {
-	var policyErrorReturn *version2.Return
-	var allow, deny []string
-	var limitReqOptions version2.LimitReqOptions
-	var limitReqZones []version2.LimitReqZone
-	var limitReqs []version2.LimitReq
-	var JWTAuth *version2.JWTAuth
-	var ingressMTLS *version2.IngressMTLS
-	var egressMTLS *version2.EgressMTLS
-	var policyError bool
+func newPoliciesConfig() *policiesCfg {
+	return &policiesCfg{}
+}
+
+type validationResults struct {
+	isError  bool
+	warnings []string
+}
+
+func newValidationResults() *validationResults {
+	return &validationResults{}
+}
+
+func (r *validationResults) addWarning(msgFmt string, args ...interface{}) {
+	r.warnings = append(r.warnings, fmt.Sprintf(msgFmt, args...))
+}
+
+func (p *policiesCfg) addAccessControlConfig(res *validationResults, accessControl *conf_v1alpha1.AccessControl) {
+	p.Allow = append(p.Allow, accessControl.Allow...)
+	p.Deny = append(p.Deny, accessControl.Deny...)
+	if len(p.Allow) > 0 && len(p.Deny) > 0 {
+		res.addWarning("AccessControl policy (or policies) with deny rules is overridden by policy (or policies) with allow rules")
+	}
+}
+
+func (p *policiesCfg) addRateLimitConfig(res *validationResults, rateLimit *conf_v1alpha1.RateLimit, polKey string, polNamespace string, polName string, vsNamespace string, vsName string) {
+	rlZoneName := fmt.Sprintf("pol_rl_%v_%v_%v_%v", polNamespace, polName, vsNamespace, vsName)
+	p.LimitReqs = append(p.LimitReqs, generateLimitReq(rlZoneName, rateLimit))
+	p.LimitReqZones = append(p.LimitReqZones, generateLimitReqZone(rlZoneName, rateLimit))
+	if len(p.LimitReqs) == 1 {
+		p.LimitReqOptions = generateLimitReqOptions(rateLimit)
+	} else {
+		curOptions := generateLimitReqOptions(rateLimit)
+		if curOptions.DryRun != p.LimitReqOptions.DryRun {
+			res.addWarning("RateLimit policy %q with limit request option dryRun=%v is overridden to dryRun=%v by the first policy reference in this context", polKey, curOptions.DryRun, p.LimitReqOptions.DryRun)
+		}
+		if curOptions.LogLevel != p.LimitReqOptions.LogLevel {
+			res.addWarning("RateLimit policy %q with limit request option logLevel=%v is overridden to logLevel=%v by the first policy reference in this context", polKey, curOptions.LogLevel, p.LimitReqOptions.LogLevel)
+		}
+		if curOptions.RejectCode != p.LimitReqOptions.RejectCode {
+			res.addWarning("RateLimit policy %q with limit request option rejectCode=%v is overridden to rejectCode=%v by the first policy reference in this context", polKey, curOptions.RejectCode, p.LimitReqOptions.RejectCode)
+		}
+	}
+}
+
+func (p *policiesCfg) addJWTAuthConfig(res *validationResults, jwtAuth *conf_v1alpha1.JWTAuth, polKey string, polNamespace string, jwtKeys map[string]string) {
+	if p.JWTAuth != nil {
+		res.addWarning("Multiple jwt policies in the same context is not valid. JWT policy %q will be ignored", polKey)
+		return
+	}
+
+	jwtSecretKey := fmt.Sprintf("%v/%v", polNamespace, jwtAuth.Secret)
+	if _, existsOnFilesystem := jwtKeys[jwtSecretKey]; !existsOnFilesystem {
+		res.addWarning("JWT policy %q references a JWKSecret %q which does not exist", polKey, jwtSecretKey)
+		res.isError = true
+		return
+	}
+
+	p.JWTAuth = &version2.JWTAuth{
+		Secret: jwtKeys[jwtSecretKey],
+		Realm:  jwtAuth.Realm,
+		Token:  jwtAuth.Token,
+	}
+}
+
+func (p *policiesCfg) addIngressMTLSConfig(res *validationResults, ingressMTLS *conf_v1alpha1.IngressMTLS, polKey string, tlsPemFileName string, context string, ingressMTLSPemFileName string) {
+	if tlsPemFileName == "" {
+		res.addWarning("TLS configuration needed for IngressMTLS policy")
+		res.isError = true
+		return
+	}
+	if context != specContext {
+		res.addWarning("IngressMTLS policy is not allowed in the %v context", context)
+		res.isError = true
+		return
+	}
+	if p.IngressMTLS != nil {
+		res.addWarning("Multiple ingressMTLS policies are not allowed. IngressMTLS policy %q will be ignored", polKey)
+		return
+	}
+
+	if ingressMTLSPemFileName == "" {
+		res.addWarning("IngressMTLS policy %q references a Secret which does not exist", polKey)
+		res.isError = true
+		return
+	}
+
+	verifyDepth := 1
+	verifyClient := "on"
+	if ingressMTLS.VerifyDepth != nil {
+		verifyDepth = *ingressMTLS.VerifyDepth
+	}
+	if ingressMTLS.VerifyClient != "" {
+		verifyClient = ingressMTLS.VerifyClient
+	}
+
+	p.IngressMTLS = &version2.IngressMTLS{
+		ClientCert:   ingressMTLSPemFileName,
+		VerifyClient: verifyClient,
+		VerifyDepth:  verifyDepth,
+	}
+}
+
+func (p *policiesCfg) addEgressMTLSConfig(res *validationResults, egressMTLS *conf_v1alpha1.EgressMTLS, polKey string, polNamespace string, egressMTLSSecrets map[string]string) {
+	if p.EgressMTLS != nil {
+		res.addWarning("Multiple egressMTLS policies in the same context is not valid. EgressMTLS policy %q will be ignored", polKey)
+		return
+	}
+
+	egressTLSSecret := fmt.Sprintf("%v/%v", polNamespace, egressMTLS.TLSSecret)
+	TrustedCertSecret := fmt.Sprintf("%v/%v", polNamespace, egressMTLS.TrustedCertSecret)
+
+	trustedCAFileName, trustedExists := egressMTLSSecrets[TrustedCertSecret]
+	if egressMTLS.TrustedCertSecret != "" && !trustedExists {
+		res.addWarning("EgressMTLS policy %q references a Secret which does not exist", polKey)
+		res.isError = true
+		return
+	}
+
+	egressMTLSPemFileName, tlsExists := egressMTLSSecrets[egressTLSSecret]
+	if egressMTLS.TLSSecret != "" && !tlsExists {
+		res.addWarning("EgressMTLS policy %q references a Secret which does not exist", polKey)
+		res.isError = true
+		return
+	}
+
+	p.EgressMTLS = &version2.EgressMTLS{
+		Certificate:    egressMTLSPemFileName,
+		CertificateKey: egressMTLSPemFileName,
+		Ciphers:        generateString(egressMTLS.Ciphers, "DEFAULT"),
+		Protocols:      generateString(egressMTLS.Protocols, "TLSv1 TLSv1.1 TLSv1.2"),
+		VerifyServer:   egressMTLS.VerifyServer,
+		VerifyDepth:    generateIntFromPointer(egressMTLS.VerifyDepth, 1),
+		SessionReuse:   generateBool(egressMTLS.SessionReuse, true),
+		ServerName:     egressMTLS.ServerName,
+		TrustedCert:    trustedCAFileName,
+		SSLName:        generateString(egressMTLS.SSLName, "$proxy_host"),
+	}
+}
+
+func (vsc *virtualServerConfigurator) generatePolicies(owner runtime.Object, ownerNamespace string, vsNamespace string, vsName string, policyRefs []conf_v1.PolicyReference, policies map[string]*conf_v1alpha1.Policy, jwtKeys map[string]string, ingressMTLSPemFileName string, context string, tlsPemFileName string, egressMTLSSecrets map[string]string) policiesCfg {
+	config := newPoliciesConfig()
 
 	for _, p := range policyRefs {
 		polNamespace := p.Namespace
@@ -512,147 +652,34 @@ func (vsc *virtualServerConfigurator) generatePolicies(owner runtime.Object, own
 		key := fmt.Sprintf("%s/%s", polNamespace, p.Name)
 
 		if pol, exists := policies[key]; exists {
-			if pol.Spec.AccessControl != nil {
-				allow = append(allow, pol.Spec.AccessControl.Allow...)
-				deny = append(deny, pol.Spec.AccessControl.Deny...)
-			} else if pol.Spec.RateLimit != nil {
-				rlZoneName := fmt.Sprintf("pol_rl_%v_%v_%v_%v", polNamespace, p.Name, vsNamespace, vsName)
-				limitReqs = append(limitReqs, generateLimitReq(rlZoneName, pol.Spec.RateLimit))
-				limitReqZones = append(limitReqZones, generateLimitReqZone(rlZoneName, pol.Spec.RateLimit))
-				if len(limitReqs) == 1 {
-					limitReqOptions = generateLimitReqOptions(pol.Spec.RateLimit)
-				} else {
-					curOptions := generateLimitReqOptions(pol.Spec.RateLimit)
-					if curOptions.DryRun != limitReqOptions.DryRun {
-						vsc.addWarningf(owner, "RateLimit policy %q with limit request option dryRun=%v is overridden to dryRun=%v by the first policy reference in this context",
-							key, curOptions.DryRun, limitReqOptions.DryRun)
-					}
-					if curOptions.LogLevel != limitReqOptions.LogLevel {
-						vsc.addWarningf(owner, "RateLimit policy %q with limit request option logLevel=%v is overridden to logLevel=%v by the first policy reference in this context",
-							key, curOptions.LogLevel, limitReqOptions.LogLevel)
-					}
-					if curOptions.RejectCode != limitReqOptions.RejectCode {
-						vsc.addWarningf(owner, "RateLimit policy %q with limit request option rejectCode=%v is overridden to rejectCode=%v by the first policy reference in this context",
-							key, curOptions.RejectCode, limitReqOptions.RejectCode)
-					}
+			res := newValidationResults()
+			switch {
+			case pol.Spec.AccessControl != nil:
+				config.addAccessControlConfig(res, pol.Spec.AccessControl)
+			case pol.Spec.RateLimit != nil:
+				config.addRateLimitConfig(res, pol.Spec.RateLimit, key, polNamespace, p.Name, vsNamespace, vsName)
+			case pol.Spec.JWTAuth != nil:
+				config.addJWTAuthConfig(res, pol.Spec.JWTAuth, key, polNamespace, jwtKeys)
+			case pol.Spec.IngressMTLS != nil:
+				config.addIngressMTLSConfig(res, pol.Spec.IngressMTLS, key, tlsPemFileName, context, ingressMTLSPemFileName)
+			case pol.Spec.EgressMTLS != nil:
+				config.addEgressMTLSConfig(res, pol.Spec.EgressMTLS, key, polNamespace, egressMTLSSecrets)
+			}
+			vsc.addWarnings(owner, res.warnings)
+			if res.isError {
+				return policiesCfg{
+					ErrorReturn: &version2.Return{Code: 500},
 				}
-			} else if pol.Spec.JWTAuth != nil {
-				if JWTAuth != nil {
-					vsc.addWarningf(owner, "Multiple jwt policies in the same context is not valid. JWT policy %q will be ignored", key)
-					continue
-				}
-
-				jwtSecretKey := fmt.Sprintf("%v/%v", polNamespace, pol.Spec.JWTAuth.Secret)
-				if _, existsOnFilesystem := jwtKeys[jwtSecretKey]; !existsOnFilesystem {
-					vsc.addWarningf(owner, `JWT policy %q references a JWKSecret %q which does not exist`, key, jwtSecretKey)
-					policyError = true
-					break
-				}
-
-				JWTAuth = &version2.JWTAuth{
-					Secret: jwtKeys[jwtSecretKey],
-					Realm:  pol.Spec.JWTAuth.Realm,
-					Token:  pol.Spec.JWTAuth.Token,
-				}
-			} else if pol.Spec.IngressMTLS != nil {
-				if tlsPemFileName == "" {
-					vsc.addWarningf(owner, `TLS configuration needed for IngressMTLS policy`)
-					policyError = true
-					break
-				}
-				if context != specContext {
-					vsc.addWarningf(owner, `IngressMTLS policy is not allowed in the %v context`, context)
-					policyError = true
-					break
-				}
-				if ingressMTLS != nil {
-					vsc.addWarningf(owner, "Multiple ingressMTLS policies are not allowed. IngressMTLS policy %q will be ignored", key)
-					continue
-				}
-
-				if ingressMTLSPemFileName == "" {
-					vsc.addWarningf(owner, `IngressMTLS policy %q references a Secret which does not exist`, key)
-					policyError = true
-					break
-				}
-
-				verifyDepth := 1
-				verifyClient := "on"
-				if pol.Spec.IngressMTLS.VerifyDepth != nil {
-					verifyDepth = *pol.Spec.IngressMTLS.VerifyDepth
-				}
-				if pol.Spec.IngressMTLS.VerifyClient != "" {
-					verifyClient = pol.Spec.IngressMTLS.VerifyClient
-				}
-
-				ingressMTLS = &version2.IngressMTLS{
-					ClientCert:   ingressMTLSPemFileName,
-					VerifyClient: verifyClient,
-					VerifyDepth:  verifyDepth,
-				}
-
-			} else if pol.Spec.EgressMTLS != nil {
-				if egressMTLS != nil {
-					vsc.addWarningf(owner, "Multiple egressMTLS policies in the same context is not valid. EgressMTLS policy %q will be ignored", key)
-					continue
-				}
-
-				egressTLSSecret := fmt.Sprintf("%v/%v", polNamespace, pol.Spec.EgressMTLS.TLSSecret)
-				TrustedCertSecret := fmt.Sprintf("%v/%v", polNamespace, pol.Spec.EgressMTLS.TrustedCertSecret)
-
-				trustedCAFileName, trustedEsists := egressMTLSSecrets[TrustedCertSecret]
-				if pol.Spec.EgressMTLS.TrustedCertSecret != "" && !trustedEsists {
-					vsc.addWarningf(owner, `EgressMTLS policy %q references a Secret which does not exist`, key)
-					policyError = true
-					break
-				}
-
-				egressMTLSPemFileName, tlsExists := egressMTLSSecrets[egressTLSSecret]
-				if pol.Spec.EgressMTLS.TLSSecret != "" && !tlsExists {
-					vsc.addWarningf(owner, `EgressMTLS policy %q references a Secret which does not exist`, key)
-					policyError = true
-					break
-				}
-
-				egressMTLS = &version2.EgressMTLS{
-					Certificate:    egressMTLSPemFileName,
-					CertificateKey: egressMTLSPemFileName,
-					Ciphers:        generateString(pol.Spec.EgressMTLS.Ciphers, "DEFAULT"),
-					Protocols:      generateString(pol.Spec.EgressMTLS.Protocols, "TLSv1 TLSv1.1 TLSv1.2"),
-					VerifyServer:   pol.Spec.EgressMTLS.VerifyServer,
-					VerifyDepth:    generateIntFromPointer(pol.Spec.EgressMTLS.VerifyDepth, 1),
-					SessionReuse:   generateBool(pol.Spec.EgressMTLS.SessionReuse, true),
-					ServerName:     pol.Spec.EgressMTLS.ServerName,
-					TrustedCert:    trustedCAFileName,
-					SSLName:        generateString(pol.Spec.EgressMTLS.SSLName, "$proxy_host"),
-				}
-
 			}
 		} else {
 			vsc.addWarningf(owner, "Policy %s is missing or invalid", key)
-			policyError = true
-			break
+			return policiesCfg{
+				ErrorReturn: &version2.Return{Code: 500},
+			}
 		}
-	}
-	if policyError {
-		return policiesCfg{
-			ErrorReturn: &version2.Return{Code: 500},
-		}
-	} else if len(allow) > 0 && len(deny) > 0 {
-		vsc.addWarningf(owner, "AccessControl policy (or policies) with deny rules is overridden by policy (or policies) with allow rules")
 	}
 
-	return policiesCfg{
-		Allow:           allow,
-		Deny:            deny,
-		LimitReqOptions: limitReqOptions,
-		LimitReqZones:   limitReqZones,
-		LimitReqs:       limitReqs,
-		JWTAuth:         JWTAuth,
-		IngressMTLS:     ingressMTLS,
-		EgressMTLS:      egressMTLS,
-		ErrorReturn:     policyErrorReturn,
-	}
+	return *config
 }
 
 func generateLimitReq(zoneName string, rateLimitPol *conf_v1alpha1.RateLimit) version2.LimitReq {
