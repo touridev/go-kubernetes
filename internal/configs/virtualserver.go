@@ -228,8 +228,19 @@ func (vsc *virtualServerConfigurator) generateEndpointsForUpstream(owner runtime
 func (vsc *virtualServerConfigurator) GenerateVirtualServerConfig(vsEx *VirtualServerEx, tlsPemFileName string, jwtKeys map[string]string, ingressMTLSPemFileName string, egressMTLSSecrets map[string]string) (version2.VirtualServerConfig, Warnings) {
 	vsc.clearWarnings()
 
-	policiesCfg := vsc.generatePolicies(vsEx.VirtualServer, vsEx.VirtualServer.Namespace, vsEx.VirtualServer.Namespace,
-		vsEx.VirtualServer.Name, vsEx.VirtualServer.Spec.Policies, vsEx.Policies, jwtKeys, ingressMTLSPemFileName, specContext, tlsPemFileName, egressMTLSSecrets)
+	ownerDetails := policyOwnerDetails{
+		owner:          vsEx.VirtualServer,
+		ownerNamespace: vsEx.VirtualServer.Namespace,
+		vsNamespace:    vsEx.VirtualServer.Namespace,
+		vsName:         vsEx.VirtualServer.Name,
+	}
+	policyOpts := policyOptions{
+		jwtKeys:                jwtKeys,
+		ingressMTLSPemFileName: ingressMTLSPemFileName,
+		tlsPemFileName:         tlsPemFileName,
+		egressMTLSSecrets:      egressMTLSSecrets,
+	}
+	policiesCfg := vsc.generatePolicies(ownerDetails, vsEx.VirtualServer.Spec.Policies, vsEx.Policies, specContext, policyOpts)
 
 	// crUpstreams maps an UpstreamName to its conf_v1.Upstream as they are generated
 	// necessary for generateLocation to know what Upstream each Location references
@@ -335,8 +346,19 @@ func (vsc *virtualServerConfigurator) GenerateVirtualServerConfig(vsEx *VirtualS
 
 		vsLocSnippets := r.LocationSnippets
 		// ingressMTLSPemFileName argument is always empty for route policies
-		routePoliciesCfg := vsc.generatePolicies(vsEx.VirtualServer, vsEx.VirtualServer.Namespace, vsEx.VirtualServer.Namespace, vsEx.VirtualServer.Name,
-			r.Policies, vsEx.Policies, jwtKeys, "", routeContext, tlsPemFileName, egressMTLSSecrets)
+		ownerDetails := policyOwnerDetails{
+			owner:          vsEx.VirtualServer,
+			ownerNamespace: vsEx.VirtualServer.Namespace,
+			vsNamespace:    vsEx.VirtualServer.Namespace,
+			vsName:         vsEx.VirtualServer.Name,
+		}
+		policyOpts := policyOptions{
+			jwtKeys:                jwtKeys,
+			ingressMTLSPemFileName: "",
+			tlsPemFileName:         tlsPemFileName,
+			egressMTLSSecrets:      egressMTLSSecrets,
+		}
+		routePoliciesCfg := vsc.generatePolicies(ownerDetails, r.Policies, vsEx.Policies, routeContext, policyOpts)
 		limitReqZones = append(limitReqZones, routePoliciesCfg.LimitReqZones...)
 
 		if len(r.Matches) > 0 {
@@ -397,14 +419,38 @@ func (vsc *virtualServerConfigurator) GenerateVirtualServerConfig(vsEx *VirtualS
 			if r.LocationSnippets == "" {
 				locSnippets = vsrLocationSnippetsFromVs[vsrNamespaceName]
 			}
-			// ingressMTLSPemFileName argument is always empty for route policies
-			routePoliciesCfg := vsc.generatePolicies(vsr, vsr.Namespace, vsEx.VirtualServer.Namespace, vsEx.VirtualServer.Name,
-				r.Policies, vsEx.Policies, jwtKeys, "", subRouteContext, tlsPemFileName, egressMTLSSecrets)
-			// use the VirtualServer route policies if the route does not define any
+
+			var ownerDetails policyOwnerDetails
+			var policyRefs []conf_v1.PolicyReference
+			var context string
 			if len(r.Policies) == 0 {
-				routePoliciesCfg = vsc.generatePolicies(vsEx.VirtualServer, vsEx.VirtualServer.Namespace, vsEx.VirtualServer.Namespace,
-					vsEx.VirtualServer.Name, vsrPoliciesFromVs[vsrNamespaceName], vsEx.Policies, jwtKeys, "", routeContext, tlsPemFileName, egressMTLSSecrets)
+				// use the VirtualServer route policies if the route does not define any
+				ownerDetails = policyOwnerDetails{
+					owner:          vsEx.VirtualServer,
+					ownerNamespace: vsEx.VirtualServer.Namespace,
+					vsNamespace:    vsEx.VirtualServer.Namespace,
+					vsName:         vsEx.VirtualServer.Name,
+				}
+				policyRefs = vsrPoliciesFromVs[vsrNamespaceName]
+				context = routeContext
+			} else {
+				ownerDetails = policyOwnerDetails{
+					owner:          vsr,
+					ownerNamespace: vsr.Namespace,
+					vsNamespace:    vsEx.VirtualServer.Namespace,
+					vsName:         vsEx.VirtualServer.Name,
+				}
+				policyRefs = r.Policies
+				context = subRouteContext
 			}
+			// ingressMTLSPemFileName argument is always empty for route policies
+			policyOpts := policyOptions{
+				jwtKeys:                jwtKeys,
+				ingressMTLSPemFileName: "",
+				tlsPemFileName:         tlsPemFileName,
+				egressMTLSSecrets:      egressMTLSSecrets,
+			}
+			routePoliciesCfg := vsc.generatePolicies(ownerDetails, policyRefs, vsEx.Policies, context, policyOpts)
 			limitReqZones = append(limitReqZones, routePoliciesCfg.LimitReqZones...)
 
 			if len(r.Matches) > 0 {
@@ -504,6 +550,20 @@ func newPoliciesConfig() *policiesCfg {
 	return &policiesCfg{}
 }
 
+type policyOwnerDetails struct {
+	owner          runtime.Object
+	ownerNamespace string
+	vsNamespace    string
+	vsName         string
+}
+
+type policyOptions struct {
+	jwtKeys                map[string]string
+	ingressMTLSPemFileName string
+	tlsPemFileName         string
+	egressMTLSSecrets      map[string]string
+}
+
 type validationResults struct {
 	isError  bool
 	warnings []string
@@ -565,7 +625,7 @@ func (p *policiesCfg) addJWTAuthConfig(res *validationResults, jwtAuth *conf_v1a
 	}
 }
 
-func (p *policiesCfg) addIngressMTLSConfig(res *validationResults, ingressMTLS *conf_v1alpha1.IngressMTLS, polKey string, tlsPemFileName string, context string, ingressMTLSPemFileName string) {
+func (p *policiesCfg) addIngressMTLSConfig(res *validationResults, ingressMTLS *conf_v1alpha1.IngressMTLS, polKey string, context string, tlsPemFileName string, ingressMTLSPemFileName string) {
 	if tlsPemFileName == "" {
 		res.addWarning("TLS configuration needed for IngressMTLS policy")
 		res.isError = true
@@ -640,13 +700,13 @@ func (p *policiesCfg) addEgressMTLSConfig(res *validationResults, egressMTLS *co
 	}
 }
 
-func (vsc *virtualServerConfigurator) generatePolicies(owner runtime.Object, ownerNamespace string, vsNamespace string, vsName string, policyRefs []conf_v1.PolicyReference, policies map[string]*conf_v1alpha1.Policy, jwtKeys map[string]string, ingressMTLSPemFileName string, context string, tlsPemFileName string, egressMTLSSecrets map[string]string) policiesCfg {
+func (vsc *virtualServerConfigurator) generatePolicies(ownerDetails policyOwnerDetails, policyRefs []conf_v1.PolicyReference, policies map[string]*conf_v1alpha1.Policy, context string, policyOpts policyOptions) policiesCfg {
 	config := newPoliciesConfig()
 
 	for _, p := range policyRefs {
 		polNamespace := p.Namespace
 		if polNamespace == "" {
-			polNamespace = ownerNamespace
+			polNamespace = ownerDetails.ownerNamespace
 		}
 
 		key := fmt.Sprintf("%s/%s", polNamespace, p.Name)
@@ -657,22 +717,22 @@ func (vsc *virtualServerConfigurator) generatePolicies(owner runtime.Object, own
 			case pol.Spec.AccessControl != nil:
 				config.addAccessControlConfig(res, pol.Spec.AccessControl)
 			case pol.Spec.RateLimit != nil:
-				config.addRateLimitConfig(res, pol.Spec.RateLimit, key, polNamespace, p.Name, vsNamespace, vsName)
+				config.addRateLimitConfig(res, pol.Spec.RateLimit, key, polNamespace, p.Name, ownerDetails.vsNamespace, ownerDetails.vsName)
 			case pol.Spec.JWTAuth != nil:
-				config.addJWTAuthConfig(res, pol.Spec.JWTAuth, key, polNamespace, jwtKeys)
+				config.addJWTAuthConfig(res, pol.Spec.JWTAuth, key, polNamespace, policyOpts.jwtKeys)
 			case pol.Spec.IngressMTLS != nil:
-				config.addIngressMTLSConfig(res, pol.Spec.IngressMTLS, key, tlsPemFileName, context, ingressMTLSPemFileName)
+				config.addIngressMTLSConfig(res, pol.Spec.IngressMTLS, key, context, policyOpts.tlsPemFileName, policyOpts.ingressMTLSPemFileName)
 			case pol.Spec.EgressMTLS != nil:
-				config.addEgressMTLSConfig(res, pol.Spec.EgressMTLS, key, polNamespace, egressMTLSSecrets)
+				config.addEgressMTLSConfig(res, pol.Spec.EgressMTLS, key, polNamespace, policyOpts.egressMTLSSecrets)
 			}
-			vsc.addWarnings(owner, res.warnings)
+			vsc.addWarnings(ownerDetails.owner, res.warnings)
 			if res.isError {
 				return policiesCfg{
 					ErrorReturn: &version2.Return{Code: 500},
 				}
 			}
 		} else {
-			vsc.addWarningf(owner, "Policy %s is missing or invalid", key)
+			vsc.addWarningf(ownerDetails.owner, "Policy %s is missing or invalid", key)
 			return policiesCfg{
 				ErrorReturn: &version2.Return{Code: 500},
 			}

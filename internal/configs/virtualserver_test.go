@@ -1772,21 +1772,22 @@ func TestGenerateVirtualServerConfigForVirtualServerWithReturns(t *testing.T) {
 }
 
 func TestGeneratePolicies(t *testing.T) {
-	var owner runtime.Object // nil is OK for the unit test
-	ownerNamespace := "default"
-	vsNamespace := "default"
-	vsName := "test"
+	ownerDetails := policyOwnerDetails{
+		owner:          nil, // nil is OK for the unit test
+		ownerNamespace: "default",
+		vsNamespace:    "default",
+		vsName:         "test",
+	}
 	ingressMTLSCertPath := "/etc/nginx/secrets/default-ingress-mtls-secret"
 	tlsPemFileName := "/etc/nginx/secrets/default-tls-secret"
 
 	tests := []struct {
-		policyRefs        []conf_v1.PolicyReference
-		policies          map[string]*conf_v1alpha1.Policy
-		jwtKeys           map[string]string
-		egressMTLSSecrets map[string]string
-		context           string
-		expected          policiesCfg
-		msg               string
+		policyRefs []conf_v1.PolicyReference
+		policies   map[string]*conf_v1alpha1.Policy
+		policyOpts policyOptions
+		context    string
+		expected   policiesCfg
+		msg        string
 	}{
 		{
 			policyRefs: []conf_v1.PolicyReference{
@@ -1804,7 +1805,10 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName: tlsPemFileName,
+			},
 			expected: policiesCfg{
 				Allow: []string{"127.0.0.1"},
 			},
@@ -1855,7 +1859,10 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName: tlsPemFileName,
+			},
 			expected: policiesCfg{
 				Allow: []string{"127.0.0.1", "127.0.0.2"},
 			},
@@ -1880,7 +1887,10 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName: tlsPemFileName,
+			},
 			expected: policiesCfg{
 				LimitReqZones: []version2.LimitReqZone{
 					{
@@ -1933,7 +1943,10 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName: tlsPemFileName,
+			},
 			expected: policiesCfg{
 				LimitReqZones: []version2.LimitReqZone{
 					{
@@ -1981,8 +1994,12 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: map[string]string{
-				"default/jwt-secret": "/etc/nginx/secrets/default-jwt-secret",
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName: tlsPemFileName,
+				jwtKeys: map[string]string{
+					"default/jwt-secret": "/etc/nginx/secrets/default-jwt-secret",
+				},
 			},
 			expected: policiesCfg{
 				JWTAuth: &version2.JWTAuth{
@@ -2009,7 +2026,10 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName: tlsPemFileName,
+			},
 			context: "spec",
 			expected: policiesCfg{
 				IngressMTLS: &version2.IngressMTLS{
@@ -2039,10 +2059,13 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
-			egressMTLSSecrets: map[string]string{
-				"default/egress-mtls-secret":       "/etc/nginx/secrets/default-egress-mtls-secret",
-				"default/egress-trusted-ca-secret": "/etc/nginx/secrets/default-egress-trusted-ca-secret",
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName: tlsPemFileName,
+				egressMTLSSecrets: map[string]string{
+					"default/egress-mtls-secret":       "/etc/nginx/secrets/default-egress-mtls-secret",
+					"default/egress-trusted-ca-secret": "/etc/nginx/secrets/default-egress-trusted-ca-secret",
+				},
 			},
 			context: "route",
 			expected: policiesCfg{
@@ -2066,7 +2089,7 @@ func TestGeneratePolicies(t *testing.T) {
 	vsc := newVirtualServerConfigurator(&ConfigParams{}, false, false, &StaticConfigParams{})
 
 	for _, test := range tests {
-		result := vsc.generatePolicies(owner, ownerNamespace, vsNamespace, vsName, test.policyRefs, test.policies, test.jwtKeys, ingressMTLSCertPath, test.context, tlsPemFileName, test.egressMTLSSecrets)
+		result := vsc.generatePolicies(ownerDetails, test.policyRefs, test.policies, test.context, test.policyOpts)
 		if diff := cmp.Diff(test.expected, result); diff != "" {
 			t.Errorf("generatePolicies() '%v' mismatch (-want +got):\n%s", test.msg, diff)
 		}
@@ -2077,26 +2100,25 @@ func TestGeneratePolicies(t *testing.T) {
 }
 
 func TestGeneratePoliciesFails(t *testing.T) {
-	var owner runtime.Object // nil is OK for the unit test
-	ownerNamespace := "default"
-	vsNamespace := "default"
-	vsName := "test"
+	ownerDetails := policyOwnerDetails{
+		owner:          nil, // nil is OK for the unit test
+		ownerNamespace: "default",
+		vsNamespace:    "default",
+		vsName:         "test",
+	}
 
 	dryRunOverride := true
 	rejectCodeOverride := 505
 
 	tests := []struct {
-		policyRefs          []conf_v1.PolicyReference
-		policies            map[string]*conf_v1alpha1.Policy
-		jwtKeys             map[string]string
-		egressMTLSSecrets   map[string]string
-		ingressMTLSFileName string
-		tlsPemFileName      string
-		trustedCAFileName   string
-		context             string
-		expected            policiesCfg
-		expectedWarnings    Warnings
-		msg                 string
+		policyRefs        []conf_v1.PolicyReference
+		policies          map[string]*conf_v1alpha1.Policy
+		policyOpts        policyOptions
+		trustedCAFileName string
+		context           string
+		expected          policiesCfg
+		expectedWarnings  Warnings
+		msg               string
 	}{
 		{
 			policyRefs: []conf_v1.PolicyReference{
@@ -2105,8 +2127,8 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					Namespace: "default",
 				},
 			},
-			policies: map[string]*conf_v1alpha1.Policy{},
-			jwtKeys:  nil,
+			policies:   map[string]*conf_v1alpha1.Policy{},
+			policyOpts: policyOptions{},
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2144,7 +2166,7 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{},
 			expected: policiesCfg{
 				Allow: []string{"127.0.0.1"},
 				Deny:  []string{"127.0.0.2"},
@@ -2190,7 +2212,7 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{},
 			expected: policiesCfg{
 				LimitReqZones: []version2.LimitReqZone{
 					{
@@ -2245,7 +2267,7 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{},
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2287,9 +2309,11 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: map[string]string{
-				"default/jwt-secret":  "/etc/nginx/secrets/default-jwt-secret",
-				"default/jwt-secret2": "",
+			policyOpts: policyOptions{
+				jwtKeys: map[string]string{
+					"default/jwt-secret":  "/etc/nginx/secrets/default-jwt-secret",
+					"default/jwt-secret2": "",
+				},
 			},
 			expected: policiesCfg{
 				JWTAuth: &version2.JWTAuth{
@@ -2320,9 +2344,10 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys:        nil,
-			context:        "spec",
-			tlsPemFileName: "/etc/nginx/secrets/default-tls-secret",
+			policyOpts: policyOptions{
+				tlsPemFileName: "/etc/nginx/secrets/default-tls-secret",
+			},
+			context: "spec",
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2362,10 +2387,11 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys:             nil,
-			context:             "spec",
-			ingressMTLSFileName: "/etc/nginx/secrets/default-ingress-mtls-secret",
-			tlsPemFileName:      "/etc/nginx/secrets/default-tls-secret",
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: "/etc/nginx/secrets/default-ingress-mtls-secret",
+				tlsPemFileName:         "/etc/nginx/secrets/default-tls-secret",
+			},
+			context: "spec",
 			expected: policiesCfg{
 				IngressMTLS: &version2.IngressMTLS{
 					ClientCert:   "/etc/nginx/secrets/default-ingress-mtls-secret",
@@ -2396,10 +2422,11 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys:             nil,
-			ingressMTLSFileName: "/etc/nginx/secrets/default-ingress-mtls-secret",
-			tlsPemFileName:      "/etc/nginx/secrets/default-tls-secret",
-			context:             "route",
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: "/etc/nginx/secrets/default-ingress-mtls-secret",
+				tlsPemFileName:         "/etc/nginx/secrets/default-tls-secret",
+			},
+			context: "route",
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2428,9 +2455,10 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys:             nil,
-			ingressMTLSFileName: "/etc/nginx/secrets/default-ingress-mtls-secret",
-			context:             "route",
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: "/etc/nginx/secrets/default-ingress-mtls-secret",
+			},
+			context: "route",
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2470,11 +2498,12 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
-			context: "route",
-			egressMTLSSecrets: map[string]string{
-				"default/egress-mtls-secret": "/etc/nginx/secrets/default-egress-mtls-secret",
+			policyOpts: policyOptions{
+				egressMTLSSecrets: map[string]string{
+					"default/egress-mtls-secret": "/etc/nginx/secrets/default-egress-mtls-secret",
+				},
 			},
+			context: "route",
 			expected: policiesCfg{
 				EgressMTLS: &version2.EgressMTLS{
 					Certificate:    "/etc/nginx/secrets/default-egress-mtls-secret",
@@ -2511,11 +2540,12 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
-			context: "route",
-			egressMTLSSecrets: map[string]string{
-				"default/egress-mtls-secret": "/etc/nginx/secrets/default-egress-mtls-secret",
+			policyOpts: policyOptions{
+				egressMTLSSecrets: map[string]string{
+					"default/egress-mtls-secret": "/etc/nginx/secrets/default-egress-mtls-secret",
+				},
 			},
+			context: "route",
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2545,11 +2575,12 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
-			context: "route",
-			egressMTLSSecrets: map[string]string{
-				"default/egress-trusted-secret": "/etc/nginx/secrets/default-egress-trusted-secret",
+			policyOpts: policyOptions{
+				egressMTLSSecrets: map[string]string{
+					"default/egress-trusted-secret": "/etc/nginx/secrets/default-egress-trusted-secret",
+				},
 			},
+			context: "route",
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2567,7 +2598,7 @@ func TestGeneratePoliciesFails(t *testing.T) {
 	for _, test := range tests {
 		vsc := newVirtualServerConfigurator(&ConfigParams{}, false, false, &StaticConfigParams{})
 
-		result := vsc.generatePolicies(owner, ownerNamespace, vsNamespace, vsName, test.policyRefs, test.policies, test.jwtKeys, test.ingressMTLSFileName, test.context, test.tlsPemFileName, test.egressMTLSSecrets)
+		result := vsc.generatePolicies(ownerDetails, test.policyRefs, test.policies, test.context, test.policyOpts)
 		if diff := cmp.Diff(test.expected, result); diff != "" {
 			t.Errorf("generatePolicies() '%v' mismatch (-want +got):\n%s", test.msg, diff)
 		}
