@@ -1807,7 +1807,7 @@ func TestGeneratePolicies(t *testing.T) {
 			},
 			policyOpts: policyOptions{
 				ingressMTLSPemFileName: ingressMTLSCertPath,
-				tlsPemFileName: tlsPemFileName,
+				tlsPemFileName:         tlsPemFileName,
 			},
 			expected: policiesCfg{
 				Allow: []string{"127.0.0.1"},
@@ -1861,7 +1861,7 @@ func TestGeneratePolicies(t *testing.T) {
 			},
 			policyOpts: policyOptions{
 				ingressMTLSPemFileName: ingressMTLSCertPath,
-				tlsPemFileName: tlsPemFileName,
+				tlsPemFileName:         tlsPemFileName,
 			},
 			expected: policiesCfg{
 				Allow: []string{"127.0.0.1", "127.0.0.2"},
@@ -1889,7 +1889,7 @@ func TestGeneratePolicies(t *testing.T) {
 			},
 			policyOpts: policyOptions{
 				ingressMTLSPemFileName: ingressMTLSCertPath,
-				tlsPemFileName: tlsPemFileName,
+				tlsPemFileName:         tlsPemFileName,
 			},
 			expected: policiesCfg{
 				LimitReqZones: []version2.LimitReqZone{
@@ -1945,7 +1945,7 @@ func TestGeneratePolicies(t *testing.T) {
 			},
 			policyOpts: policyOptions{
 				ingressMTLSPemFileName: ingressMTLSCertPath,
-				tlsPemFileName: tlsPemFileName,
+				tlsPemFileName:         tlsPemFileName,
 			},
 			expected: policiesCfg{
 				LimitReqZones: []version2.LimitReqZone{
@@ -1996,7 +1996,7 @@ func TestGeneratePolicies(t *testing.T) {
 			},
 			policyOpts: policyOptions{
 				ingressMTLSPemFileName: ingressMTLSCertPath,
-				tlsPemFileName: tlsPemFileName,
+				tlsPemFileName:         tlsPemFileName,
 				jwtKeys: map[string]string{
 					"default/jwt-secret": "/etc/nginx/secrets/default-jwt-secret",
 				},
@@ -2028,7 +2028,7 @@ func TestGeneratePolicies(t *testing.T) {
 			},
 			policyOpts: policyOptions{
 				ingressMTLSPemFileName: ingressMTLSCertPath,
-				tlsPemFileName: tlsPemFileName,
+				tlsPemFileName:         tlsPemFileName,
 			},
 			context: "spec",
 			expected: policiesCfg{
@@ -2061,7 +2061,7 @@ func TestGeneratePolicies(t *testing.T) {
 			},
 			policyOpts: policyOptions{
 				ingressMTLSPemFileName: ingressMTLSCertPath,
-				tlsPemFileName: tlsPemFileName,
+				tlsPemFileName:         tlsPemFileName,
 				egressMTLSSecrets: map[string]string{
 					"default/egress-mtls-secret":       "/etc/nginx/secrets/default-egress-mtls-secret",
 					"default/egress-trusted-ca-secret": "/etc/nginx/secrets/default-egress-trusted-ca-secret",
