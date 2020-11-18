@@ -577,11 +577,6 @@ func (v *validationResults) addWarningf(msgFmt string, args ...interface{}) {
 	v.warnings = append(v.warnings, fmt.Sprintf(msgFmt, args...))
 }
 
-func (v *validationResults) addValidationResults(other *validationResults) {
-	v.warnings = append(v.warnings, other.warnings...)
-	v.isError = v.isError || other.isError
-}
-
 func (p *policiesCfg) addAccessControlConfig(accessControl *conf_v1alpha1.AccessControl) *validationResults {
 	res := newValidationResults()
 	p.Allow = append(p.Allow, accessControl.Allow...)
