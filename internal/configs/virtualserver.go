@@ -573,7 +573,7 @@ func newValidationResults() *validationResults {
 	return &validationResults{}
 }
 
-func (r *validationResults) addWarning(msgFmt string, args ...interface{}) {
+func (r *validationResults) addWarningf(msgFmt string, args ...interface{}) {
 	r.warnings = append(r.warnings, fmt.Sprintf(msgFmt, args...))
 }
 
@@ -581,7 +581,7 @@ func (p *policiesCfg) addAccessControlConfig(res *validationResults, accessContr
 	p.Allow = append(p.Allow, accessControl.Allow...)
 	p.Deny = append(p.Deny, accessControl.Deny...)
 	if len(p.Allow) > 0 && len(p.Deny) > 0 {
-		res.addWarning("AccessControl policy (or policies) with deny rules is overridden by policy (or policies) with allow rules")
+		res.addWarningf("AccessControl policy (or policies) with deny rules is overridden by policy (or policies) with allow rules")
 	}
 }
 
@@ -594,26 +594,26 @@ func (p *policiesCfg) addRateLimitConfig(res *validationResults, rateLimit *conf
 	} else {
 		curOptions := generateLimitReqOptions(rateLimit)
 		if curOptions.DryRun != p.LimitReqOptions.DryRun {
-			res.addWarning("RateLimit policy %q with limit request option dryRun=%v is overridden to dryRun=%v by the first policy reference in this context", polKey, curOptions.DryRun, p.LimitReqOptions.DryRun)
+			res.addWarningf("RateLimit policy %q with limit request option dryRun=%v is overridden to dryRun=%v by the first policy reference in this context", polKey, curOptions.DryRun, p.LimitReqOptions.DryRun)
 		}
 		if curOptions.LogLevel != p.LimitReqOptions.LogLevel {
-			res.addWarning("RateLimit policy %q with limit request option logLevel=%v is overridden to logLevel=%v by the first policy reference in this context", polKey, curOptions.LogLevel, p.LimitReqOptions.LogLevel)
+			res.addWarningf("RateLimit policy %q with limit request option logLevel=%v is overridden to logLevel=%v by the first policy reference in this context", polKey, curOptions.LogLevel, p.LimitReqOptions.LogLevel)
 		}
 		if curOptions.RejectCode != p.LimitReqOptions.RejectCode {
-			res.addWarning("RateLimit policy %q with limit request option rejectCode=%v is overridden to rejectCode=%v by the first policy reference in this context", polKey, curOptions.RejectCode, p.LimitReqOptions.RejectCode)
+			res.addWarningf("RateLimit policy %q with limit request option rejectCode=%v is overridden to rejectCode=%v by the first policy reference in this context", polKey, curOptions.RejectCode, p.LimitReqOptions.RejectCode)
 		}
 	}
 }
 
 func (p *policiesCfg) addJWTAuthConfig(res *validationResults, jwtAuth *conf_v1alpha1.JWTAuth, polKey string, polNamespace string, jwtKeys map[string]string) {
 	if p.JWTAuth != nil {
-		res.addWarning("Multiple jwt policies in the same context is not valid. JWT policy %q will be ignored", polKey)
+		res.addWarningf("Multiple jwt policies in the same context is not valid. JWT policy %q will be ignored", polKey)
 		return
 	}
 
 	jwtSecretKey := fmt.Sprintf("%v/%v", polNamespace, jwtAuth.Secret)
 	if _, existsOnFilesystem := jwtKeys[jwtSecretKey]; !existsOnFilesystem {
-		res.addWarning("JWT policy %q references a JWKSecret %q which does not exist", polKey, jwtSecretKey)
+		res.addWarningf("JWT policy %q references a JWKSecret %q which does not exist", polKey, jwtSecretKey)
 		res.isError = true
 		return
 	}
@@ -627,22 +627,22 @@ func (p *policiesCfg) addJWTAuthConfig(res *validationResults, jwtAuth *conf_v1a
 
 func (p *policiesCfg) addIngressMTLSConfig(res *validationResults, ingressMTLS *conf_v1alpha1.IngressMTLS, polKey string, context string, tlsPemFileName string, ingressMTLSPemFileName string) {
 	if tlsPemFileName == "" {
-		res.addWarning("TLS configuration needed for IngressMTLS policy")
+		res.addWarningf("TLS configuration needed for IngressMTLS policy")
 		res.isError = true
 		return
 	}
 	if context != specContext {
-		res.addWarning("IngressMTLS policy is not allowed in the %v context", context)
+		res.addWarningf("IngressMTLS policy is not allowed in the %v context", context)
 		res.isError = true
 		return
 	}
 	if p.IngressMTLS != nil {
-		res.addWarning("Multiple ingressMTLS policies are not allowed. IngressMTLS policy %q will be ignored", polKey)
+		res.addWarningf("Multiple ingressMTLS policies are not allowed. IngressMTLS policy %q will be ignored", polKey)
 		return
 	}
 
 	if ingressMTLSPemFileName == "" {
-		res.addWarning("IngressMTLS policy %q references a Secret which does not exist", polKey)
+		res.addWarningf("IngressMTLS policy %q references a Secret which does not exist", polKey)
 		res.isError = true
 		return
 	}
@@ -665,7 +665,7 @@ func (p *policiesCfg) addIngressMTLSConfig(res *validationResults, ingressMTLS *
 
 func (p *policiesCfg) addEgressMTLSConfig(res *validationResults, egressMTLS *conf_v1alpha1.EgressMTLS, polKey string, polNamespace string, egressMTLSSecrets map[string]string) {
 	if p.EgressMTLS != nil {
-		res.addWarning("Multiple egressMTLS policies in the same context is not valid. EgressMTLS policy %q will be ignored", polKey)
+		res.addWarningf("Multiple egressMTLS policies in the same context is not valid. EgressMTLS policy %q will be ignored", polKey)
 		return
 	}
 
@@ -674,14 +674,14 @@ func (p *policiesCfg) addEgressMTLSConfig(res *validationResults, egressMTLS *co
 
 	trustedCAFileName, trustedExists := egressMTLSSecrets[TrustedCertSecret]
 	if egressMTLS.TrustedCertSecret != "" && !trustedExists {
-		res.addWarning("EgressMTLS policy %q references a Secret which does not exist", polKey)
+		res.addWarningf("EgressMTLS policy %q references a Secret which does not exist", polKey)
 		res.isError = true
 		return
 	}
 
 	egressMTLSPemFileName, tlsExists := egressMTLSSecrets[egressTLSSecret]
 	if egressMTLS.TLSSecret != "" && !tlsExists {
-		res.addWarning("EgressMTLS policy %q references a Secret which does not exist", polKey)
+		res.addWarningf("EgressMTLS policy %q references a Secret which does not exist", polKey)
 		res.isError = true
 		return
 	}
