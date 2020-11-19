@@ -321,7 +321,6 @@ def patch_virtual_server_from_yaml(
 ) -> None:
     """
     Patch a VS based on yaml manifest
-
     :param custom_objects: CustomObjectsApi
     :param name:
     :param yaml_manifest: an absolute path to file
@@ -337,6 +336,30 @@ def patch_virtual_server_from_yaml(
             "k8s.nginx.org", "v1", namespace, "virtualservers", name, dep
         )
         print(f"VirtualServer updated with name '{dep['metadata']['name']}'")
+    except ApiException:
+        logging.exception(f"Failed with exception while patching VirtualServer: {name}")
+        raise
+
+
+def delete_and_create_vs_from_yaml(
+    custom_objects: CustomObjectsApi, name, yaml_manifest, namespace
+) -> None:
+    """
+    Perform delete and create for vs with same name based on yaml
+
+    :param custom_objects: CustomObjectsApi
+    :param name:
+    :param yaml_manifest: an absolute path to file
+    :param namespace:
+    :return:
+    """
+    try: 
+        delete_virtual_server(
+            custom_objects, name, namespace
+        )
+        create_virtual_server_from_yaml(
+            custom_objects, yaml_manifest, namespace
+        )
     except ApiException:
         logging.exception(f"Failed with exception while patching VirtualServer: {name}")
         raise
