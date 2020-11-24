@@ -135,7 +135,11 @@ func TestVariableNamerSafeNsName(t *testing.T) {
 	variableNamer := newVariableNamer(&virtualServer)
 
 	if variableNamer.safeNsName != expected {
-		t.Errorf("newVariableNamer() returned variableNamer with safeNsName=%q but expected %q", variableNamer.safeNsName, expected)
+		t.Errorf(
+			"newVariableNamer() returned variableNamer with safeNsName=%q but expected %q",
+			variableNamer.safeNsName,
+			expected,
+		)
 	}
 }
 
@@ -602,10 +606,21 @@ func TestGenerateVirtualServerConfig(t *testing.T) {
 	isResolverConfigured := false
 	tlsPemFileName := ""
 	ingressMTLSFileName := ""
-	vsc := newVirtualServerConfigurator(&baseCfgParams, isPlus, isResolverConfigured, &StaticConfigParams{TLSPassthrough: true})
+	vsc := newVirtualServerConfigurator(
+		&baseCfgParams,
+		isPlus,
+		isResolverConfigured,
+		&StaticConfigParams{TLSPassthrough: true},
+	)
 	jwtKeys := make(map[string]string)
 	egressMTLSSecrets := make(map[string]string)
-	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName, egressMTLSSecrets)
+	result, warnings := vsc.GenerateVirtualServerConfig(
+		&virtualServerEx,
+		tlsPemFileName,
+		jwtKeys,
+		ingressMTLSFileName,
+		egressMTLSSecrets,
+	)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("GenerateVirtualServerConfig returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -712,7 +727,13 @@ func TestGenerateVirtualServerConfigWithSpiffeCerts(t *testing.T) {
 	jwtKeys := make(map[string]string)
 	egressMTLSSecrets := make(map[string]string)
 	ingressMTLSFileName := ""
-	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName, egressMTLSSecrets)
+	result, warnings := vsc.GenerateVirtualServerConfig(
+		&virtualServerEx,
+		tlsPemFileName,
+		jwtKeys,
+		ingressMTLSFileName,
+		egressMTLSSecrets,
+	)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("GenerateVirtualServerConfig returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -983,7 +1004,13 @@ func TestGenerateVirtualServerConfigForVirtualServerWithSplits(t *testing.T) {
 	jwtKeys := make(map[string]string)
 	egressMTLSSecrets := make(map[string]string)
 	ingressMTLSFileName := ""
-	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName, egressMTLSSecrets)
+	result, warnings := vsc.GenerateVirtualServerConfig(
+		&virtualServerEx,
+		tlsPemFileName,
+		jwtKeys,
+		ingressMTLSFileName,
+		egressMTLSSecrets,
+	)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("GenerateVirtualServerConfig returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -1287,7 +1314,13 @@ func TestGenerateVirtualServerConfigForVirtualServerWithMatches(t *testing.T) {
 	jwtKeys := make(map[string]string)
 	egressMTLSSecrets := make(map[string]string)
 	ingressMTLSFileName := ""
-	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName, egressMTLSSecrets)
+	result, warnings := vsc.GenerateVirtualServerConfig(
+		&virtualServerEx,
+		tlsPemFileName,
+		jwtKeys,
+		ingressMTLSFileName,
+		egressMTLSSecrets,
+	)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("GenerateVirtualServerConfig returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -1761,7 +1794,13 @@ func TestGenerateVirtualServerConfigForVirtualServerWithReturns(t *testing.T) {
 	jwtKeys := make(map[string]string)
 	egressMTLSSecrets := make(map[string]string)
 	ingressMTLSFileName := ""
-	result, warnings := vsc.GenerateVirtualServerConfig(&virtualServerEx, tlsPemFileName, jwtKeys, ingressMTLSFileName, egressMTLSSecrets)
+	result, warnings := vsc.GenerateVirtualServerConfig(
+		&virtualServerEx,
+		tlsPemFileName,
+		jwtKeys,
+		ingressMTLSFileName,
+		egressMTLSSecrets,
+	)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("GenerateVirtualServerConfig returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -1772,21 +1811,22 @@ func TestGenerateVirtualServerConfigForVirtualServerWithReturns(t *testing.T) {
 }
 
 func TestGeneratePolicies(t *testing.T) {
-	var owner runtime.Object // nil is OK for the unit test
-	ownerNamespace := "default"
-	vsNamespace := "default"
-	vsName := "test"
+	ownerDetails := policyOwnerDetails{
+		owner:          nil, // nil is OK for the unit test
+		ownerNamespace: "default",
+		vsNamespace:    "default",
+		vsName:         "test",
+	}
 	ingressMTLSCertPath := "/etc/nginx/secrets/default-ingress-mtls-secret"
 	tlsPemFileName := "/etc/nginx/secrets/default-tls-secret"
 
 	tests := []struct {
-		policyRefs        []conf_v1.PolicyReference
-		policies          map[string]*conf_v1alpha1.Policy
-		jwtKeys           map[string]string
-		egressMTLSSecrets map[string]string
-		context           string
-		expected          policiesCfg
-		msg               string
+		policyRefs []conf_v1.PolicyReference
+		policies   map[string]*conf_v1alpha1.Policy
+		policyOpts policyOptions
+		context    string
+		expected   policiesCfg
+		msg        string
 	}{
 		{
 			policyRefs: []conf_v1.PolicyReference{
@@ -1804,7 +1844,10 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName:         tlsPemFileName,
+			},
 			expected: policiesCfg{
 				Allow: []string{"127.0.0.1"},
 			},
@@ -1855,7 +1898,10 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName:         tlsPemFileName,
+			},
 			expected: policiesCfg{
 				Allow: []string{"127.0.0.1", "127.0.0.2"},
 			},
@@ -1880,7 +1926,10 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName:         tlsPemFileName,
+			},
 			expected: policiesCfg{
 				LimitReqZones: []version2.LimitReqZone{
 					{
@@ -1933,7 +1982,10 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName:         tlsPemFileName,
+			},
 			expected: policiesCfg{
 				LimitReqZones: []version2.LimitReqZone{
 					{
@@ -1981,8 +2033,12 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: map[string]string{
-				"default/jwt-secret": "/etc/nginx/secrets/default-jwt-secret",
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName:         tlsPemFileName,
+				jwtKeys: map[string]string{
+					"default/jwt-secret": "/etc/nginx/secrets/default-jwt-secret",
+				},
 			},
 			expected: policiesCfg{
 				JWTAuth: &version2.JWTAuth{
@@ -2009,7 +2065,10 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName:         tlsPemFileName,
+			},
 			context: "spec",
 			expected: policiesCfg{
 				IngressMTLS: &version2.IngressMTLS{
@@ -2039,10 +2098,13 @@ func TestGeneratePolicies(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
-			egressMTLSSecrets: map[string]string{
-				"default/egress-mtls-secret":       "/etc/nginx/secrets/default-egress-mtls-secret",
-				"default/egress-trusted-ca-secret": "/etc/nginx/secrets/default-egress-trusted-ca-secret",
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: ingressMTLSCertPath,
+				tlsPemFileName:         tlsPemFileName,
+				egressMTLSSecrets: map[string]string{
+					"default/egress-mtls-secret":       "/etc/nginx/secrets/default-egress-mtls-secret",
+					"default/egress-trusted-ca-secret": "/etc/nginx/secrets/default-egress-trusted-ca-secret",
+				},
 			},
 			context: "route",
 			expected: policiesCfg{
@@ -2066,7 +2128,7 @@ func TestGeneratePolicies(t *testing.T) {
 	vsc := newVirtualServerConfigurator(&ConfigParams{}, false, false, &StaticConfigParams{})
 
 	for _, test := range tests {
-		result := vsc.generatePolicies(owner, ownerNamespace, vsNamespace, vsName, test.policyRefs, test.policies, test.jwtKeys, ingressMTLSCertPath, test.context, tlsPemFileName, test.egressMTLSSecrets)
+		result := vsc.generatePolicies(ownerDetails, test.policyRefs, test.policies, test.context, test.policyOpts)
 		if diff := cmp.Diff(test.expected, result); diff != "" {
 			t.Errorf("generatePolicies() '%v' mismatch (-want +got):\n%s", test.msg, diff)
 		}
@@ -2077,26 +2139,25 @@ func TestGeneratePolicies(t *testing.T) {
 }
 
 func TestGeneratePoliciesFails(t *testing.T) {
-	var owner runtime.Object // nil is OK for the unit test
-	ownerNamespace := "default"
-	vsNamespace := "default"
-	vsName := "test"
+	ownerDetails := policyOwnerDetails{
+		owner:          nil, // nil is OK for the unit test
+		ownerNamespace: "default",
+		vsNamespace:    "default",
+		vsName:         "test",
+	}
 
 	dryRunOverride := true
 	rejectCodeOverride := 505
 
 	tests := []struct {
-		policyRefs          []conf_v1.PolicyReference
-		policies            map[string]*conf_v1alpha1.Policy
-		jwtKeys             map[string]string
-		egressMTLSSecrets   map[string]string
-		ingressMTLSFileName string
-		tlsPemFileName      string
-		trustedCAFileName   string
-		context             string
-		expected            policiesCfg
-		expectedWarnings    Warnings
-		msg                 string
+		policyRefs        []conf_v1.PolicyReference
+		policies          map[string]*conf_v1alpha1.Policy
+		policyOpts        policyOptions
+		trustedCAFileName string
+		context           string
+		expected          policiesCfg
+		expectedWarnings  Warnings
+		msg               string
 	}{
 		{
 			policyRefs: []conf_v1.PolicyReference{
@@ -2105,8 +2166,8 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					Namespace: "default",
 				},
 			},
-			policies: map[string]*conf_v1alpha1.Policy{},
-			jwtKeys:  nil,
+			policies:   map[string]*conf_v1alpha1.Policy{},
+			policyOpts: policyOptions{},
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2144,7 +2205,7 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{},
 			expected: policiesCfg{
 				Allow: []string{"127.0.0.1"},
 				Deny:  []string{"127.0.0.2"},
@@ -2190,7 +2251,7 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{},
 			expected: policiesCfg{
 				LimitReqZones: []version2.LimitReqZone{
 					{
@@ -2245,7 +2306,7 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
+			policyOpts: policyOptions{},
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2287,9 +2348,11 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: map[string]string{
-				"default/jwt-secret":  "/etc/nginx/secrets/default-jwt-secret",
-				"default/jwt-secret2": "",
+			policyOpts: policyOptions{
+				jwtKeys: map[string]string{
+					"default/jwt-secret":  "/etc/nginx/secrets/default-jwt-secret",
+					"default/jwt-secret2": "",
+				},
 			},
 			expected: policiesCfg{
 				JWTAuth: &version2.JWTAuth{
@@ -2320,9 +2383,10 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys:        nil,
-			context:        "spec",
-			tlsPemFileName: "/etc/nginx/secrets/default-tls-secret",
+			policyOpts: policyOptions{
+				tlsPemFileName: "/etc/nginx/secrets/default-tls-secret",
+			},
+			context: "spec",
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2362,10 +2426,11 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys:             nil,
-			context:             "spec",
-			ingressMTLSFileName: "/etc/nginx/secrets/default-ingress-mtls-secret",
-			tlsPemFileName:      "/etc/nginx/secrets/default-tls-secret",
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: "/etc/nginx/secrets/default-ingress-mtls-secret",
+				tlsPemFileName:         "/etc/nginx/secrets/default-tls-secret",
+			},
+			context: "spec",
 			expected: policiesCfg{
 				IngressMTLS: &version2.IngressMTLS{
 					ClientCert:   "/etc/nginx/secrets/default-ingress-mtls-secret",
@@ -2396,10 +2461,11 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys:             nil,
-			ingressMTLSFileName: "/etc/nginx/secrets/default-ingress-mtls-secret",
-			tlsPemFileName:      "/etc/nginx/secrets/default-tls-secret",
-			context:             "route",
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: "/etc/nginx/secrets/default-ingress-mtls-secret",
+				tlsPemFileName:         "/etc/nginx/secrets/default-tls-secret",
+			},
+			context: "route",
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2428,9 +2494,10 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys:             nil,
-			ingressMTLSFileName: "/etc/nginx/secrets/default-ingress-mtls-secret",
-			context:             "route",
+			policyOpts: policyOptions{
+				ingressMTLSPemFileName: "/etc/nginx/secrets/default-ingress-mtls-secret",
+			},
+			context: "route",
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2470,11 +2537,12 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
-			context: "route",
-			egressMTLSSecrets: map[string]string{
-				"default/egress-mtls-secret": "/etc/nginx/secrets/default-egress-mtls-secret",
+			policyOpts: policyOptions{
+				egressMTLSSecrets: map[string]string{
+					"default/egress-mtls-secret": "/etc/nginx/secrets/default-egress-mtls-secret",
+				},
 			},
+			context: "route",
 			expected: policiesCfg{
 				EgressMTLS: &version2.EgressMTLS{
 					Certificate:    "/etc/nginx/secrets/default-egress-mtls-secret",
@@ -2511,11 +2579,12 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
-			context: "route",
-			egressMTLSSecrets: map[string]string{
-				"default/egress-mtls-secret": "/etc/nginx/secrets/default-egress-mtls-secret",
+			policyOpts: policyOptions{
+				egressMTLSSecrets: map[string]string{
+					"default/egress-mtls-secret": "/etc/nginx/secrets/default-egress-mtls-secret",
+				},
 			},
+			context: "route",
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2545,11 +2614,12 @@ func TestGeneratePoliciesFails(t *testing.T) {
 					},
 				},
 			},
-			jwtKeys: nil,
-			context: "route",
-			egressMTLSSecrets: map[string]string{
-				"default/egress-trusted-secret": "/etc/nginx/secrets/default-egress-trusted-secret",
+			policyOpts: policyOptions{
+				egressMTLSSecrets: map[string]string{
+					"default/egress-trusted-secret": "/etc/nginx/secrets/default-egress-trusted-secret",
+				},
 			},
+			context: "route",
 			expected: policiesCfg{
 				ErrorReturn: &version2.Return{
 					Code: 500,
@@ -2567,12 +2637,17 @@ func TestGeneratePoliciesFails(t *testing.T) {
 	for _, test := range tests {
 		vsc := newVirtualServerConfigurator(&ConfigParams{}, false, false, &StaticConfigParams{})
 
-		result := vsc.generatePolicies(owner, ownerNamespace, vsNamespace, vsName, test.policyRefs, test.policies, test.jwtKeys, test.ingressMTLSFileName, test.context, test.tlsPemFileName, test.egressMTLSSecrets)
+		result := vsc.generatePolicies(ownerDetails, test.policyRefs, test.policies, test.context, test.policyOpts)
 		if diff := cmp.Diff(test.expected, result); diff != "" {
 			t.Errorf("generatePolicies() '%v' mismatch (-want +got):\n%s", test.msg, diff)
 		}
 		if !reflect.DeepEqual(vsc.warnings, test.expectedWarnings) {
-			t.Errorf("generatePolicies() returned warnings of \n%v but expected \n%v for the case of %s", vsc.warnings, test.expectedWarnings, test.msg)
+			t.Errorf(
+				"generatePolicies() returned warnings of \n%v but expected \n%v for the case of %s",
+				vsc.warnings,
+				test.expectedWarnings,
+				test.msg,
+			)
 		}
 	}
 }
@@ -2764,7 +2839,12 @@ func TestGenerateUpstreamWithKeepalive(t *testing.T) {
 		vsc := newVirtualServerConfigurator(test.cfgParams, false, false, &StaticConfigParams{})
 		result := vsc.generateUpstream(nil, name, test.upstream, false, endpoints)
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generateUpstream() returned %v but expected %v for the case of %v", result, test.expected, test.msg)
+			t.Errorf(
+				"generateUpstream() returned %v but expected %v for the case of %v",
+				result,
+				test.expected,
+				test.msg,
+			)
 		}
 
 		if len(vsc.warnings) != 0 {
@@ -2839,7 +2919,14 @@ func TestGenerateProxyPass(t *testing.T) {
 	for _, test := range tests {
 		result := generateProxyPass(test.tlsEnabled, test.upstreamName, test.internal, nil)
 		if result != test.expected {
-			t.Errorf("generateProxyPass(%v, %v, %v) returned %v but expected %v", test.tlsEnabled, test.upstreamName, test.internal, result, test.expected)
+			t.Errorf(
+				"generateProxyPass(%v, %v, %v) returned %v but expected %v",
+				test.tlsEnabled,
+				test.upstreamName,
+				test.internal,
+				result,
+				test.expected,
+			)
 		}
 	}
 }
@@ -2866,7 +2953,12 @@ func TestGenerateProxyPassProtocol(t *testing.T) {
 	for _, test := range tests {
 		result := generateProxyPassProtocol(test.upstream.TLS.Enable)
 		if result != test.expected {
-			t.Errorf("generateProxyPassProtocol(%v) returned %v but expected %v", test.upstream.TLS.Enable, result, test.expected)
+			t.Errorf(
+				"generateProxyPassProtocol(%v) returned %v but expected %v",
+				test.upstream.TLS.Enable,
+				result,
+				test.expected,
+			)
 		}
 	}
 }
@@ -2991,7 +3083,19 @@ func TestGenerateLocationForProxying(t *testing.T) {
 		ProxyPassRequestHeaders:  true,
 	}
 
-	result := generateLocationForProxying(path, upstreamName, conf_v1.Upstream{}, &cfgParams, nil, false, 0, "", nil, "", vsLocSnippets)
+	result := generateLocationForProxying(
+		path,
+		upstreamName,
+		conf_v1.Upstream{},
+		&cfgParams,
+		nil,
+		false,
+		0,
+		"",
+		nil,
+		"",
+		vsLocSnippets,
+	)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("generateLocationForProxying() returned \n%v but expected \n%v", result, expected)
 	}
@@ -3231,7 +3335,12 @@ func TestGenerateSSLConfig(t *testing.T) {
 	for _, test := range tests {
 		result := generateSSLConfig(test.inputTLS, test.inputTLSPemFileName, test.inputCfgParams)
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generateSSLConfig() returned %v but expected %v for the case of %s", result, test.expected, test.msg)
+			t.Errorf(
+				"generateSSLConfig() returned %v but expected %v for the case of %s",
+				result,
+				test.expected,
+				test.msg,
+			)
 		}
 	}
 }
@@ -3295,7 +3404,12 @@ func TestGenerateRedirectConfig(t *testing.T) {
 	for _, test := range tests {
 		result := generateTLSRedirectConfig(test.inputTLS)
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generateTLSRedirectConfig() returned %v but expected %v for the case of %s", result, test.expected, test.msg)
+			t.Errorf(
+				"generateTLSRedirectConfig() returned %v but expected %v for the case of %s",
+				result,
+				test.expected,
+				test.msg,
+			)
 		}
 	}
 }
@@ -3648,9 +3762,12 @@ func TestGenerateSplits(t *testing.T) {
 	}
 	expectedLocations := []version2.Location{
 		{
-			Path:                     "/internal_location_splits_1_split_0",
-			ProxyPass:                "http://vs_default_cafe_coffee-v1",
-			Rewrites:                 []string{"^ $request_uri", fmt.Sprintf(`"^%v(.*)$" "/rewrite$1" break`, originalPath)},
+			Path:      "/internal_location_splits_1_split_0",
+			ProxyPass: "http://vs_default_cafe_coffee-v1",
+			Rewrites: []string{
+				"^ $request_uri",
+				fmt.Sprintf(`"^%v(.*)$" "/rewrite$1" break`, originalPath),
+			},
 			ProxyNextUpstream:        "error timeout",
 			ProxyNextUpstreamTimeout: "0s",
 			ProxyNextUpstreamTries:   0,
@@ -3721,8 +3838,20 @@ func TestGenerateSplits(t *testing.T) {
 	}
 	returnLocationIndex := 1
 
-	resultSplitClient, resultLocations, resultReturnLocations := generateSplits(splits, upstreamNamer, crUpstreams,
-		variableNamer, scIndex, &cfgParams, errorPages, 0, originalPath, locSnippet, enableSnippets, returnLocationIndex)
+	resultSplitClient, resultLocations, resultReturnLocations := generateSplits(
+		splits,
+		upstreamNamer,
+		crUpstreams,
+		variableNamer,
+		scIndex,
+		&cfgParams,
+		errorPages,
+		0,
+		originalPath,
+		locSnippet,
+		enableSnippets,
+		returnLocationIndex,
+	)
 	if !reflect.DeepEqual(resultSplitClient, expectedSplitClient) {
 		t.Errorf("generateSplits() returned \n%+v but expected \n%+v", resultSplitClient, expectedSplitClient)
 	}
@@ -4191,7 +4320,20 @@ func TestGenerateMatchesConfig(t *testing.T) {
 		"vs_default_cafe_tea":       {Service: "tea"},
 	}
 
-	result := generateMatchesConfig(route, upstreamNamer, crUpstreams, variableNamer, index, scIndex, &cfgParams, errorPages, 2, locSnippets, enableSnippets, 0)
+	result := generateMatchesConfig(
+		route,
+		upstreamNamer,
+		crUpstreams,
+		variableNamer,
+		index,
+		scIndex,
+		&cfgParams,
+		errorPages,
+		2,
+		locSnippets,
+		enableSnippets,
+		0,
+	)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("generateMatchesConfig() returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -4547,7 +4689,20 @@ func TestGenerateMatchesConfigWithMultipleSplits(t *testing.T) {
 		"vs_default_cafe_coffee-v1": {Service: "coffee-v1"},
 		"vs_default_cafe_coffee-v2": {Service: "coffee-v2"},
 	}
-	result := generateMatchesConfig(route, upstreamNamer, crUpstreams, variableNamer, index, scIndex, &cfgParams, errorPages, 0, locSnippets, enableSnippets, 0)
+	result := generateMatchesConfig(
+		route,
+		upstreamNamer,
+		crUpstreams,
+		variableNamer,
+		index,
+		scIndex,
+		&cfgParams,
+		errorPages,
+		0,
+		locSnippets,
+		enableSnippets,
+		0,
+	)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("generateMatchesConfig() returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -4609,10 +4764,20 @@ func TestGenerateValueForMatchesRouteMap(t *testing.T) {
 	for _, test := range tests {
 		resultValue, resultIsNegative := generateValueForMatchesRouteMap(test.input)
 		if resultValue != test.expectedValue {
-			t.Errorf("generateValueForMatchesRouteMap(%q) returned %q but expected %q as the value", test.input, resultValue, test.expectedValue)
+			t.Errorf(
+				"generateValueForMatchesRouteMap(%q) returned %q but expected %q as the value",
+				test.input,
+				resultValue,
+				test.expectedValue,
+			)
 		}
 		if resultIsNegative != test.expectedIsNegative {
-			t.Errorf("generateValueForMatchesRouteMap(%q) returned %v but expected %v as the isNegative", test.input, resultIsNegative, test.expectedIsNegative)
+			t.Errorf(
+				"generateValueForMatchesRouteMap(%q) returned %v but expected %v as the isNegative",
+				test.input,
+				resultIsNegative,
+				test.expectedIsNegative,
+			)
 		}
 	}
 }
@@ -4656,7 +4821,13 @@ func TestGenerateParametersForMatchesRouteMap(t *testing.T) {
 	for _, test := range tests {
 		result := generateParametersForMatchesRouteMap(test.inputMatchedValue, test.inputSuccessfulResult)
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generateParametersForMatchesRouteMap(%q, %q) returned %v but expected %v", test.inputMatchedValue, test.inputSuccessfulResult, result, test.expected)
+			t.Errorf(
+				"generateParametersForMatchesRouteMap(%q, %q) returned %v but expected %v",
+				test.inputMatchedValue,
+				test.inputSuccessfulResult,
+				result,
+				test.expected,
+			)
 		}
 	}
 }
@@ -4695,7 +4866,12 @@ func TestGetNameForSourceForMatchesRouteMapFromCondition(t *testing.T) {
 	for _, test := range tests {
 		result := getNameForSourceForMatchesRouteMapFromCondition(test.input)
 		if result != test.expected {
-			t.Errorf("getNameForSourceForMatchesRouteMapFromCondition() returned %q but expected %q for input %v", result, test.expected, test.input)
+			t.Errorf(
+				"getNameForSourceForMatchesRouteMapFromCondition() returned %q but expected %q for input %v",
+				result,
+				test.expected,
+				test.input,
+			)
 		}
 	}
 }
@@ -4761,7 +4937,12 @@ func TestUpstreamHasKeepalive(t *testing.T) {
 	for _, test := range tests {
 		result := upstreamHasKeepalive(test.upstream, test.cfgParams)
 		if result != test.expected {
-			t.Errorf("upstreamHasKeepalive() returned %v, but expected %v for the case of %v", result, test.expected, test.msg)
+			t.Errorf(
+				"upstreamHasKeepalive() returned %v, but expected %v for the case of %v",
+				result,
+				test.expected,
+				test.msg,
+			)
 		}
 	}
 }
@@ -4914,7 +5095,12 @@ func TestGenerateHealthCheck(t *testing.T) {
 	for _, test := range tests {
 		result := generateHealthCheck(test.upstream, test.upstreamName, baseCfgParams)
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generateHealthCheck returned \n%v but expected \n%v \n for case: %v", result, test.expected, test.msg)
+			t.Errorf(
+				"generateHealthCheck returned \n%v but expected \n%v \n for case: %v",
+				result,
+				test.expected,
+				test.msg,
+			)
 		}
 	}
 }
@@ -5087,16 +5273,31 @@ func TestGenerateEndpointsForUpstream(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		vsc := newVirtualServerConfigurator(&ConfigParams{}, test.isPlus, test.isResolverConfigured, &StaticConfigParams{})
+		vsc := newVirtualServerConfigurator(
+			&ConfigParams{},
+			test.isPlus,
+			test.isResolverConfigured,
+			&StaticConfigParams{},
+		)
 		result := vsc.generateEndpointsForUpstream(test.vsEx.VirtualServer, namespace, test.upstream, test.vsEx)
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generateEndpointsForUpstream(isPlus=%v, isResolverConfigured=%v) returned %v, but expected %v for case: %v",
-				test.isPlus, test.isResolverConfigured, result, test.expected, test.msg)
+			t.Errorf(
+				"generateEndpointsForUpstream(isPlus=%v, isResolverConfigured=%v) returned %v, but expected %v for case: %v",
+				test.isPlus,
+				test.isResolverConfigured,
+				result,
+				test.expected,
+				test.msg,
+			)
 		}
 
 		if len(vsc.warnings) == 0 && test.warningsExpected {
-			t.Errorf("generateEndpointsForUpstream(isPlus=%v, isResolverConfigured=%v) didn't return any warnings for %v but warnings expected",
-				test.isPlus, test.isResolverConfigured, test.upstream)
+			t.Errorf(
+				"generateEndpointsForUpstream(isPlus=%v, isResolverConfigured=%v) didn't return any warnings for %v but warnings expected",
+				test.isPlus,
+				test.isResolverConfigured,
+				test.upstream,
+			)
 		}
 
 		if len(vsc.warnings) != 0 && !test.warningsExpected {
@@ -5126,7 +5327,12 @@ func TestGenerateSlowStartForPlusWithInCompatibleLBMethods(t *testing.T) {
 		result := vsc.generateSlowStartForPlus(&conf_v1.VirtualServer{}, upstream, lbMethod)
 
 		if !reflect.DeepEqual(result, expected) {
-			t.Errorf("generateSlowStartForPlus returned %v, but expected %v for lbMethod %v", result, expected, lbMethod)
+			t.Errorf(
+				"generateSlowStartForPlus returned %v, but expected %v for lbMethod %v",
+				result,
+				expected,
+				lbMethod,
+			)
 		}
 
 		if len(vsc.warnings) == 0 {
@@ -5222,9 +5428,13 @@ func TestGenerateUpstreamWithQueue(t *testing.T) {
 			msg: "upstream queue with size and timeout",
 		},
 		{
-			name:     "test-upstream-queue-with-default-timeout",
-			upstream: conf_v1.Upstream{Service: serviceName, Port: 80, Queue: &conf_v1.UpstreamQueue{Size: 10, Timeout: ""}},
-			isPlus:   true,
+			name: "test-upstream-queue-with-default-timeout",
+			upstream: conf_v1.Upstream{
+				Service: serviceName,
+				Port:    80,
+				Queue:   &conf_v1.UpstreamQueue{Size: 10, Timeout: ""},
+			},
+			isPlus: true,
 			expected: version2.Upstream{
 				UpstreamLabels: version2.UpstreamLabels{
 					Service: "test-queue",
@@ -5255,7 +5465,12 @@ func TestGenerateUpstreamWithQueue(t *testing.T) {
 		vsc := newVirtualServerConfigurator(&ConfigParams{}, test.isPlus, false, &StaticConfigParams{})
 		result := vsc.generateUpstream(nil, test.name, test.upstream, false, []string{})
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generateUpstream() returned %v but expected %v for the case of %v", result, test.expected, test.msg)
+			t.Errorf(
+				"generateUpstream() returned %v but expected %v for the case of %v",
+				result,
+				test.expected,
+				test.msg,
+			)
 		}
 	}
 
@@ -5287,7 +5502,12 @@ func TestGenerateQueueForPlus(t *testing.T) {
 	for _, test := range tests {
 		result := generateQueueForPlus(test.upstreamQueue, "60s")
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generateQueueForPlus() returned %v but expected %v for the case of %v", result, test.expected, test.msg)
+			t.Errorf(
+				"generateQueueForPlus() returned %v but expected %v for the case of %v",
+				result,
+				test.expected,
+				test.msg,
+			)
 		}
 	}
 
@@ -5318,7 +5538,12 @@ func TestGenerateSessionCookie(t *testing.T) {
 	for _, test := range tests {
 		result := generateSessionCookie(test.sc)
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generateSessionCookie() returned %v, but expected %v for the case of: %v", result, test.expected, test.msg)
+			t.Errorf(
+				"generateSessionCookie() returned %v, but expected %v for the case of: %v",
+				result,
+				test.expected,
+				test.msg,
+			)
 		}
 	}
 }
@@ -5380,7 +5605,13 @@ func TestGenerateErrorPageName(t *testing.T) {
 	for _, test := range tests {
 		result := generateErrorPageName(test.routeIndex, test.index)
 		if result != test.expected {
-			t.Errorf("generateErrorPageName(%v, %v) returned %v but expected %v", test.routeIndex, test.index, result, test.expected)
+			t.Errorf(
+				"generateErrorPageName(%v, %v) returned %v but expected %v",
+				test.routeIndex,
+				test.index,
+				result,
+				test.expected,
+			)
 		}
 	}
 }
@@ -5464,7 +5695,13 @@ func TestGenerateErrorPages(t *testing.T) {
 	for i, test := range tests {
 		result := generateErrorPages(i, test.errorPages)
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generateErrorPages(%v, %v) returned %v but expected %v", test.upstreamName, test.errorPages, result, test.expected)
+			t.Errorf(
+				"generateErrorPages(%v, %v) returned %v but expected %v",
+				test.upstreamName,
+				test.errorPages,
+				result,
+				test.expected,
+			)
 		}
 	}
 }
@@ -5535,7 +5772,13 @@ func TestGenerateErrorPageLocations(t *testing.T) {
 	for i, test := range tests {
 		result := generateErrorPageLocations(i, test.errorPages)
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("generateErrorPageLocations(%v, %v) returned %v but expected %v", test.upstreamName, test.errorPages, result, test.expected)
+			t.Errorf(
+				"generateErrorPageLocations(%v, %v) returned %v but expected %v",
+				test.upstreamName,
+				test.errorPages,
+				result,
+				test.expected,
+			)
 		}
 	}
 }
@@ -5594,7 +5837,13 @@ func TestIsTLSEnabled(t *testing.T) {
 	for _, test := range tests {
 		result := isTLSEnabled(test.upstream, test.spiffeCert)
 		if result != test.expected {
-			t.Errorf("isTLSEnabled(%v, %v) returned %v but expected %v", test.upstream, test.spiffeCert, result, test.expected)
+			t.Errorf(
+				"isTLSEnabled(%v, %v) returned %v but expected %v",
+				test.upstream,
+				test.spiffeCert,
+				result,
+				test.expected,
+			)
 		}
 	}
 
@@ -5804,7 +6053,12 @@ func TestGenerateProxyPassRequestHeaders(t *testing.T) {
 	for _, test := range tests {
 		result := generateProxyPassRequestHeaders(test.proxy)
 		if result != test.expected {
-			t.Errorf("generateProxyPassRequestHeaders(%v) returned %v but expected %v", test.proxy, result, test.expected)
+			t.Errorf(
+				"generateProxyPassRequestHeaders(%v) returned %v but expected %v",
+				test.proxy,
+				result,
+				test.expected,
+			)
 		}
 	}
 }
