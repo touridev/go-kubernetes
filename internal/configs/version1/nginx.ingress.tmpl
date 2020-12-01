@@ -1,5 +1,4 @@
 # configuration for {{.Ingress.Namespace}}/{{.Ingress.Name}}
-
 {{range $upstream := .Upstreams}}
 upstream {{$upstream.Name}} {
 	{{if ne $upstream.UpstreamZoneSize "0"}}zone {{$upstream.Name}} {{$upstream.UpstreamZoneSize}};{{end}}
@@ -43,6 +42,10 @@ server {
 
 	server_name {{$server.Name}};
 
+	set $resource_type "ingress";
+	set $resource_name "{{$.Ingress.Name}}";
+	set $resource_namespace "{{$.Ingress.Namespace}}";
+
 	{{range $proxyHideHeader := $server.ProxyHideHeaders}}
 	proxy_hide_header {{$proxyHideHeader}};{{end}}
 	{{range $proxyPassHeader := $server.ProxyPassHeaders}}
@@ -85,8 +88,11 @@ server {
 
 	{{range $location := $server.Locations}}
 	location {{$location.Path}} {
+		set $service "{{$location.ServiceName}}"; 
 		{{with $location.MinionIngress}}
 		# location for minion {{$location.MinionIngress.Namespace}}/{{$location.MinionIngress.Name}}
+		set $resource_name "{{$location.MinionIngress.Name}}";
+		set $resource_namespace "{{$location.MinionIngress.Namespace}}";
 		{{end}}
 		{{if $location.GRPC}}
 		{{if not $server.GRPCOnly}}

@@ -136,6 +136,7 @@ type Location struct {
 	ProxyMaxTempFileSize string
 	ProxySSLName         string
 	JWTAuth              *JWTAuth
+	ServiceName          string
 
 	MinionIngress *Ingress
 }

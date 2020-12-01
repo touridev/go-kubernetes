@@ -44,6 +44,11 @@ server {
 
     server_name {{ $s.ServerName }};
 
+    set $resource_type "virtualserver";
+    set $resource_name "{{$s.ServerName}}";
+    set $resource_namespace "{{$s.Namespace}}";
+
+
     {{ with $ssl := $s.SSL }}
         {{ if $s.TLSPassthrough }}
     listen unix:/var/lib/nginx/passthrough-https.sock{{ if $ssl.HTTP2 }} http2{{ end }} proxy_protocol;
@@ -171,6 +176,7 @@ server {
 
     {{ range $l := $s.Locations }}
     location {{ $l.Path }} {
+        set $service "{{$l.ServiceName}}";
         {{ if $l.Internal }}
         internal;
         {{ end }}

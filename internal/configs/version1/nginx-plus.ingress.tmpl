@@ -60,6 +60,10 @@ server {
 
 	status_zone {{$server.StatusZone}};
 
+	set $resource_type "ingress";
+	set $resource_name "{{$.Ingress.Name}}";
+	set $resource_namespace "{{$.Ingress.Namespace}}";
+
 	{{- if $server.AppProtectEnable}}
 	app_protect_enable {{$server.AppProtectEnable}};
 	{{if $server.AppProtectPolicy}}app_protect_policy_file {{$server.AppProtectPolicy}};{{end}}
@@ -143,8 +147,11 @@ server {
 
 	{{range $location := $server.Locations}}
 	location {{$location.Path}} {
+		set $service "{{$location.ServiceName}}";
 		{{with $location.MinionIngress}}
 		# location for minion {{$location.MinionIngress.Namespace}}/{{$location.MinionIngress.Name}}
+		set $resource_name "{{$location.MinionIngress.Name}}";
+		set $resource_namespace "{{$location.MinionIngress.Namespace}}";
 		{{end}}
 		{{if $location.GRPC}}
 		{{if not $server.GRPCOnly}}
