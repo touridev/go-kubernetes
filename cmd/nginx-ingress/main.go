@@ -18,6 +18,7 @@ import (
 	"github.com/nginxinc/kubernetes-ingress/internal/configs/version1"
 	"github.com/nginxinc/kubernetes-ingress/internal/configs/version2"
 	"github.com/nginxinc/kubernetes-ingress/internal/k8s"
+	"github.com/nginxinc/kubernetes-ingress/internal/k8s/secrets"
 	"github.com/nginxinc/kubernetes-ingress/internal/metrics"
 	"github.com/nginxinc/kubernetes-ingress/internal/metrics/collectors"
 	"github.com/nginxinc/kubernetes-ingress/internal/nginx"
@@ -757,7 +758,7 @@ func getAndValidateSecret(kubeClient *kubernetes.Clientset, secretNsName string)
 	if err != nil {
 		return nil, fmt.Errorf("could not get %v: %v", secretNsName, err)
 	}
-	err = k8s.ValidateTLSSecret(secret)
+	err = secrets.ValidateTLSSecret(secret)
 	if err != nil {
 		return nil, fmt.Errorf("%v is invalid: %v", secretNsName, err)
 	}

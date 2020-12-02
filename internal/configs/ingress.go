@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/nginxinc/kubernetes-ingress/internal/k8s/secrets"
 	api_v1 "k8s.io/api/core/v1"
 	networking "k8s.io/api/networking/v1beta1"
 
@@ -30,7 +31,7 @@ type IngressEx struct {
 	AppProtectPolicy  *unstructured.Unstructured
 	AppProtectLogConf *unstructured.Unstructured
 	AppProtectLogDst  string
-	SecretRefs        map[string]*SecretReference
+	SecretRefs        map[string]*secrets.SecretReference
 }
 
 // JWTKey represents a secret that holds JSON Web Key.
@@ -248,12 +249,12 @@ func generateNginxCfg(ingEx *IngressEx, apResources map[string]string, isMinion 
 	}
 }
 
-func generateJWTConfig(secretRefs map[string]*SecretReference, cfgParams *ConfigParams, redirectLocationName string) (*version1.JWTAuth, *version1.JWTRedirectLocation) {
+func generateJWTConfig(secretRefs map[string]*secrets.SecretReference, cfgParams *ConfigParams, redirectLocationName string) (*version1.JWTAuth, *version1.JWTRedirectLocation) {
 	secret := secretRefs[cfgParams.JWTKey]
 
 	if secret.Error != nil {
 		// TO-DO: add a warning
-	} else if secret.Type != SecretTypeJWK {
+	} else if secret.Type != secrets.SecretTypeJWK {
 		// TO-DO: add a warning
 	}
 
@@ -278,7 +279,7 @@ func generateJWTConfig(secretRefs map[string]*SecretReference, cfgParams *Config
 	return jwtAuth, redirectLocation
 }
 
-func addSSLConfig(server *version1.Server, host string, ingressTLS []networking.IngressTLS, secretRefs map[string]*SecretReference, isWildcardEnabled bool) {
+func addSSLConfig(server *version1.Server, host string, ingressTLS []networking.IngressTLS, secretRefs map[string]*secrets.SecretReference, isWildcardEnabled bool) {
 	var tlsEnabled bool
 	var tlsSecret string
 

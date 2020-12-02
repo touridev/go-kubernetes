@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/nginxinc/kubernetes-ingress/internal/configs/version2"
+	"github.com/nginxinc/kubernetes-ingress/internal/k8s/secrets"
 	"github.com/nginxinc/kubernetes-ingress/internal/nginx"
 	conf_v1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1"
 	conf_v1alpha1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1alpha1"
@@ -1810,7 +1811,7 @@ func TestGeneratePolicies(t *testing.T) {
 	ingressMTLSCertPath := "/etc/nginx/secrets/default-ingress-mtls-secret"
 	policyOpts := policyOptions{
 		tls: true,
-		secretRefs: map[string]*SecretReference{
+		secretRefs: map[string]*secrets.SecretReference{
 			"default/ingress-mtls-secret": {
 				Type: "nginx.org/ca",
 				Path: ingressMTLSCertPath,
@@ -1824,7 +1825,7 @@ func TestGeneratePolicies(t *testing.T) {
 				Path: "/etc/nginx/secrets/default-egress-trusted-ca-secret",
 			},
 			"default/jwt-secret": {
-				Type: SecretTypeJWK,
+				Type: secrets.SecretTypeJWK,
 				Path: "/etc/nginx/secrets/default-jwt-secret",
 			},
 		},
@@ -2294,9 +2295,9 @@ func TestGeneratePoliciesFails(t *testing.T) {
 				},
 			},
 			policyOpts: policyOptions{
-				secretRefs: map[string]*SecretReference{
+				secretRefs: map[string]*secrets.SecretReference{
 					"default/jwt-secret": {
-						Type:  SecretTypeJWK,
+						Type:  secrets.SecretTypeJWK,
 						Error: errors.New("secret is invalid"),
 					},
 				},
@@ -2351,13 +2352,13 @@ func TestGeneratePoliciesFails(t *testing.T) {
 				},
 			},
 			policyOpts: policyOptions{
-				secretRefs: map[string]*SecretReference{
+				secretRefs: map[string]*secrets.SecretReference{
 					"default/jwt-secret": {
-						Type: SecretTypeJWK,
+						Type: secrets.SecretTypeJWK,
 						Path: "/etc/nginx/secrets/default-jwt-secret",
 					},
 					"default/jwt-secret2": {
-						Type: SecretTypeJWK,
+						Type: secrets.SecretTypeJWK,
 						Path: "/etc/nginx/secrets/default-jwt-secret2",
 					},
 				},
@@ -2397,7 +2398,7 @@ func TestGeneratePoliciesFails(t *testing.T) {
 			},
 			policyOpts: policyOptions{
 				tls: true,
-				secretRefs: map[string]*SecretReference{
+				secretRefs: map[string]*secrets.SecretReference{
 					"default/ingress-mtls-secret": {
 						Error: errors.New("secret is invalid"),
 					},
@@ -2449,9 +2450,9 @@ func TestGeneratePoliciesFails(t *testing.T) {
 			},
 			policyOpts: policyOptions{
 				tls: true,
-				secretRefs: map[string]*SecretReference{
+				secretRefs: map[string]*secrets.SecretReference{
 					"default/ingress-mtls-secret": {
-						Type: SecretTypeCA,
+						Type: secrets.SecretTypeCA,
 						Path: "/etc/nginx/secrets/default-ingress-mtls-secret",
 					},
 				},
@@ -2493,9 +2494,9 @@ func TestGeneratePoliciesFails(t *testing.T) {
 			},
 			policyOpts: policyOptions{
 				tls: true,
-				secretRefs: map[string]*SecretReference{
+				secretRefs: map[string]*secrets.SecretReference{
 					"default/ingress-mtls-secret": {
-						Type: SecretTypeCA,
+						Type: secrets.SecretTypeCA,
 						Path: "/etc/nginx/secrets/default-ingress-mtls-secret",
 					},
 				},
@@ -2535,9 +2536,9 @@ func TestGeneratePoliciesFails(t *testing.T) {
 			},
 			policyOpts: policyOptions{
 				tls: false,
-				secretRefs: map[string]*SecretReference{
+				secretRefs: map[string]*secrets.SecretReference{
 					"default/ingress-mtls-secret": {
-						Type: SecretTypeCA,
+						Type: secrets.SecretTypeCA,
 						Path: "/etc/nginx/secrets/default-ingress-mtls-secret",
 					},
 				},
@@ -2591,7 +2592,7 @@ func TestGeneratePoliciesFails(t *testing.T) {
 				},
 			},
 			policyOpts: policyOptions{
-				secretRefs: map[string]*SecretReference{
+				secretRefs: map[string]*secrets.SecretReference{
 					"default/egress-mtls-secret": {
 						Type: api_v1.SecretTypeTLS,
 						Path: "/etc/nginx/secrets/default-egress-mtls-secret",
@@ -2640,9 +2641,9 @@ func TestGeneratePoliciesFails(t *testing.T) {
 				},
 			},
 			policyOpts: policyOptions{
-				secretRefs: map[string]*SecretReference{
+				secretRefs: map[string]*secrets.SecretReference{
 					"default/egress-trusted-secret": {
-						Type:  SecretTypeCA,
+						Type:  secrets.SecretTypeCA,
 						Error: errors.New("secret is invalid"),
 					},
 				},
@@ -2682,7 +2683,7 @@ func TestGeneratePoliciesFails(t *testing.T) {
 				},
 			},
 			policyOpts: policyOptions{
-				secretRefs: map[string]*SecretReference{
+				secretRefs: map[string]*secrets.SecretReference{
 					"default/egress-mtls-secret": {
 						Type:  api_v1.SecretTypeTLS,
 						Error: errors.New("secret is invalid"),
@@ -3326,14 +3327,14 @@ func TestGenerateLocationForRedirect(t *testing.T) {
 func TestGenerateSSLConfig(t *testing.T) {
 	tests := []struct {
 		inputTLS        *conf_v1.TLS
-		inputSecretRefs map[string]*SecretReference
+		inputSecretRefs map[string]*secrets.SecretReference
 		inputCfgParams  *ConfigParams
 		expected        *version2.SSL
 		msg             string
 	}{
 		{
 			inputTLS:        nil,
-			inputSecretRefs: map[string]*SecretReference{},
+			inputSecretRefs: map[string]*secrets.SecretReference{},
 			inputCfgParams:  &ConfigParams{},
 			expected:        nil,
 			msg:             "no TLS field",
@@ -3342,7 +3343,7 @@ func TestGenerateSSLConfig(t *testing.T) {
 			inputTLS: &conf_v1.TLS{
 				Secret: "",
 			},
-			inputSecretRefs: map[string]*SecretReference{},
+			inputSecretRefs: map[string]*secrets.SecretReference{},
 			inputCfgParams:  &ConfigParams{},
 			expected:        nil,
 			msg:             "TLS field with empty secret",
@@ -3352,7 +3353,7 @@ func TestGenerateSSLConfig(t *testing.T) {
 				Secret: "secret",
 			},
 			inputCfgParams: &ConfigParams{},
-			inputSecretRefs: map[string]*SecretReference{
+			inputSecretRefs: map[string]*secrets.SecretReference{
 				"default/secret": {
 					Error: errors.New("secret doesn't exist"),
 				},
@@ -3369,7 +3370,7 @@ func TestGenerateSSLConfig(t *testing.T) {
 			inputTLS: &conf_v1.TLS{
 				Secret: "secret",
 			},
-			inputSecretRefs: map[string]*SecretReference{
+			inputSecretRefs: map[string]*secrets.SecretReference{
 				"default/secret": {
 					Type: api_v1.SecretTypeTLS,
 					Path: "secret.pem",

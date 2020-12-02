@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/nginxinc/kubernetes-ingress/internal/k8s/secrets"
 	"github.com/nginxinc/kubernetes-ingress/internal/nginx"
 	conf_v1alpha1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1alpha1"
 	api_v1 "k8s.io/api/core/v1"
@@ -59,7 +60,7 @@ type VirtualServerEx struct {
 	ExternalNameSvcs    map[string]bool
 	Policies            map[string]*conf_v1alpha1.Policy
 	PodsByIP            map[string]PodInfo
-	SecretRefs          map[string]*SecretReference
+	SecretRefs          map[string]*secrets.SecretReference
 }
 
 func (vsx *VirtualServerEx) String() string {
@@ -612,7 +613,7 @@ type policyOwnerDetails struct {
 
 type policyOptions struct {
 	tls        bool
-	secretRefs map[string]*SecretReference
+	secretRefs map[string]*secrets.SecretReference
 }
 
 type validationResults struct {
@@ -673,7 +674,7 @@ func (p *policiesCfg) addJWTAuthConfig(
 	jwtAuth *conf_v1alpha1.JWTAuth,
 	polKey string,
 	polNamespace string,
-	secretRefs map[string]*SecretReference,
+	secretRefs map[string]*secrets.SecretReference,
 ) *validationResults {
 	res := newValidationResults()
 	if p.JWTAuth != nil {
@@ -687,7 +688,7 @@ func (p *policiesCfg) addJWTAuthConfig(
 		res.addWarningf("JWT policy %q references an invalid Secret: %v", polKey, secret.Error)
 		res.isError = true
 		return res
-	} else if secret.Type != SecretTypeJWK {
+	} else if secret.Type != secrets.SecretTypeJWK {
 		res.addWarningf("JWT policy %q references a Secret of an incorrect type %q", polKey, secret.Type)
 		res.isError = true
 		return res
@@ -707,7 +708,7 @@ func (p *policiesCfg) addIngressMTLSConfig(
 	polNamespace string,
 	context string,
 	tls bool,
-	secretRefs map[string]*SecretReference,
+	secretRefs map[string]*secrets.SecretReference,
 ) *validationResults {
 	res := newValidationResults()
 	if !tls {
@@ -731,7 +732,7 @@ func (p *policiesCfg) addIngressMTLSConfig(
 		res.addWarningf("IngressMTLS policy %q references an invalid Secret: %v", polKey, secret.Error)
 		res.isError = true
 		return res
-	} else if secret.Type != SecretTypeCA {
+	} else if secret.Type != secrets.SecretTypeCA {
 		res.addWarningf("IngressMTLS policy %q references a Secret of an incorrect type %q", polKey, secret.Type)
 		res.isError = true
 		return res
@@ -758,7 +759,7 @@ func (p *policiesCfg) addEgressMTLSConfig(
 	egressMTLS *conf_v1alpha1.EgressMTLS,
 	polKey string,
 	polNamespace string,
-	secretRefs map[string]*SecretReference,
+	secretRefs map[string]*secrets.SecretReference,
 ) *validationResults {
 	res := newValidationResults()
 	if p.EgressMTLS != nil {
@@ -798,7 +799,7 @@ func (p *policiesCfg) addEgressMTLSConfig(
 			res.addWarningf("EgressMTLS policy %q references an invalid Secret: %v", polKey, trustedSecret.Error)
 			res.isError = true
 			return res
-		} else if trustedSecret.Type != SecretTypeCA {
+		} else if trustedSecret.Type != secrets.SecretTypeCA {
 			res.addWarningf("EgressMTLS policy %q references a Secret of an incorrect type %q", polKey, trustedSecret.Type)
 			res.isError = true
 			return res
@@ -1780,7 +1781,7 @@ func getNameForSourceForMatchesRouteMapFromCondition(condition conf_v1.Condition
 	return condition.Variable
 }
 
-func generateSSLConfig(tls *conf_v1.TLS, namespace string, secretRefs map[string]*SecretReference, cfgParams *ConfigParams) *version2.SSL {
+func generateSSLConfig(tls *conf_v1.TLS, namespace string, secretRefs map[string]*secrets.SecretReference, cfgParams *ConfigParams) *version2.SSL {
 	if tls == nil {
 		return nil
 	}

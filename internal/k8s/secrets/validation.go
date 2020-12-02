@@ -1,4 +1,4 @@
-package k8s
+package secrets
 
 import (
 	"crypto/tls"
@@ -6,7 +6,7 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	v1 "k8s.io/api/core/v1"
+	api_v1 "k8s.io/api/core/v1"
 )
 
 // JWTKeyKey is the key of the data field of a Secret where the JWK must be stored.
@@ -16,20 +16,20 @@ const JWTKeyKey = "jwk"
 const CAKey = "ca.crt"
 
 // SecretTypeCA contains a certificate authority for TLS certificate verification.
-const SecretTypeCA v1.SecretType = "nginx.org/ca"
+const SecretTypeCA api_v1.SecretType = "nginx.org/ca"
 
 // SecretTypeJWK contains a JWK (JSON Web Key) for validating JWTs (JSON Web Tokens).
-const SecretTypeJWK v1.SecretType = "nginx.org/jwk"
+const SecretTypeJWK api_v1.SecretType = "nginx.org/jwk"
 
 // ValidateTLSSecret validates the secret. If it is valid, the function returns nil.
-func ValidateTLSSecret(secret *v1.Secret) error {
-	if secret.Type != v1.SecretTypeTLS {
-		return fmt.Errorf("TLS Secret must be of the type %v", v1.SecretTypeTLS)
+func ValidateTLSSecret(secret *api_v1.Secret) error {
+	if secret.Type != api_v1.SecretTypeTLS {
+		return fmt.Errorf("TLS Secret must be of the type %v", api_v1.SecretTypeTLS)
 	}
 
-	// Kubernetes ensures that 'tls.crt' and 'tls.key' are present for secrets of v1.SecretTypeTLS type
+	// Kubernetes ensures that 'tls.crt' and 'tls.key' are present for secrets of api_v1.SecretTypeTLS type
 
-	_, err := tls.X509KeyPair(secret.Data[v1.TLSCertKey], secret.Data[v1.TLSPrivateKeyKey])
+	_, err := tls.X509KeyPair(secret.Data[api_v1.TLSCertKey], secret.Data[api_v1.TLSPrivateKeyKey])
 	if err != nil {
 		return fmt.Errorf("Failed to validate TLS cert and key: %v", err)
 	}
@@ -38,7 +38,7 @@ func ValidateTLSSecret(secret *v1.Secret) error {
 }
 
 // ValidateJWKSecret validates the secret. If it is valid, the function returns nil.
-func ValidateJWKSecret(secret *v1.Secret) error {
+func ValidateJWKSecret(secret *api_v1.Secret) error {
 	if secret.Type != SecretTypeJWK {
 		return fmt.Errorf("JWK secret must be of the type %v", SecretTypeJWK)
 	}
@@ -54,7 +54,7 @@ func ValidateJWKSecret(secret *v1.Secret) error {
 }
 
 // ValidateCASecret validates the secret. If it is valid, the function returns nil.
-func ValidateCASecret(secret *v1.Secret) error {
+func ValidateCASecret(secret *api_v1.Secret) error {
 	if secret.Type != SecretTypeCA {
 		return fmt.Errorf("CA secret must be of the type %v", SecretTypeCA)
 	}
@@ -80,14 +80,14 @@ func ValidateCASecret(secret *v1.Secret) error {
 }
 
 // IsSupportedSecretType checks if the secret type is supported.
-func IsSupportedSecretType(secretType v1.SecretType) bool {
-	return secretType == v1.SecretTypeTLS || secretType == SecretTypeCA || secretType == SecretTypeJWK
+func IsSupportedSecretType(secretType api_v1.SecretType) bool {
+	return secretType == api_v1.SecretTypeTLS || secretType == SecretTypeCA || secretType == SecretTypeJWK
 }
 
 // ValidateSecret validates the secret. If it is valid, the function returns nil.
-func ValidateSecret(secret *v1.Secret) error {
+func ValidateSecret(secret *api_v1.Secret) error {
 	switch secret.Type {
-	case v1.SecretTypeTLS:
+	case api_v1.SecretTypeTLS:
 		return ValidateTLSSecret(secret)
 	case SecretTypeJWK:
 		return ValidateJWKSecret(secret)

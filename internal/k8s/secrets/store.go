@@ -1,9 +1,10 @@
-package k8s
+package secrets
 
 import (
 	"fmt"
 
 	api_v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // StoredSecret holds a secret, its validation status and the path on the file system.
@@ -11,6 +12,13 @@ type StoredSecret struct {
 	Secret        *api_v1.Secret
 	Path          string
 	ValidationErr error
+}
+
+// SecretReference holds a reference to a secret stored on the file system.
+type SecretReference struct {
+	Type  api_v1.SecretType
+	Path  string
+	Error error
 }
 
 // SecretFileManager manages secrets on the file system.
@@ -23,7 +31,7 @@ type SecretFileManager interface {
 type SecretStore interface {
 	AddOrUpdateSecret(secret *api_v1.Secret)
 	DeleteSecret(key string)
-	GetSecret(key string) (api_v1.SecretType, string, error)
+	GetSecretReference(key string) *SecretReference
 }
 
 // LocalSecretStore implements SecretStore interface.
@@ -84,18 +92,64 @@ func (s *LocalSecretStore) DeleteSecret(key string) {
 	s.manager.DeleteSecret(key)
 }
 
-// GetSecret gets the secretType and the path of a requested secret via its namespace/name key.
-// If the secret doesn't exist, is of an unsupported type, or invalid, GetSecret will return an error.
+// GetSecretReference returns a SecretReference.
+// If the secret doesn't exist, is of an unsupported type, or invalid, the Error field will include an error.
 // If the secret is valid but isn't present on the file system, the secret will be written to the file system.
-func (s *LocalSecretStore) GetSecret(key string) (api_v1.SecretType, string, error) {
+func (s *LocalSecretStore) GetSecretReference(key string) *SecretReference {
 	storedSecret, exists := s.secrets[key]
 	if !exists {
-		return "", "", fmt.Errorf("secret doesn't exist or of an unsupported type")
+		return &SecretReference{
+			Error: fmt.Errorf("secret doesn't exist or of an unsupported type"),
+		}
 	}
 
 	if storedSecret.ValidationErr == nil && storedSecret.Path == "" {
 		storedSecret.Path = s.manager.AddOrUpdateSecret(storedSecret.Secret)
 	}
 
-	return storedSecret.Secret.Type, storedSecret.Path, storedSecret.ValidationErr
+	return &SecretReference{
+		Type:  storedSecret.Secret.Type,
+		Path:  storedSecret.Path,
+		Error: storedSecret.ValidationErr,
+	}
+}
+
+func getResourceKey(meta *metav1.ObjectMeta) string {
+	return fmt.Sprintf("%s/%s", meta.Namespace, meta.Name)
+}
+
+// FakeSecretStore is a fake implementation of SecretStore.
+type FakeSecretStore struct {
+	secrets map[string]*StoredSecret
+}
+
+// NewFakeSecretsStore creates a new FakeSecretStore.
+func NewFakeSecretsStore(secrets map[string]*StoredSecret) SecretStore {
+	return &FakeSecretStore{
+		secrets: secrets,
+	}
+}
+
+// AddOrUpdateSecret is a fake implementation of AddOrUpdateSecret.
+func (s *FakeSecretStore) AddOrUpdateSecret(secret *api_v1.Secret) {
+}
+
+// DeleteSecret is a fake implementation of DeleteSecret.
+func (s *FakeSecretStore) DeleteSecret(key string) {
+}
+
+// GetSecretReference is a fake implementation of GetSecretReference.
+func (s *FakeSecretStore) GetSecretReference(key string) *SecretReference {
+	storedSecret, exists := s.secrets[key]
+	if !exists {
+		return &SecretReference{
+			Error: fmt.Errorf("secret doesn't exist"),
+		}
+	}
+
+	return &SecretReference{
+		Type:  storedSecret.Secret.Type,
+		Path:  storedSecret.Path,
+		Error: storedSecret.ValidationErr,
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/golang/glog"
+	"github.com/nginxinc/kubernetes-ingress/internal/k8s/secrets"
 	v1 "k8s.io/api/core/v1"
 	networking "k8s.io/api/networking/v1beta1"
 	"k8s.io/client-go/tools/cache"
@@ -133,7 +134,7 @@ func createSecretHandlers(lbc *LoadBalancerController) cache.ResourceEventHandle
 	return cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			secret := obj.(*v1.Secret)
-			if !IsSupportedSecretType(secret.Type) {
+			if !secrets.IsSupportedSecretType(secret.Type) {
 				glog.V(3).Infof("Ignoring Secret %v of unsupported type %v", secret.Name, secret.Type)
 				return
 			}
@@ -154,7 +155,7 @@ func createSecretHandlers(lbc *LoadBalancerController) cache.ResourceEventHandle
 					return
 				}
 			}
-			if !IsSupportedSecretType(secret.Type) {
+			if !secrets.IsSupportedSecretType(secret.Type) {
 				glog.V(3).Infof("Ignoring Secret %v of unsupported type %v", secret.Name, secret.Type)
 				return
 			}
@@ -165,7 +166,7 @@ func createSecretHandlers(lbc *LoadBalancerController) cache.ResourceEventHandle
 		UpdateFunc: func(old, cur interface{}) {
 			// A secret cannot change its type. That's why we only need to check the type of the current secret.
 			curSecret := cur.(*v1.Secret)
-			if !IsSupportedSecretType(curSecret.Type) {
+			if !secrets.IsSupportedSecretType(curSecret.Type) {
 				glog.V(3).Infof("Ignoring Secret %v of unsupported type %v", curSecret.Name, curSecret.Type)
 				return
 			}

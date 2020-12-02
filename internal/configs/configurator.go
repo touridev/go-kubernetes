@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/nginxinc/kubernetes-ingress/internal/k8s/secrets"
 	"github.com/nginxinc/nginx-prometheus-exporter/collector"
 	"github.com/spiffe/go-spiffe/workload"
 
@@ -1283,9 +1284,9 @@ func (cnf *Configurator) AddInternalRouteConfig() error {
 // AddOrUpdateSecret adds or updates a secret.
 func (cnf *Configurator) AddOrUpdateSecret(secret *api_v1.Secret) string {
 	switch secret.Type {
-	case SecretTypeCA:
+	case secrets.SecretTypeCA:
 		return cnf.addOrUpdateCASecret(secret)
-	case SecretTypeJWK:
+	case secrets.SecretTypeJWK:
 		return cnf.addOrUpdateJWKSecret(secret)
 	default:
 		return cnf.addOrUpdateTLSSecret(secret)
