@@ -25,7 +25,7 @@ RUN set -x \
 	&& mkdir -p /etc/nginx/secrets \
 	&& mkdir -p /etc/nginx/stream-conf.d \
 	&& setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx \
-	&& setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx-debug \
+	          'cap_net_bind_service=+ep' /usr/sbin/nginx-debug \
 	&& chown -R nginx:0 /etc/nginx \
 	&& chown -R nginx:0 /var/cache/nginx \
 	&& chown -R nginx:0 /var/lib/nginx \
