@@ -15,8 +15,8 @@ RUN mkdir -p /etc/nginx/secrets \
 	&& setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx \
 	          'cap_net_bind_service=+ep' /usr/sbin/nginx-debug \
 	&& chown -R nginx:0 /etc/nginx \
-	&& chown -R nginx:0 /var/cache/nginx \
-	&& chown -R nginx:0 /var/lib/nginx \
+			    /var/cache/nginx \
+			    /var/lib/nginx \
 	&& apk del libcap \
 	&& rm /etc/nginx/conf.d/* \
 	&& rm -rf /var/cache/apk/*

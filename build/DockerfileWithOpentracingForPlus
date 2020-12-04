@@ -71,8 +71,8 @@ RUN mkdir -p /var/lib/nginx \
 	&& mkdir -p /etc/nginx/secrets \
 	&& mkdir -p /etc/nginx/stream-conf.d \
 	&& chown -R nginx:0 /etc/nginx \
-	&& chown -R nginx:0 /var/cache/nginx \
-	&& chown -R nginx:0 /var/lib/nginx/ \
+			    /var/cache/nginx \
+			    /var/lib/nginx/ \
 	&& apt-get remove --purge -y libcap2-bin \
 	&& rm /etc/nginx/conf.d/*
 

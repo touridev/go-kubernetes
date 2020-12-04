@@ -83,13 +83,13 @@ RUN  mkdir -p /var/lib/nginx \
 	&& mkdir -p /var/log/app_protect \
 	&& mkdir -p /opt/app_protect \
 	&& chown -R nginx:0 /etc/app_protect \
-	&& chown -R nginx:0 /usr/share/ts \
-	&& chown -R nginx:0 /etc/nginx \
-	&& chown -R nginx:0 /var/cache/nginx \
-	&& chown -R nginx:0 /var/lib/nginx/ \
-	&& chown -R nginx:0 /var/log/app_protect/ \
-	&& chown -R nginx:0 /opt/app_protect/ \
-	&& chown -R nginx:0 /var/log/nginx/ \
+			    /usr/share/ts \
+			    /etc/nginx \
+			    /var/cache/nginx \
+			    /var/lib/nginx/ \
+			    /var/log/app_protect/ \
+			    /opt/app_protect/ \
+			    /var/log/nginx/ \
 	&& rm /etc/nginx/conf.d/*
 
 RUN printf "MODULE = ALL;\nLOG_LEVEL = TS_CRIT;\nFILE = 2;\n" > /etc/app_protect/bd/logger.cfg \

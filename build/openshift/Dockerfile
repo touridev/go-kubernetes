@@ -27,8 +27,8 @@ RUN set -x \
 	&& setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx \
 	          'cap_net_bind_service=+ep' /usr/sbin/nginx-debug \
 	&& chown -R nginx:0 /etc/nginx \
-	&& chown -R nginx:0 /var/cache/nginx \
-	&& chown -R nginx:0 /var/lib/nginx \
+			    /var/cache/nginx \
+			    /var/lib/nginx \
 	&& rm /etc/yum.repos.d/nginx.repo \
 	&& rm /etc/nginx/conf.d/*
 
