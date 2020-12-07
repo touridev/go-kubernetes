@@ -221,7 +221,7 @@ func validateRateLimitZoneSize(zoneSize string, fieldPath *field.Path) field.Err
 		return append(allErrs, field.Required(fieldPath, ""))
 	}
 
-	allErrs = append(allErrs, validateSize(zoneSize, fieldPath)...)
+	allErrs = append(allErrs, ValidateSize(zoneSize, fieldPath)...)
 
 	kbZoneSize := strings.TrimSuffix(strings.ToLower(zoneSize), "k")
 	kbZoneSizeNum, err := strconv.Atoi(kbZoneSize)

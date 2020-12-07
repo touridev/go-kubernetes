@@ -21,7 +21,7 @@ type apiObject interface {
 // GetMapKeyAsBool searches the map for the given key and parses the key as bool.
 func GetMapKeyAsBool(m map[string]string, key string, context apiObject) (bool, bool, error) {
 	if str, exists := m[key]; exists {
-		b, err := strconv.ParseBool(str)
+		b, err := ParseBool(str)
 		if err != nil {
 			return false, exists, fmt.Errorf("%s %v/%v '%s' contains invalid bool: %v, ignoring", context.GetObjectKind().GroupVersionKind().Kind, context.GetNamespace(), context.GetName(), key, err)
 		}
@@ -35,7 +35,7 @@ func GetMapKeyAsBool(m map[string]string, key string, context apiObject) (bool, 
 // GetMapKeyAsInt tries to find and parse a key in a map as int.
 func GetMapKeyAsInt(m map[string]string, key string, context apiObject) (int, bool, error) {
 	if str, exists := m[key]; exists {
-		i, err := strconv.Atoi(str)
+		i, err := ParseInt(str)
 		if err != nil {
 			return 0, exists, fmt.Errorf("%s %v/%v '%s' contains invalid integer: %v, ignoring", context.GetObjectKind().GroupVersionKind().Kind, context.GetNamespace(), context.GetName(), key, err)
 		}
@@ -49,7 +49,7 @@ func GetMapKeyAsInt(m map[string]string, key string, context apiObject) (int, bo
 // GetMapKeyAsInt64 tries to find and parse a key in a map as int64.
 func GetMapKeyAsInt64(m map[string]string, key string, context apiObject) (int64, bool, error) {
 	if str, exists := m[key]; exists {
-		i, err := strconv.ParseInt(str, 10, 64)
+		i, err := ParseInt64(str)
 		if err != nil {
 			return 0, exists, fmt.Errorf("%s %v/%v '%s' contains invalid integer: %v, ignoring", context.GetObjectKind().GroupVersionKind().Kind, context.GetNamespace(), context.GetName(), key, err)
 		}
@@ -63,7 +63,7 @@ func GetMapKeyAsInt64(m map[string]string, key string, context apiObject) (int64
 // GetMapKeyAsUint64 tries to find and parse a key in a map as uint64.
 func GetMapKeyAsUint64(m map[string]string, key string, context apiObject, nonZero bool) (uint64, bool, error) {
 	if str, exists := m[key]; exists {
-		i, err := strconv.ParseUint(str, 10, 64)
+		i, err := ParseUint64(str)
 		if err != nil {
 			return 0, exists, fmt.Errorf("%s %v/%v '%s' contains invalid uint64: %v, ignoring", context.GetObjectKind().GroupVersionKind().Kind, context.GetNamespace(), context.GetName(), key, err)
 		}
@@ -162,6 +162,23 @@ func validateHashLBMethod(method string) (string, error) {
 	return "", fmt.Errorf("Invalid load balancing method: %q", method)
 }
 
+// ParseBool ensures that the string value in the annotation is a valid bool
+func ParseBool(s string) (bool, error) {
+	return strconv.ParseBool(s)
+}
+
+func ParseInt(s string) (int, error) {
+	return strconv.Atoi(s)
+}
+
+func ParseInt64(s string) (int64, error) {
+	return strconv.ParseInt(s, 10, 64)
+}
+
+func ParseUint64(s string) (uint64, error) {
+	return strconv.ParseUint(s, 10, 64)
+}
+
 // http://nginx.org/en/docs/syntax.html
 var validTimeSuffixes = []string{
 	"ms",
@@ -185,6 +202,45 @@ func ParseTime(s string) (string, error) {
 		return s, nil
 	}
 	return "", errors.New("Invalid time string")
+}
+
+// http://nginx.org/en/docs/syntax.html
+const OffsetFmt = `\d+[kKmMgG]?`
+
+var offsetRegexp = regexp.MustCompile("^" + OffsetFmt + "$")
+
+func ParseOffset(s string) (string, error) {
+	s = strings.TrimSpace(s)
+
+	if offsetRegexp.MatchString(s) {
+		return s, nil
+	}
+	return "", errors.New("Invalid offset string")
+}
+
+// http://nginx.org/en/docs/syntax.html
+const SizeFmt = `\d+[kKmM]?`
+
+var sizeRegexp = regexp.MustCompile("^" + SizeFmt + "$")
+
+func ParseSize(s string) (string, error) {
+	s = strings.TrimSpace(s)
+
+	if sizeRegexp.MatchString(s) {
+		return s, nil
+	}
+	return "", errors.New("Invalid size string")
+}
+
+var proxyBuffersRegexp = regexp.MustCompile(`^\d+ \d+[kKmM]?$`)
+
+func ParseProxyBuffers(s string) (string, error) {
+	s = strings.TrimSpace(s)
+
+	if proxyBuffersRegexp.MatchString(s) {
+		return s, nil
+	}
+	return "", errors.New("must be a valid proxy buffers spec as specified here: https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffers, e.g. \"8 4k\"")
 }
 
 var threshEx = regexp.MustCompile(`high=([1-9]|[1-9][0-9]|100) low=([1-9]|[1-9][0-9]|100)\b`)

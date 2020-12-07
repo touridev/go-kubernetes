@@ -93,29 +93,21 @@ func parseAnnotations(ingEx *IngressEx, baseCfgParams *ConfigParams, isPlus bool
 		if err != nil {
 			glog.Error(err)
 		}
-		if isPlus {
-			cfgParams.HealthCheckEnabled = healthCheckEnabled
-		} else {
-			glog.Warning("Annotation 'nginx.com/health-checks' requires NGINX Plus")
-		}
+		cfgParams.HealthCheckEnabled = healthCheckEnabled
 	}
 
-	if cfgParams.HealthCheckEnabled {
-		if healthCheckMandatory, exists, err := GetMapKeyAsBool(ingEx.Ingress.Annotations, "nginx.com/health-checks-mandatory", ingEx.Ingress); exists {
-			if err != nil {
-				glog.Error(err)
-			}
-			cfgParams.HealthCheckMandatory = healthCheckMandatory
+	if healthCheckMandatory, exists, err := GetMapKeyAsBool(ingEx.Ingress.Annotations, "nginx.com/health-checks-mandatory", ingEx.Ingress); exists {
+		if err != nil {
+			glog.Error(err)
 		}
+		cfgParams.HealthCheckMandatory = healthCheckMandatory
 	}
 
-	if cfgParams.HealthCheckMandatory {
-		if healthCheckQueue, exists, err := GetMapKeyAsInt64(ingEx.Ingress.Annotations, "nginx.com/health-checks-mandatory-queue", ingEx.Ingress); exists {
-			if err != nil {
-				glog.Error(err)
-			}
-			cfgParams.HealthCheckMandatoryQueue = healthCheckQueue
+	if healthCheckQueue, exists, err := GetMapKeyAsInt64(ingEx.Ingress.Annotations, "nginx.com/health-checks-mandatory-queue", ingEx.Ingress); exists {
+		if err != nil {
+			glog.Error(err)
 		}
+		cfgParams.HealthCheckMandatoryQueue = healthCheckQueue
 	}
 
 	if slowStart, exists := ingEx.Ingress.Annotations["nginx.com/slow-start"]; exists {

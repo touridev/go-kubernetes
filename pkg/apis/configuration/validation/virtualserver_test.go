@@ -2252,33 +2252,6 @@ func TestValidatePositiveIntOrZeroFails(t *testing.T) {
 	}
 }
 
-func TestValidateTime(t *testing.T) {
-	time := "1h 2s"
-	allErrs := validateTime(time, field.NewPath("time-field"))
-
-	if len(allErrs) != 0 {
-		t.Errorf("validateTime returned errors %v valid input %v", allErrs, time)
-	}
-}
-
-func TestValidateOffset(t *testing.T) {
-	var validInput = []string{"", "1", "10k", "11m", "1K", "100M", "5G"}
-	for _, test := range validInput {
-		allErrs := validateOffset(test, field.NewPath("offset-field"))
-		if len(allErrs) != 0 {
-			t.Errorf("validateOffset(%q) returned an error for valid input", test)
-		}
-	}
-
-	var invalidInput = []string{"55mm", "2mG", "6kb", "-5k", "1L", "5Gb"}
-	for _, test := range invalidInput {
-		allErrs := validateOffset(test, field.NewPath("offset-field"))
-		if len(allErrs) == 0 {
-			t.Errorf("validateOffset(%q) didn't return error for invalid input.", test)
-		}
-	}
-}
-
 func TestValidateBuffer(t *testing.T) {
 	validbuff := &v1.UpstreamBuffers{Number: 8, Size: "8k"}
 	allErrs := validateBuffer(validbuff, field.NewPath("buffers-field"))
@@ -2306,15 +2279,6 @@ func TestValidateBuffer(t *testing.T) {
 		if len(allErrs) == 0 {
 			t.Errorf("validateBuffer didn't return error for invalid input %v.", test)
 		}
-	}
-}
-
-func TestValidateTimeFails(t *testing.T) {
-	time := "invalid"
-	allErrs := validateTime(time, field.NewPath("time-field"))
-
-	if len(allErrs) == 0 {
-		t.Errorf("validateTime returned no errors for invalid input %v", time)
 	}
 }
 

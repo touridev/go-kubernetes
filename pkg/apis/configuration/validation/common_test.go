@@ -273,17 +273,53 @@ func TestValidateStringWithVariablesFail(t *testing.T) {
 func TestValidateSize(t *testing.T) {
 	var validInput = []string{"", "4k", "8K", "16m", "32M"}
 	for _, test := range validInput {
-		allErrs := validateSize(test, field.NewPath("size-field"))
+		allErrs := ValidateSize(test, field.NewPath("size-field"))
 		if len(allErrs) != 0 {
-			t.Errorf("validateSize(%q) returned an error for valid input", test)
+			t.Errorf("ValidateSize(%q) returned an error for valid input", test)
 		}
 	}
 
 	var invalidInput = []string{"55mm", "2mG", "6kb", "-5k", "1L", "5G"}
 	for _, test := range invalidInput {
-		allErrs := validateSize(test, field.NewPath("size-field"))
+		allErrs := ValidateSize(test, field.NewPath("size-field"))
 		if len(allErrs) == 0 {
-			t.Errorf("validateSize(%q) didn't return error for invalid input.", test)
+			t.Errorf("ValidateSize(%q) didn't return error for invalid input.", test)
+		}
+	}
+}
+
+func TestValidateTime(t *testing.T) {
+	time := "1h 2s"
+	allErrs := ValidateTime(time, field.NewPath("time-field"))
+
+	if len(allErrs) != 0 {
+		t.Errorf("ValidateTime returned errors %v valid input %v", allErrs, time)
+	}
+}
+
+func TestValidateTimeFails(t *testing.T) {
+	time := "invalid"
+	allErrs := ValidateTime(time, field.NewPath("time-field"))
+
+	if len(allErrs) == 0 {
+		t.Errorf("ValidateTime returned no errors for invalid input %v", time)
+	}
+}
+
+func TestValidateOffset(t *testing.T) {
+	var validInput = []string{"", "1", "10k", "11m", "1K", "100M", "5G"}
+	for _, test := range validInput {
+		allErrs := ValidateOffset(test, field.NewPath("offset-field"))
+		if len(allErrs) != 0 {
+			t.Errorf("ValidateOffset(%q) returned an error for valid input", test)
+		}
+	}
+
+	var invalidInput = []string{"55mm", "2mG", "6kb", "-5k", "1L", "5Gb"}
+	for _, test := range invalidInput {
+		allErrs := ValidateOffset(test, field.NewPath("offset-field"))
+		if len(allErrs) == 0 {
+			t.Errorf("ValidateOffset(%q) didn't return error for invalid input.", test)
 		}
 	}
 }

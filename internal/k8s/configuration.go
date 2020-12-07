@@ -307,6 +307,8 @@ type Configuration struct {
 	appPolicyReferenceChecker  *appProtectResourceReferenceChecker
 	appLogConfReferenceChecker *appProtectResourceReferenceChecker
 
+	isPlus bool
+
 	lock sync.RWMutex
 }
 
@@ -325,6 +327,7 @@ func NewConfiguration(hasCorrectIngressClass func(interface{}) bool, isPlus bool
 		policyReferenceChecker:     newPolicyReferenceChecker(),
 		appPolicyReferenceChecker:  newAppProtectResourceReferenceChecker(configs.AppProtectPolicyAnnotation),
 		appLogConfReferenceChecker: newAppProtectResourceReferenceChecker(configs.AppProtectLogConfAnnotation),
+		isPlus:                     isPlus,
 	}
 }
 
@@ -339,7 +342,7 @@ func (c *Configuration) AddOrUpdateIngress(ing *networking.Ingress) ([]ResourceC
 	if !c.hasCorrectIngressClass(ing) {
 		delete(c.ingresses, key)
 	} else {
-		validationError = validateIngress(ing).ToAggregate()
+		validationError = validateIngress(ing, c.isPlus).ToAggregate()
 		if validationError != nil {
 			delete(c.ingresses, key)
 		} else {
