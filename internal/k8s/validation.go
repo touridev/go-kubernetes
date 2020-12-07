@@ -29,6 +29,8 @@ type annotationValidationContext struct {
 type annotationValidationFunc func(context *annotationValidationContext) field.ErrorList
 type validatorFunc func(val string) error
 
+// annotationValidations defines the various validations which will be applied in order to each ingress annotation.
+// If any specified validation fails, the remaining validations for that annotation will not be run.
 var annotationValidations = map[string][]annotationValidationFunc{
 	mergeableIngressTypeAnnotation: {
 		validateRequiredAnnotation,
