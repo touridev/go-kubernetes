@@ -90,27 +90,31 @@ func validateIngress(ing *networking.Ingress, isPlus bool) field.ErrorList {
 
 func validateIngressAnnotations(annotations map[string]string, isPlus bool, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
-
 	for _, name := range annotationNames {
-		if value, nameExists := annotations[name]; nameExists {
-			if validationFuncs, validationExists := annotationValidations[name]; validationExists {
-				for _, validationFunc := range validationFuncs {
-					valErrors := validationFunc(&annotationValidationContext{
-						annotations: annotations,
-						name:        name,
-						value:       value,
-						isPlus:      isPlus,
-						fieldPath:   fieldPath.Child(name),
-					})
-					if len(valErrors) > 0 {
-						allErrs = append(allErrs, valErrors...)
-						break
-					}
-				}
+		if value, exists := annotations[name]; exists {
+			allErrs = append(allErrs, validateIngressAnnotation(&annotationValidationContext{
+				annotations: annotations,
+				name:        name,
+				value:       value,
+				isPlus:      isPlus,
+				fieldPath:   fieldPath.Child(name),
+			})...)
+		}
+	}
+	return allErrs
+}
+
+func validateIngressAnnotation(context *annotationValidationContext) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if validationFuncs, exists := annotationValidations[context.name]; exists {
+		for _, validationFunc := range validationFuncs {
+			valErrors := validationFunc(context)
+			if len(valErrors) > 0 {
+				allErrs = append(allErrs, valErrors...)
+				break
 			}
 		}
 	}
-
 	return allErrs
 }
 
