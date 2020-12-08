@@ -186,7 +186,7 @@ func validateBuffer(buff *v1.UpstreamBuffers, fieldPath *field.Path) field.Error
 	if buff.Size == "" {
 		allErrs = append(allErrs, field.Required(fieldPath.Child("size"), "cannot be empty"))
 	} else {
-		allErrs = append(allErrs, ValidateSize(buff.Size, fieldPath.Child("size"))...)
+		allErrs = append(allErrs, validateSize(buff.Size, fieldPath.Child("size"))...)
 	}
 
 	return allErrs
@@ -224,13 +224,13 @@ func validateUpstreamHealthCheck(hc *v1.HealthCheck, fieldPath *field.Path) fiel
 		allErrs = append(allErrs, validatePath(hc.Path, fieldPath.Child("path"))...)
 	}
 
-	allErrs = append(allErrs, ValidateTime(hc.Interval, fieldPath.Child("interval"))...)
-	allErrs = append(allErrs, ValidateTime(hc.Jitter, fieldPath.Child("jitter"))...)
+	allErrs = append(allErrs, validateTime(hc.Interval, fieldPath.Child("interval"))...)
+	allErrs = append(allErrs, validateTime(hc.Jitter, fieldPath.Child("jitter"))...)
 	allErrs = append(allErrs, validatePositiveIntOrZero(hc.Fails, fieldPath.Child("fails"))...)
 	allErrs = append(allErrs, validatePositiveIntOrZero(hc.Passes, fieldPath.Child("passes"))...)
-	allErrs = append(allErrs, ValidateTime(hc.ConnectTimeout, fieldPath.Child("connect-timeout"))...)
-	allErrs = append(allErrs, ValidateTime(hc.ReadTimeout, fieldPath.Child("read-timeout"))...)
-	allErrs = append(allErrs, ValidateTime(hc.SendTimeout, fieldPath.Child("send-timeout"))...)
+	allErrs = append(allErrs, validateTime(hc.ConnectTimeout, fieldPath.Child("connect-timeout"))...)
+	allErrs = append(allErrs, validateTime(hc.ReadTimeout, fieldPath.Child("read-timeout"))...)
+	allErrs = append(allErrs, validateTime(hc.SendTimeout, fieldPath.Child("send-timeout"))...)
 	allErrs = append(allErrs, validateStatusMatch(hc.StatusMatch, fieldPath.Child("statusMatch"))...)
 
 	for i, header := range hc.Headers {
@@ -267,7 +267,7 @@ func validateSessionCookie(sc *v1.SessionCookie, fieldPath *field.Path) field.Er
 	}
 
 	if sc.Expires != "max" {
-		allErrs = append(allErrs, ValidateTime(sc.Expires, fieldPath.Child("expires"))...)
+		allErrs = append(allErrs, validateTime(sc.Expires, fieldPath.Child("expires"))...)
 	}
 
 	if sc.Domain != "" {
@@ -412,22 +412,22 @@ func (vsv *VirtualServerValidator) validateUpstreams(upstreams []v1.Upstream, fi
 
 		allErrs = append(allErrs, validateServiceName(u.Service, idxPath.Child("service"))...)
 		allErrs = append(allErrs, validateLabels(u.Subselector, idxPath.Child("subselector"))...)
-		allErrs = append(allErrs, ValidateTime(u.ProxyConnectTimeout, idxPath.Child("connect-timeout"))...)
-		allErrs = append(allErrs, ValidateTime(u.ProxyReadTimeout, idxPath.Child("read-timeout"))...)
-		allErrs = append(allErrs, ValidateTime(u.ProxySendTimeout, idxPath.Child("send-timeout"))...)
+		allErrs = append(allErrs, validateTime(u.ProxyConnectTimeout, idxPath.Child("connect-timeout"))...)
+		allErrs = append(allErrs, validateTime(u.ProxyReadTimeout, idxPath.Child("read-timeout"))...)
+		allErrs = append(allErrs, validateTime(u.ProxySendTimeout, idxPath.Child("send-timeout"))...)
 		allErrs = append(allErrs, validateNextUpstream(u.ProxyNextUpstream, idxPath.Child("next-upstream"))...)
-		allErrs = append(allErrs, ValidateTime(u.ProxyNextUpstreamTimeout, idxPath.Child("next-upstream-timeout"))...)
+		allErrs = append(allErrs, validateTime(u.ProxyNextUpstreamTimeout, idxPath.Child("next-upstream-timeout"))...)
 		allErrs = append(allErrs, validatePositiveIntOrZeroFromPointer(&u.ProxyNextUpstreamTries, idxPath.Child("next-upstream-tries"))...)
 		allErrs = append(allErrs, validateUpstreamLBMethod(u.LBMethod, idxPath.Child("lb-method"), vsv.isPlus)...)
-		allErrs = append(allErrs, ValidateTime(u.FailTimeout, idxPath.Child("fail-timeout"))...)
+		allErrs = append(allErrs, validateTime(u.FailTimeout, idxPath.Child("fail-timeout"))...)
 		allErrs = append(allErrs, validatePositiveIntOrZeroFromPointer(u.MaxFails, idxPath.Child("max-fails"))...)
 		allErrs = append(allErrs, validatePositiveIntOrZeroFromPointer(u.Keepalive, idxPath.Child("keepalive"))...)
 		allErrs = append(allErrs, validatePositiveIntOrZeroFromPointer(u.MaxConns, idxPath.Child("max-conns"))...)
-		allErrs = append(allErrs, ValidateOffset(u.ClientMaxBodySize, idxPath.Child("client-max-body-size"))...)
+		allErrs = append(allErrs, validateOffset(u.ClientMaxBodySize, idxPath.Child("client-max-body-size"))...)
 		allErrs = append(allErrs, validateUpstreamHealthCheck(u.HealthCheck, idxPath.Child("healthCheck"))...)
-		allErrs = append(allErrs, ValidateTime(u.SlowStart, idxPath.Child("slow-start"))...)
+		allErrs = append(allErrs, validateTime(u.SlowStart, idxPath.Child("slow-start"))...)
 		allErrs = append(allErrs, validateBuffer(u.ProxyBuffers, idxPath.Child("buffers"))...)
-		allErrs = append(allErrs, ValidateSize(u.ProxyBufferSize, idxPath.Child("buffer-size"))...)
+		allErrs = append(allErrs, validateSize(u.ProxyBufferSize, idxPath.Child("buffer-size"))...)
 		allErrs = append(allErrs, validateQueue(u.Queue, idxPath.Child("queue"))...)
 		allErrs = append(allErrs, validateSessionCookie(u.SessionCookie, idxPath.Child("sessionCookie"))...)
 
@@ -1417,7 +1417,7 @@ func validateQueue(queue *v1.UpstreamQueue, fieldPath *field.Path) field.ErrorLi
 		return allErrs
 	}
 
-	allErrs = append(allErrs, ValidateTime(queue.Timeout, fieldPath.Child("timeout"))...)
+	allErrs = append(allErrs, validateTime(queue.Timeout, fieldPath.Child("timeout"))...)
 	if queue.Size <= 0 {
 		allErrs = append(allErrs, field.Required(fieldPath.Child("size"), "must be positive"))
 	}

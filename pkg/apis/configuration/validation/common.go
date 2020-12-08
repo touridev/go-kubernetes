@@ -136,7 +136,7 @@ func validateStringWithVariables(str string, fieldPath *field.Path, specialVars 
 	return allErrs
 }
 
-func ValidateTime(time string, fieldPath *field.Path) field.ErrorList {
+func validateTime(time string, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if time == "" {
@@ -153,7 +153,7 @@ func ValidateTime(time string, fieldPath *field.Path) field.ErrorList {
 // http://nginx.org/en/docs/syntax.html
 const offsetErrMsg = "must consist of numeric characters followed by a valid size suffix. 'k|K|m|M|g|G"
 
-func ValidateOffset(offset string, fieldPath *field.Path) field.ErrorList {
+func validateOffset(offset string, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if offset == "" {
@@ -171,9 +171,7 @@ func ValidateOffset(offset string, fieldPath *field.Path) field.ErrorList {
 // http://nginx.org/en/docs/syntax.html
 const sizeErrMsg = "must consist of numeric characters followed by a valid size suffix. 'k|K|m|M"
 
-var sizeRegexp = regexp.MustCompile("^" + configs.SizeFmt + "$")
-
-func ValidateSize(size string, fieldPath *field.Path) field.ErrorList {
+func validateSize(size string, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if size == "" {
