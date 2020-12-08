@@ -162,53 +162,45 @@ func validateHashLBMethod(method string) (string, error) {
 	return "", fmt.Errorf("Invalid load balancing method: %q", method)
 }
 
-// ParseBool ensures that the string value in the annotation is a valid bool
+// ParseBool ensures that the string value is a valid bool
 func ParseBool(s string) (bool, error) {
 	return strconv.ParseBool(s)
 }
 
+// ParseInt ensures that the string value is a valid int
 func ParseInt(s string) (int, error) {
 	return strconv.Atoi(s)
 }
 
+// ParseInt64 ensures that the string value is a valid int64
 func ParseInt64(s string) (int64, error) {
 	return strconv.ParseInt(s, 10, 64)
 }
 
+// ParseUint64 ensures that the string value is a valid uint64
 func ParseUint64(s string) (uint64, error) {
 	return strconv.ParseUint(s, 10, 64)
 }
 
-// http://nginx.org/en/docs/syntax.html
-var validTimeSuffixes = []string{
-	"ms",
-	"s",
-	"m",
-	"h",
-	"d",
-	"w",
-	"M",
-	"y",
-}
-
-var durationEscaped = strings.Join(validTimeSuffixes, "|")
-var validNginxTime = regexp.MustCompile(`^([0-9]+([` + durationEscaped + `]?){0,1} *)+$`)
+// timeRegexp http://nginx.org/en/docs/syntax.html
+var timeRegexp = regexp.MustCompile(`^([0-9]+([ms|s|m|h|d|w|M|y]?){0,1} *)+$`)
 
 // ParseTime ensures that the string value in the annotation is a valid time.
 func ParseTime(s string) (string, error) {
 	s = strings.TrimSpace(s)
 
-	if validNginxTime.MatchString(s) {
+	if timeRegexp.MatchString(s) {
 		return s, nil
 	}
 	return "", errors.New("Invalid time string")
 }
 
-// http://nginx.org/en/docs/syntax.html
+// OffsetFmt http://nginx.org/en/docs/syntax.html
 const OffsetFmt = `\d+[kKmMgG]?`
 
 var offsetRegexp = regexp.MustCompile("^" + OffsetFmt + "$")
 
+// ParseOffset ensures that the string value is a valid offset
 func ParseOffset(s string) (string, error) {
 	s = strings.TrimSpace(s)
 
@@ -218,11 +210,12 @@ func ParseOffset(s string) (string, error) {
 	return "", errors.New("Invalid offset string")
 }
 
-// http://nginx.org/en/docs/syntax.html
+// SizeFmt http://nginx.org/en/docs/syntax.html
 const SizeFmt = `\d+[kKmM]?`
 
 var sizeRegexp = regexp.MustCompile("^" + SizeFmt + "$")
 
+// ParseSize ensures that the string value is a valid size
 func ParseSize(s string) (string, error) {
 	s = strings.TrimSpace(s)
 
@@ -230,17 +223,6 @@ func ParseSize(s string) (string, error) {
 		return s, nil
 	}
 	return "", errors.New("Invalid size string")
-}
-
-var proxyBuffersRegexp = regexp.MustCompile(`^\d+ \d+[kKmM]?$`)
-
-func ParseProxyBuffers(s string) (string, error) {
-	s = strings.TrimSpace(s)
-
-	if proxyBuffersRegexp.MatchString(s) {
-		return s, nil
-	}
-	return "", errors.New("must be a valid proxy buffers spec as specified here: https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffers, e.g. \"8 4k\"")
 }
 
 var threshEx = regexp.MustCompile(`high=([1-9]|[1-9][0-9]|100) low=([1-9]|[1-9][0-9]|100)\b`)
