@@ -111,15 +111,11 @@ func parseAnnotations(ingEx *IngressEx, baseCfgParams *ConfigParams, isPlus bool
 	}
 
 	if slowStart, exists := ingEx.Ingress.Annotations["nginx.com/slow-start"]; exists {
-		if parsedSlowStart, err := ParseTime(slowStart); err != nil {
-			glog.Errorf("Ingress %s/%s: Invalid value nginx.org/slow-start: got %q: %v", ingEx.Ingress.GetNamespace(), ingEx.Ingress.GetName(), slowStart, err)
-		} else {
-			if isPlus {
-				cfgParams.SlowStart = parsedSlowStart
-			} else {
-				glog.Warning("Annotation 'nginx.com/slow-start' requires NGINX Plus")
-			}
+		parsedSlowStart, err := ParseTime(slowStart)
+		if err != nil {
+			glog.Error(err)
 		}
+		cfgParams.SlowStart = parsedSlowStart
 	}
 
 	if serverTokens, exists, err := GetMapKeyAsBool(ingEx.Ingress.Annotations, "nginx.org/server-tokens", ingEx.Ingress); exists {

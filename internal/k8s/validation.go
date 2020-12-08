@@ -17,6 +17,7 @@ const (
 	healthChecksAnnotation               = "nginx.com/health-checks"
 	healthChecksMandatoryAnnotation      = "nginx.com/health-checks-mandatory"
 	healthChecksMandatoryQueueAnnotation = "nginx.com/health-checks-mandatory-queue"
+	slowStartAnnotation                  = "nginx.com/slow-start"
 )
 
 type annotationValidationContext struct {
@@ -56,6 +57,11 @@ var (
 			validateRelatedAnnotation(healthChecksMandatoryAnnotation, validateIsTrue),
 			validateRequiredAnnotation,
 			validateNonNegativeIntAnnotation,
+		},
+		slowStartAnnotation: {
+			validateRequiredAnnotation,
+			validatePlusOnlyAnnotation,
+			validateTimeAnnotation,
 		},
 	}
 	annotationNames = sortedAnnotationNames(annotationValidations)
@@ -175,6 +181,14 @@ func validateBoolAnnotation(context *annotationValidationContext) field.ErrorLis
 	allErrs := field.ErrorList{}
 	if _, err := configs.ParseBool(context.value); err != nil {
 		return append(allErrs, field.Invalid(context.fieldPath, context.value, "must be a valid boolean"))
+	}
+	return allErrs
+}
+
+func validateTimeAnnotation(context *annotationValidationContext) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if _, err := configs.ParseTime(context.value); err != nil {
+		return append(allErrs, field.Invalid(context.fieldPath, context.value, "must be a valid time"))
 	}
 	return allErrs
 }

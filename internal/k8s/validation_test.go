@@ -343,6 +343,35 @@ func TestValidateIngressAnnotations(t *testing.T) {
 			},
 			msg: "invalid nginx.com/health-checks-mandatory-queue nginx.com/health-checks-mandatory is not true",
 		},
+
+		{
+			annotations: map[string]string{
+				"nginx.com/slow-start": "60s",
+			},
+			isPlus:         true,
+			expectedErrors: nil,
+			msg:            "valid nginx.com/slow-start annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.com/slow-start": "true",
+			},
+			isPlus: false,
+			expectedErrors: []string{
+				"annotations.nginx.com/slow-start: Forbidden: annotation requires NGINX Plus",
+			},
+			msg: "invalid nginx.com/slow-start annotation, nginx plus only",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.com/slow-start": "not_a_time",
+			},
+			isPlus: true,
+			expectedErrors: []string{
+				"annotations.nginx.com/slow-start: Invalid value: \"not_a_time\": must be a valid time",
+			},
+			msg: "invalid nginx.com/slow-start annotation",
+		},
 	}
 
 	for _, test := range tests {
