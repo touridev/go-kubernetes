@@ -3,6 +3,7 @@ package k8s
 import (
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/nginxinc/kubernetes-ingress/internal/configs"
 	networking "k8s.io/api/networking/v1beta1"
@@ -29,32 +30,44 @@ type annotationValidationContext struct {
 type annotationValidationFunc func(context *annotationValidationContext) field.ErrorList
 type validatorFunc func(val string) error
 
-// annotationValidations defines the various validations which will be applied in order to each ingress annotation.
-// If any specified validation fails, the remaining validations for that annotation will not be run.
-var annotationValidations = map[string][]annotationValidationFunc{
-	mergeableIngressTypeAnnotation: {
-		validateRequiredAnnotation,
-		validateMergeableIngressTypeAnnotation,
-	},
-	lbMethodAnnotation: {
-		validateRequiredAnnotation,
-		validateLBMethodAnnotation,
-	},
-	healthChecksAnnotation: {
-		validateRequiredAnnotation,
-		validatePlusOnlyAnnotation,
-		validateBoolAnnotation,
-	},
-	healthChecksMandatoryAnnotation: {
-		validateRelatedAnnotation(healthChecksAnnotation, validateIsTrue),
-		validateRequiredAnnotation,
-		validateBoolAnnotation,
-	},
-	healthChecksMandatoryQueueAnnotation: {
-		validateRelatedAnnotation(healthChecksMandatoryAnnotation, validateIsTrue),
-		validateRequiredAnnotation,
-		validateNonNegativeIntAnnotation,
-	},
+var (
+	// annotationValidations defines the various validations which will be applied in order to each ingress annotation.
+	// If any specified validation fails, the remaining validations for that annotation will not be run.
+	annotationValidations = map[string][]annotationValidationFunc{
+		mergeableIngressTypeAnnotation: {
+			validateRequiredAnnotation,
+			validateMergeableIngressTypeAnnotation,
+		},
+		lbMethodAnnotation: {
+			validateRequiredAnnotation,
+			validateLBMethodAnnotation,
+		},
+		healthChecksAnnotation: {
+			validateRequiredAnnotation,
+			validatePlusOnlyAnnotation,
+			validateBoolAnnotation,
+		},
+		healthChecksMandatoryAnnotation: {
+			validateRelatedAnnotation(healthChecksAnnotation, validateIsTrue),
+			validateRequiredAnnotation,
+			validateBoolAnnotation,
+		},
+		healthChecksMandatoryQueueAnnotation: {
+			validateRelatedAnnotation(healthChecksMandatoryAnnotation, validateIsTrue),
+			validateRequiredAnnotation,
+			validateNonNegativeIntAnnotation,
+		},
+	}
+	annotationNames = sortedAnnotationNames(annotationValidations)
+)
+
+func sortedAnnotationNames(annotationValidations map[string][]annotationValidationFunc) []string {
+	sortedNames := make([]string, 0)
+	for annotationName := range annotationValidations {
+		sortedNames = append(sortedNames, annotationName)
+	}
+	sort.Strings(sortedNames)
+	return sortedNames
 }
 
 // validateIngress validate an Ingress resource with rules that our Ingress Controller enforces.
@@ -78,19 +91,21 @@ func validateIngress(ing *networking.Ingress, isPlus bool) field.ErrorList {
 func validateIngressAnnotations(annotations map[string]string, isPlus bool, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	for name, validationFuncs := range annotationValidations {
-		if value, exists := annotations[name]; exists {
-			for _, validationFunc := range validationFuncs {
-				valErrors := validationFunc(&annotationValidationContext{
-					annotations: annotations,
-					name:        name,
-					value:       value,
-					isPlus:      isPlus,
-					fieldPath:   fieldPath.Child(name),
-				})
-				if len(valErrors) > 0 {
-					allErrs = append(allErrs, valErrors...)
-					break
+	for _, name := range annotationNames {
+		if value, nameExists := annotations[name]; nameExists {
+			if validationFuncs, validationExists := annotationValidations[name]; validationExists {
+				for _, validationFunc := range validationFuncs {
+					valErrors := validationFunc(&annotationValidationContext{
+						annotations: annotations,
+						name:        name,
+						value:       value,
+						isPlus:      isPlus,
+						fieldPath:   fieldPath.Child(name),
+					})
+					if len(valErrors) > 0 {
+						allErrs = append(allErrs, valErrors...)
+						break
+					}
 				}
 			}
 		}

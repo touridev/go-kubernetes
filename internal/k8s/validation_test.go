@@ -128,7 +128,20 @@ func TestValidateIngressAnnotations(t *testing.T) {
 			annotations:    map[string]string{},
 			isPlus:         true,
 			expectedErrors: nil,
-			msg:            "valid input",
+			msg:            "valid no annotations",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/lb-method":     "invalid_method",
+				"nginx.com/health-checks": "not_a_boolean",
+			},
+			isPlus: true,
+			expectedErrors: []string{
+				"annotations.nginx.com/health-checks: Invalid value: \"not_a_boolean\": must be a valid boolean",
+				"annotations.nginx.org/lb-method: Invalid value: \"invalid_method\": Invalid load balancing method: \"invalid_method\"",
+			},
+			msg: "invalid multiple annotations messages in alphabetical order",
 		},
 
 		{
