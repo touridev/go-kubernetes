@@ -515,18 +515,18 @@ func TestParseInt(t *testing.T) {
 	for _, test := range testsWithValidInput {
 		result, err := ParseInt(test.input)
 		if err != nil {
-			t.Errorf("TestParseBool(%q) returned an error for valid input", test.input)
+			t.Errorf("TestParseInt(%q) returned an error for valid input", test.input)
 		}
 
 		if result != test.expected {
-			t.Errorf("TestParseBool(%q) returned %d expected %d", test.input, result, test.expected)
+			t.Errorf("TestParseInt(%q) returned %d expected %d", test.input, result, test.expected)
 		}
 	}
 
 	for _, input := range invalidInput {
 		_, err := ParseInt(input)
 		if err == nil {
-			t.Errorf("TestParseBool(%q) does not return an error for invalid input", input)
+			t.Errorf("TestParseInt(%q) does not return an error for invalid input", input)
 		}
 	}
 }
@@ -552,18 +552,18 @@ func TestParseInt64(t *testing.T) {
 	for _, test := range testsWithValidInput {
 		result, err := ParseInt64(test.input)
 		if err != nil {
-			t.Errorf("TestParseBool(%q) returned an error for valid input", test.input)
+			t.Errorf("TestParseInt64(%q) returned an error for valid input", test.input)
 		}
 
 		if result != test.expected {
-			t.Errorf("TestParseBool(%q) returned %d expected %d", test.input, result, test.expected)
+			t.Errorf("TestParseInt64(%q) returned %d expected %d", test.input, result, test.expected)
 		}
 	}
 
 	for _, input := range invalidInput {
 		_, err := ParseInt64(input)
 		if err == nil {
-			t.Errorf("TestParseBool(%q) does not return an error for invalid input", input)
+			t.Errorf("TestParseInt64(%q) does not return an error for invalid input", input)
 		}
 	}
 }
@@ -590,18 +590,18 @@ func TestParseUint64(t *testing.T) {
 	for _, test := range testsWithValidInput {
 		result, err := ParseUint64(test.input)
 		if err != nil {
-			t.Errorf("TestParseBool(%q) returned an error for valid input", test.input)
+			t.Errorf("TestParseUint64(%q) returned an error for valid input", test.input)
 		}
 
 		if result != test.expected {
-			t.Errorf("TestParseBool(%q) returned %d expected %d", test.input, result, test.expected)
+			t.Errorf("TestParseUint64(%q) returned %d expected %d", test.input, result, test.expected)
 		}
 	}
 
 	for _, input := range invalidInput {
 		_, err := ParseUint64(input)
 		if err == nil {
-			t.Errorf("TestParseBool(%q) does not return an error for invalid input", input)
+			t.Errorf("TestParseUint64(%q) does not return an error for invalid input", input)
 		}
 	}
 }
