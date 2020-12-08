@@ -172,41 +172,6 @@ func validatePositiveIntOrZeroFromPointer(n *int, fieldPath *field.Path) field.E
 	return allErrs
 }
 
-func validateTime(time string, fieldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-
-	if time == "" {
-		return allErrs
-	}
-
-	if _, err := configs.ParseTime(time); err != nil {
-		return append(allErrs, field.Invalid(fieldPath, time, err.Error()))
-	}
-
-	return allErrs
-}
-
-// http://nginx.org/en/docs/syntax.html
-const offsetFmt = `\d+[kKmMgG]?`
-const offsetErrMsg = "must consist of numeric characters followed by a valid size suffix. 'k|K|m|M|g|G"
-
-var offsetRegexp = regexp.MustCompile("^" + offsetFmt + "$")
-
-func validateOffset(offset string, fieldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-
-	if offset == "" {
-		return allErrs
-	}
-
-	if !offsetRegexp.MatchString(offset) {
-		msg := validation.RegexError(offsetErrMsg, offsetFmt, "16", "32k", "64M")
-		return append(allErrs, field.Invalid(fieldPath, offset, msg))
-	}
-
-	return allErrs
-}
-
 func validateBuffer(buff *v1.UpstreamBuffers, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
