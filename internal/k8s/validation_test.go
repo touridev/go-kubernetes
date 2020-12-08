@@ -117,29 +117,27 @@ func TestValidateIngress(t *testing.T) {
 	}
 }
 
-func TestValidateIngressAnnotations(t *testing.T) {
+func TestValidateNginxIngressAnnotations(t *testing.T) {
+	isPlus := false
 	tests := []struct {
 		annotations    map[string]string
-		isPlus         bool
 		expectedErrors []string
 		msg            string
 	}{
 		{
 			annotations:    map[string]string{},
-			isPlus:         true,
 			expectedErrors: nil,
 			msg:            "valid no annotations",
 		},
 
 		{
 			annotations: map[string]string{
-				"nginx.org/lb-method":     "invalid_method",
-				"nginx.com/health-checks": "not_a_boolean",
+				"nginx.org/lb-method":              "invalid_method",
+				"nginx.org/mergeable-ingress-type": "invalid",
 			},
-			isPlus: true,
 			expectedErrors: []string{
-				"annotations.nginx.com/health-checks: Invalid value: \"not_a_boolean\": must be a valid boolean",
-				"annotations.nginx.org/lb-method: Invalid value: \"invalid_method\": Invalid load balancing method: \"invalid_method\"",
+				`annotations.nginx.org/lb-method: Invalid value: "invalid_method": Invalid load balancing method: "invalid_method"`,
+				`annotations.nginx.org/mergeable-ingress-type: Invalid value: "invalid": must be one of: 'master' or 'minion'`,
 			},
 			msg: "invalid multiple annotations messages in alphabetical order",
 		},
@@ -148,7 +146,6 @@ func TestValidateIngressAnnotations(t *testing.T) {
 			annotations: map[string]string{
 				"nginx.org/mergeable-ingress-type": "master",
 			},
-			isPlus:         false,
 			expectedErrors: nil,
 			msg:            "valid input with master annotation",
 		},
@@ -156,7 +153,6 @@ func TestValidateIngressAnnotations(t *testing.T) {
 			annotations: map[string]string{
 				"nginx.org/mergeable-ingress-type": "minion",
 			},
-			isPlus:         false,
 			expectedErrors: nil,
 			msg:            "valid input with minion annotation",
 		},
@@ -164,7 +160,6 @@ func TestValidateIngressAnnotations(t *testing.T) {
 			annotations: map[string]string{
 				"nginx.org/mergeable-ingress-type": "",
 			},
-			isPlus: false,
 			expectedErrors: []string{
 				"annotations.nginx.org/mergeable-ingress-type: Required value",
 			},
@@ -174,7 +169,142 @@ func TestValidateIngressAnnotations(t *testing.T) {
 			annotations: map[string]string{
 				"nginx.org/mergeable-ingress-type": "abc",
 			},
-			isPlus: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/mergeable-ingress-type: Invalid value: "abc": must be one of: 'master' or 'minion'`,
+			},
+			msg: "invalid mergeable type annotation 2",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/lb-method": "random",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/lb-method annotation, nginx normal",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/lb-method": "least_time header",
+			},
+			expectedErrors: []string{
+				`annotations.nginx.org/lb-method: Invalid value: "least_time header": Invalid load balancing method: "least_time header"`,
+			},
+			msg: "invalid nginx.org/lb-method annotation, nginx plus only",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/lb-method": "invalid_method",
+			},
+			expectedErrors: []string{
+				`annotations.nginx.org/lb-method: Invalid value: "invalid_method": Invalid load balancing method: "invalid_method"`,
+			},
+			msg: "invalid nginx.org/lb-method annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.com/health-checks": "true",
+			},
+			expectedErrors: []string{
+				"annotations.nginx.com/health-checks: Forbidden: annotation requires NGINX Plus",
+			},
+			msg: "invalid nginx.com/health-checks annotation, nginx plus only",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.com/health-checks-mandatory": "true",
+			},
+			expectedErrors: []string{
+				"annotations.nginx.com/health-checks-mandatory: Forbidden: annotation requires NGINX Plus",
+			},
+			msg: "invalid nginx.com/health-checks-mandatory annotation, nginx plus only",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.com/health-checks-mandatory-queue": "true",
+			},
+			expectedErrors: []string{
+				"annotations.nginx.com/health-checks-mandatory-queue: Forbidden: annotation requires NGINX Plus",
+			},
+			msg: "invalid nginx.com/health-checks-mandatory-queue annotation, nginx plus only",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.com/slow-start": "true",
+			},
+			expectedErrors: []string{
+				"annotations.nginx.com/slow-start: Forbidden: annotation requires NGINX Plus",
+			},
+			msg: "invalid nginx.com/slow-start annotation, nginx plus only",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.msg, func(t *testing.T) {
+			allErrs := validateIngressAnnotations(test.annotations, isPlus, field.NewPath("annotations"))
+			assertion := assertErrors("validateIngressAnnotations()", test.msg, allErrs, test.expectedErrors)
+			if assertion != "" {
+				t.Error(assertion)
+			}
+		})
+	}
+}
+
+func TestValidateNginxPlusIngressAnnotations(t *testing.T) {
+	isPlus := true
+	tests := []struct {
+		annotations    map[string]string
+		expectedErrors []string
+		msg            string
+	}{
+		{
+			annotations:    map[string]string{},
+			expectedErrors: nil,
+			msg:            "valid no annotations",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/lb-method":     "invalid_method",
+				"nginx.com/health-checks": "not_a_boolean",
+			},
+			expectedErrors: []string{
+				`annotations.nginx.com/health-checks: Invalid value: "not_a_boolean": must be a valid boolean`,
+				`annotations.nginx.org/lb-method: Invalid value: "invalid_method": Invalid load balancing method: "invalid_method"`,
+			},
+			msg: "invalid multiple annotations messages in alphabetical order",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/mergeable-ingress-type": "master",
+			},
+			expectedErrors: nil,
+			msg:            "valid input with master annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/mergeable-ingress-type": "minion",
+			},
+			expectedErrors: nil,
+			msg:            "valid input with minion annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/mergeable-ingress-type": "",
+			},
+			expectedErrors: []string{
+				"annotations.nginx.org/mergeable-ingress-type: Required value",
+			},
+			msg: "invalid mergeable type annotation 1",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/mergeable-ingress-type": "abc",
+			},
 			expectedErrors: []string{
 				`annotations.nginx.org/mergeable-ingress-type: Invalid value: "abc": must be one of: 'master' or 'minion'`,
 			},
@@ -185,84 +315,41 @@ func TestValidateIngressAnnotations(t *testing.T) {
 			annotations: map[string]string{
 				"nginx.org/lb-method": "least_time header",
 			},
-			isPlus:         true,
 			expectedErrors: nil,
-			msg:            "valid nginx.org/lb-method annotation, nginx plus",
-		},
-		{
-			annotations: map[string]string{
-				"nginx.org/lb-method": "random",
-			},
-			isPlus:         false,
-			expectedErrors: nil,
-			msg:            "valid nginx.org/lb-method annotation, nginx normal",
+			msg:            "valid nginx.org/lb-method annotation",
 		},
 		{
 			annotations: map[string]string{
 				"nginx.org/lb-method": "invalid_method",
 			},
-			isPlus: true,
 			expectedErrors: []string{
-				"annotations.nginx.org/lb-method: Invalid value: \"invalid_method\": Invalid load balancing method: \"invalid_method\"",
+				`annotations.nginx.org/lb-method: Invalid value: "invalid_method": Invalid load balancing method: "invalid_method"`,
 			},
 			msg: "invalid nginx.org/lb-method annotation, nginx",
-		},
-		{
-			annotations: map[string]string{
-				"nginx.org/lb-method": "least_time header",
-			},
-			isPlus: false,
-			expectedErrors: []string{
-				"annotations.nginx.org/lb-method: Invalid value: \"least_time header\": Invalid load balancing method: \"least_time header\"",
-			},
-			msg: "invalid nginx.org/lb-method annotation, nginx plus",
 		},
 
 		{
 			annotations: map[string]string{
 				"nginx.com/health-checks": "true",
 			},
-			isPlus:         true,
 			expectedErrors: nil,
 			msg:            "valid nginx.com/health-checks annotation",
 		},
 		{
 			annotations: map[string]string{
-				"nginx.com/health-checks": "true",
-			},
-			isPlus: false,
-			expectedErrors: []string{
-				"annotations.nginx.com/health-checks: Forbidden: annotation requires NGINX Plus",
-			},
-			msg: "invalid nginx.com/health-checks annotation, nginx plus only",
-		},
-		{
-			annotations: map[string]string{
 				"nginx.com/health-checks": "not_a_boolean",
 			},
-			isPlus: true,
 			expectedErrors: []string{
-				"annotations.nginx.com/health-checks: Invalid value: \"not_a_boolean\": must be a valid boolean",
+				`annotations.nginx.com/health-checks: Invalid value: "not_a_boolean": must be a valid boolean`,
 			},
 			msg: "invalid nginx.com/health-checks annotation",
 		},
 
 		{
 			annotations: map[string]string{
-				"nginx.com/health-checks": "not_a_boolean",
-			},
-			isPlus: false,
-			expectedErrors: []string{
-				"annotations.nginx.com/health-checks: Forbidden: annotation requires NGINX Plus",
-			},
-			msg: "invalid nginx.com/health-checks annotation",
-		},
-		{
-			annotations: map[string]string{
 				"nginx.com/health-checks":           "true",
 				"nginx.com/health-checks-mandatory": "true",
 			},
-			isPlus:         true,
 			expectedErrors: nil,
 			msg:            "valid nginx.com/health-checks-mandatory annotation",
 		},
@@ -271,9 +358,8 @@ func TestValidateIngressAnnotations(t *testing.T) {
 				"nginx.com/health-checks":           "true",
 				"nginx.com/health-checks-mandatory": "not_a_boolean",
 			},
-			isPlus: true,
 			expectedErrors: []string{
-				"annotations.nginx.com/health-checks-mandatory: Invalid value: \"not_a_boolean\": must be a valid boolean",
+				`annotations.nginx.com/health-checks-mandatory: Invalid value: "not_a_boolean": must be a valid boolean`,
 			},
 			msg: "invalid nginx.com/health-checks-mandatory, must be a boolean",
 		},
@@ -281,7 +367,6 @@ func TestValidateIngressAnnotations(t *testing.T) {
 			annotations: map[string]string{
 				"nginx.com/health-checks-mandatory": "true",
 			},
-			isPlus: true,
 			expectedErrors: []string{
 				"annotations.nginx.com/health-checks-mandatory: Forbidden: related annotation nginx.com/health-checks: must be set",
 			},
@@ -292,7 +377,6 @@ func TestValidateIngressAnnotations(t *testing.T) {
 				"nginx.com/health-checks":           "false",
 				"nginx.com/health-checks-mandatory": "true",
 			},
-			isPlus: true,
 			expectedErrors: []string{
 				"annotations.nginx.com/health-checks-mandatory: Forbidden: related annotation nginx.com/health-checks: must be true",
 			},
@@ -305,7 +389,6 @@ func TestValidateIngressAnnotations(t *testing.T) {
 				"nginx.com/health-checks-mandatory":       "true",
 				"nginx.com/health-checks-mandatory-queue": "5",
 			},
-			isPlus:         true,
 			expectedErrors: nil,
 			msg:            "valid nginx.com/health-checks-mandatory-queue annotation",
 		},
@@ -315,17 +398,15 @@ func TestValidateIngressAnnotations(t *testing.T) {
 				"nginx.com/health-checks-mandatory":       "true",
 				"nginx.com/health-checks-mandatory-queue": "not_a_number",
 			},
-			isPlus: true,
 			expectedErrors: []string{
-				"annotations.nginx.com/health-checks-mandatory-queue: Invalid value: \"not_a_number\": must be a non-negative integer",
+				`annotations.nginx.com/health-checks-mandatory-queue: Invalid value: "not_a_number": must be a non-negative integer`,
 			},
-			msg: "invalid nginx.com/health-checks-mandatory-queue, must be a boolean",
+			msg: "invalid nginx.com/health-checks-mandatory-queue, must be a number",
 		},
 		{
 			annotations: map[string]string{
 				"nginx.com/health-checks-mandatory-queue": "5",
 			},
-			isPlus: true,
 			expectedErrors: []string{
 				"annotations.nginx.com/health-checks-mandatory-queue: Forbidden: related annotation nginx.com/health-checks-mandatory: must be set",
 			},
@@ -337,7 +418,6 @@ func TestValidateIngressAnnotations(t *testing.T) {
 				"nginx.com/health-checks-mandatory":       "false",
 				"nginx.com/health-checks-mandatory-queue": "5",
 			},
-			isPlus: true,
 			expectedErrors: []string{
 				"annotations.nginx.com/health-checks-mandatory-queue: Forbidden: related annotation nginx.com/health-checks-mandatory: must be true",
 			},
@@ -348,27 +428,15 @@ func TestValidateIngressAnnotations(t *testing.T) {
 			annotations: map[string]string{
 				"nginx.com/slow-start": "60s",
 			},
-			isPlus:         true,
 			expectedErrors: nil,
 			msg:            "valid nginx.com/slow-start annotation",
 		},
 		{
 			annotations: map[string]string{
-				"nginx.com/slow-start": "true",
-			},
-			isPlus: false,
-			expectedErrors: []string{
-				"annotations.nginx.com/slow-start: Forbidden: annotation requires NGINX Plus",
-			},
-			msg: "invalid nginx.com/slow-start annotation, nginx plus only",
-		},
-		{
-			annotations: map[string]string{
 				"nginx.com/slow-start": "not_a_time",
 			},
-			isPlus: true,
 			expectedErrors: []string{
-				"annotations.nginx.com/slow-start: Invalid value: \"not_a_time\": must be a valid time",
+				`annotations.nginx.com/slow-start: Invalid value: "not_a_time": must be a valid time`,
 			},
 			msg: "invalid nginx.com/slow-start annotation",
 		},
@@ -376,7 +444,7 @@ func TestValidateIngressAnnotations(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.msg, func(t *testing.T) {
-			allErrs := validateIngressAnnotations(test.annotations, test.isPlus, field.NewPath("annotations"))
+			allErrs := validateIngressAnnotations(test.annotations, isPlus, field.NewPath("annotations"))
 			assertion := assertErrors("validateIngressAnnotations()", test.msg, allErrs, test.expectedErrors)
 			if assertion != "" {
 				t.Error(assertion)

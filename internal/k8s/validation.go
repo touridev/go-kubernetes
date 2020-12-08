@@ -29,23 +29,51 @@ type annotationValidationContext struct {
 }
 
 type annotationValidationFunc func(context *annotationValidationContext) field.ErrorList
+type annotationValidationConfig map[string][]annotationValidationFunc
 type validatorFunc func(val string) error
 
 var (
-	// annotationValidations defines the various validations which will be applied in order to each ingress annotation.
-	// If any specified validation fails, the remaining validations for that annotation will not be run.
-	annotationValidations = map[string][]annotationValidationFunc{
+	// nginxAnnotationValidations defines the various validations which will be applied in order to each ingress
+	// annotation for nginx. If any specified validation fails, the remaining validations for that annotation will not
+	// be run.
+	nginxAnnotationValidations = annotationValidationConfig{
 		mergeableIngressTypeAnnotation: {
 			validateRequiredAnnotation,
 			validateMergeableIngressTypeAnnotation,
 		},
 		lbMethodAnnotation: {
 			validateRequiredAnnotation,
-			validateLBMethodAnnotation,
+			validateNginxLBMethodAnnotation,
+		},
+		healthChecksAnnotation: {
+			validatePlusOnlyAnnotation,
+		},
+		healthChecksMandatoryAnnotation: {
+			validatePlusOnlyAnnotation,
+		},
+		healthChecksMandatoryQueueAnnotation: {
+			validatePlusOnlyAnnotation,
+		},
+		slowStartAnnotation: {
+			validatePlusOnlyAnnotation,
+		},
+	}
+	nginxAnnotationNames = sortedAnnotationNames(nginxAnnotationValidations)
+
+	// nginxPlusAnnotationValidations defines the various validations which will be applied in order to each ingress
+	// annotation for nginx plus. If any specified validation fails, the remaining validations for that annotation will
+	// not be run.
+	nginxPlusAnnotationValidations = annotationValidationConfig{
+		mergeableIngressTypeAnnotation: {
+			validateRequiredAnnotation,
+			validateMergeableIngressTypeAnnotation,
+		},
+		lbMethodAnnotation: {
+			validateRequiredAnnotation,
+			validateNginxPlusLBMethodAnnotation,
 		},
 		healthChecksAnnotation: {
 			validateRequiredAnnotation,
-			validatePlusOnlyAnnotation,
 			validateBoolAnnotation,
 		},
 		healthChecksMandatoryAnnotation: {
@@ -60,14 +88,13 @@ var (
 		},
 		slowStartAnnotation: {
 			validateRequiredAnnotation,
-			validatePlusOnlyAnnotation,
 			validateTimeAnnotation,
 		},
 	}
-	annotationNames = sortedAnnotationNames(annotationValidations)
+	nginxPlusAnnotationNames = sortedAnnotationNames(nginxPlusAnnotationValidations)
 )
 
-func sortedAnnotationNames(annotationValidations map[string][]annotationValidationFunc) []string {
+func sortedAnnotationNames(annotationValidations annotationValidationConfig) []string {
 	sortedNames := make([]string, 0)
 	for annotationName := range annotationValidations {
 		sortedNames = append(sortedNames, annotationName)
@@ -80,7 +107,6 @@ func sortedAnnotationNames(annotationValidations map[string][]annotationValidati
 // Note that the full validation of Ingress resources is done by Kubernetes.
 func validateIngress(ing *networking.Ingress, isPlus bool) field.ErrorList {
 	allErrs := field.ErrorList{}
-
 	allErrs = append(allErrs, validateIngressAnnotations(ing.Annotations, isPlus, field.NewPath("annotations"))...)
 
 	allErrs = append(allErrs, validateIngressSpec(&ing.Spec, field.NewPath("spec"))...)
@@ -96,22 +122,40 @@ func validateIngress(ing *networking.Ingress, isPlus bool) field.ErrorList {
 
 func validateIngressAnnotations(annotations map[string]string, isPlus bool, fieldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
+
+	var annotationNames []string
+	if isPlus {
+		annotationNames = nginxPlusAnnotationNames
+	} else {
+		annotationNames = nginxAnnotationNames
+	}
+
 	for _, name := range annotationNames {
 		if value, exists := annotations[name]; exists {
-			allErrs = append(allErrs, validateIngressAnnotation(&annotationValidationContext{
+			context := &annotationValidationContext{
 				annotations: annotations,
 				name:        name,
 				value:       value,
 				isPlus:      isPlus,
 				fieldPath:   fieldPath.Child(name),
-			})...)
+			}
+			allErrs = append(allErrs, validateIngressAnnotation(context)...)
 		}
 	}
+
 	return allErrs
 }
 
 func validateIngressAnnotation(context *annotationValidationContext) field.ErrorList {
 	allErrs := field.ErrorList{}
+
+	var annotationValidations annotationValidationConfig
+	if context.isPlus {
+		annotationValidations = nginxPlusAnnotationValidations
+	} else {
+		annotationValidations = nginxAnnotationValidations
+	}
+
 	if validationFuncs, exists := annotationValidations[context.name]; exists {
 		for _, validationFunc := range validationFuncs {
 			valErrors := validationFunc(context)
@@ -147,16 +191,18 @@ func validateMergeableIngressTypeAnnotation(context *annotationValidationContext
 	return allErrs
 }
 
-func validateLBMethodAnnotation(context *annotationValidationContext) field.ErrorList {
+func validateNginxLBMethodAnnotation(context *annotationValidationContext) field.ErrorList {
 	allErrs := field.ErrorList{}
-	if context.isPlus {
-		if _, err := configs.ParseLBMethodForPlus(context.value); err != nil {
-			return append(allErrs, field.Invalid(context.fieldPath, context.value, err.Error()))
-		}
-	} else {
-		if _, err := configs.ParseLBMethod(context.value); err != nil {
-			return append(allErrs, field.Invalid(context.fieldPath, context.value, err.Error()))
-		}
+	if _, err := configs.ParseLBMethod(context.value); err != nil {
+		return append(allErrs, field.Invalid(context.fieldPath, context.value, err.Error()))
+	}
+	return allErrs
+}
+
+func validateNginxPlusLBMethodAnnotation(context *annotationValidationContext) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if _, err := configs.ParseLBMethodForPlus(context.value); err != nil {
+		return append(allErrs, field.Invalid(context.fieldPath, context.value, err.Error()))
 	}
 	return allErrs
 }
