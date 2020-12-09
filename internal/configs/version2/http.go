@@ -70,7 +70,8 @@ type Server struct {
 	IngressMTLS               *IngressMTLS
 	EgressMTLS                *EgressMTLS
 	PoliciesErrorReturn       *Return
-	Namespace                 string
+	VSNamespace               string
+	VSName                    string
 }
 
 // SSL defines SSL configuration for a server.

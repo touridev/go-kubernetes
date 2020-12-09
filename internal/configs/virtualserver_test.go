@@ -488,7 +488,8 @@ func TestGenerateVirtualServerConfig(t *testing.T) {
 		Server: version2.Server{
 			ServerName:      "cafe.example.com",
 			StatusZone:      "cafe.example.com",
-			Namespace:       "default",
+			VSNamespace:     "default",
+			VSName:          "cafe",
 			ProxyProtocol:   true,
 			ServerTokens:    "off",
 			SetRealIPFrom:   []string{"0.0.0.0/0"},
@@ -710,7 +711,8 @@ func TestGenerateVirtualServerConfigWithSpiffeCerts(t *testing.T) {
 		Server: version2.Server{
 			ServerName:      "cafe.example.com",
 			StatusZone:      "cafe.example.com",
-			Namespace:       "default",
+			VSNamespace:     "default",
+			VSName:          "cafe",
 			ProxyProtocol:   true,
 			ServerTokens:    "off",
 			SetRealIPFrom:   []string{"0.0.0.0/0"},
@@ -947,9 +949,10 @@ func TestGenerateVirtualServerConfigForVirtualServerWithSplits(t *testing.T) {
 		HTTPSnippets:  []string{""},
 		LimitReqZones: []version2.LimitReqZone{},
 		Server: version2.Server{
-			ServerName: "cafe.example.com",
-			StatusZone: "cafe.example.com",
-			Namespace:  "default",
+			ServerName:  "cafe.example.com",
+			StatusZone:  "cafe.example.com",
+			VSNamespace: "default",
+			VSName:      "cafe",
 			InternalRedirectLocations: []version2.InternalRedirectLocation{
 				{
 					Path:        "/tea",
@@ -993,6 +996,9 @@ func TestGenerateVirtualServerConfigForVirtualServerWithSplits(t *testing.T) {
 					ProxySSLName:             "coffee-svc-v1.default.svc",
 					ProxyPassRequestHeaders:  true,
 					ServiceName:              "coffee-svc-v1",
+					IsVSR:                    true,
+					VSRName:                  "coffee",
+					VSRNamespace:             "default",
 				},
 				{
 					Path:                     "/internal_location_splits_1_split_1",
@@ -1004,6 +1010,9 @@ func TestGenerateVirtualServerConfigForVirtualServerWithSplits(t *testing.T) {
 					ProxySSLName:             "coffee-svc-v2.default.svc",
 					ProxyPassRequestHeaders:  true,
 					ServiceName:              "coffee-svc-v2",
+					IsVSR:                    true,
+					VSRName:                  "coffee",
+					VSRNamespace:             "default",
 				},
 			},
 		},
@@ -1253,9 +1262,10 @@ func TestGenerateVirtualServerConfigForVirtualServerWithMatches(t *testing.T) {
 		HTTPSnippets:  []string{""},
 		LimitReqZones: []version2.LimitReqZone{},
 		Server: version2.Server{
-			ServerName: "cafe.example.com",
-			StatusZone: "cafe.example.com",
-			Namespace:  "default",
+			ServerName:  "cafe.example.com",
+			StatusZone:  "cafe.example.com",
+			VSNamespace: "default",
+			VSName:      "cafe",
 			InternalRedirectLocations: []version2.InternalRedirectLocation{
 				{
 					Path:        "/tea",
@@ -1299,6 +1309,9 @@ func TestGenerateVirtualServerConfigForVirtualServerWithMatches(t *testing.T) {
 					ProxySSLName:             "coffee-svc-v2.default.svc",
 					ProxyPassRequestHeaders:  true,
 					ServiceName:              "coffee-svc-v2",
+					IsVSR:                    true,
+					VSRName:                  "coffee",
+					VSRNamespace:             "default",
 				},
 				{
 					Path:                     "/internal_location_matches_1_default",
@@ -1310,6 +1323,9 @@ func TestGenerateVirtualServerConfigForVirtualServerWithMatches(t *testing.T) {
 					ProxySSLName:             "coffee-svc-v1.default.svc",
 					ProxyPassRequestHeaders:  true,
 					ServiceName:              "coffee-svc-v1",
+					IsVSR:                    true,
+					VSRName:                  "coffee",
+					VSRNamespace:             "default",
 				},
 			},
 		},
@@ -1559,9 +1575,10 @@ func TestGenerateVirtualServerConfigForVirtualServerWithReturns(t *testing.T) {
 		HTTPSnippets:  []string{""},
 		LimitReqZones: []version2.LimitReqZone{},
 		Server: version2.Server{
-			ServerName: "example.com",
-			StatusZone: "example.com",
-			Namespace:  "default",
+			ServerName:  "example.com",
+			StatusZone:  "example.com",
+			VSNamespace: "default",
+			VSName:      "returns",
 			InternalRedirectLocations: []version2.InternalRedirectLocation{
 				{
 					Path:        "/splits-with-return",
@@ -3870,6 +3887,9 @@ func TestGenerateSplits(t *testing.T) {
 			ProxyPassRequestHeaders: true,
 			Snippets:                []string{locSnippet},
 			ServiceName:             "coffee-v1",
+			IsVSR:                   true,
+			VSRName:                 "coffee",
+			VSRNamespace:            "default",
 		},
 		{
 			Path:                     "/internal_location_splits_1_split_1",
@@ -3895,6 +3915,9 @@ func TestGenerateSplits(t *testing.T) {
 			ProxyPassRequestHeaders: true,
 			Snippets:                []string{locSnippet},
 			ServiceName:             "coffee-v2",
+			IsVSR:                   true,
+			VSRName:                 "coffee",
+			VSRNamespace:            "default",
 		},
 		{
 			Path:                 "/internal_location_splits_1_split_2",
@@ -3934,6 +3957,9 @@ func TestGenerateSplits(t *testing.T) {
 		locSnippet,
 		enableSnippets,
 		returnLocationIndex,
+		true,
+		"coffee",
+		"default",
 	)
 	if !reflect.DeepEqual(resultSplitClient, expectedSplitClient) {
 		t.Errorf("generateSplits() returned \n%+v but expected \n%+v", resultSplitClient, expectedSplitClient)
@@ -4003,6 +4029,9 @@ func TestGenerateDefaultSplitsConfig(t *testing.T) {
 				ProxySSLName:             "coffee-v1.default.svc",
 				ProxyPassRequestHeaders:  true,
 				ServiceName:              "coffee-v1",
+				IsVSR:                    true,
+				VSRName:                  "coffee",
+				VSRNamespace:             "default",
 			},
 			{
 				Path:                     "/internal_location_splits_1_split_1",
@@ -4014,6 +4043,9 @@ func TestGenerateDefaultSplitsConfig(t *testing.T) {
 				ProxySSLName:             "coffee-v2.default.svc",
 				ProxyPassRequestHeaders:  true,
 				ServiceName:              "coffee-v2",
+				IsVSR:                    true,
+				VSRName:                  "coffee",
+				VSRNamespace:             "default",
 			},
 		},
 		InternalRedirectLocation: version2.InternalRedirectLocation{
@@ -4035,7 +4067,7 @@ func TestGenerateDefaultSplitsConfig(t *testing.T) {
 	}
 
 	result := generateDefaultSplitsConfig(route, upstreamNamer, crUpstreams, variableNamer, index, &cfgParams,
-		route.ErrorPages, 0, "", locSnippet, enableSnippets, 0)
+		route.ErrorPages, 0, "", locSnippet, enableSnippets, 0, true, "coffee", "default")
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("generateDefaultSplitsConfig() returned \n%+v but expected \n%+v", result, expected)
 	}
@@ -4304,6 +4336,9 @@ func TestGenerateMatchesConfig(t *testing.T) {
 				ProxySSLName:            "coffee-v1.default.svc",
 				ProxyPassRequestHeaders: true,
 				ServiceName:             "coffee-v1",
+				IsVSR:                   false,
+				VSRName:                 "",
+				VSRNamespace:            "",
 			},
 			{
 				Path:                     "/internal_location_splits_2_split_0",
@@ -4328,6 +4363,9 @@ func TestGenerateMatchesConfig(t *testing.T) {
 				ProxySSLName:            "coffee-v1.default.svc",
 				ProxyPassRequestHeaders: true,
 				ServiceName:             "coffee-v1",
+				IsVSR:                   false,
+				VSRName:                 "",
+				VSRNamespace:            "",
 			},
 			{
 				Path:                     "/internal_location_splits_2_split_1",
@@ -4352,6 +4390,9 @@ func TestGenerateMatchesConfig(t *testing.T) {
 				ProxySSLName:            "coffee-v2.default.svc",
 				ProxyPassRequestHeaders: true,
 				ServiceName:             "coffee-v2",
+				IsVSR:                   false,
+				VSRName:                 "",
+				VSRNamespace:            "",
 			},
 			{
 				Path:                     "/internal_location_matches_1_default",
@@ -4376,6 +4417,9 @@ func TestGenerateMatchesConfig(t *testing.T) {
 				ProxySSLName:            "tea.default.svc",
 				ProxyPassRequestHeaders: true,
 				ServiceName:             "tea",
+				IsVSR:                   false,
+				VSRName:                 "",
+				VSRNamespace:            "",
 			},
 		},
 		InternalRedirectLocation: version2.InternalRedirectLocation{
@@ -4422,6 +4466,9 @@ func TestGenerateMatchesConfig(t *testing.T) {
 		locSnippets,
 		enableSnippets,
 		0,
+		false,
+		"",
+		"",
 	)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("generateMatchesConfig() returned \n%+v but expected \n%+v", result, expected)
@@ -4605,6 +4652,9 @@ func TestGenerateMatchesConfigWithMultipleSplits(t *testing.T) {
 				ProxySSLName:            "coffee-v1.default.svc",
 				ProxyPassRequestHeaders: true,
 				ServiceName:             "coffee-v1",
+				IsVSR:                   true,
+				VSRName:                 "coffee",
+				VSRNamespace:            "default",
 			},
 			{
 				Path:                     "/internal_location_splits_2_split_1",
@@ -4629,6 +4679,9 @@ func TestGenerateMatchesConfigWithMultipleSplits(t *testing.T) {
 				ProxySSLName:            "coffee-v2.default.svc",
 				ProxyPassRequestHeaders: true,
 				ServiceName:             "coffee-v2",
+				IsVSR:                   true,
+				VSRName:                 "coffee",
+				VSRNamespace:            "default",
 			},
 			{
 				Path:                     "/internal_location_splits_3_split_0",
@@ -4653,6 +4706,9 @@ func TestGenerateMatchesConfigWithMultipleSplits(t *testing.T) {
 				ProxySSLName:            "coffee-v2.default.svc",
 				ProxyPassRequestHeaders: true,
 				ServiceName:             "coffee-v2",
+				IsVSR:                   true,
+				VSRName:                 "coffee",
+				VSRNamespace:            "default",
 			},
 			{
 				Path:                     "/internal_location_splits_3_split_1",
@@ -4677,6 +4733,9 @@ func TestGenerateMatchesConfigWithMultipleSplits(t *testing.T) {
 				ProxySSLName:            "coffee-v1.default.svc",
 				ProxyPassRequestHeaders: true,
 				ServiceName:             "coffee-v1",
+				IsVSR:                   true,
+				VSRName:                 "coffee",
+				VSRNamespace:            "default",
 			},
 			{
 				Path:                     "/internal_location_splits_4_split_0",
@@ -4701,6 +4760,9 @@ func TestGenerateMatchesConfigWithMultipleSplits(t *testing.T) {
 				ProxySSLName:            "coffee-v1.default.svc",
 				ProxyPassRequestHeaders: true,
 				ServiceName:             "coffee-v1",
+				IsVSR:                   true,
+				VSRName:                 "coffee",
+				VSRNamespace:            "default",
 			},
 			{
 				Path:                     "/internal_location_splits_4_split_1",
@@ -4725,6 +4787,9 @@ func TestGenerateMatchesConfigWithMultipleSplits(t *testing.T) {
 				ProxySSLName:            "coffee-v2.default.svc",
 				ProxyPassRequestHeaders: true,
 				ServiceName:             "coffee-v2",
+				IsVSR:                   true,
+				VSRName:                 "coffee",
+				VSRNamespace:            "default",
 			},
 		},
 		InternalRedirectLocation: version2.InternalRedirectLocation{
@@ -4797,6 +4862,9 @@ func TestGenerateMatchesConfigWithMultipleSplits(t *testing.T) {
 		locSnippets,
 		enableSnippets,
 		0,
+		true,
+		"coffee",
+		"default",
 	)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("generateMatchesConfig() returned \n%+v but expected \n%+v", result, expected)

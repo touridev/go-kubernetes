@@ -60,10 +60,9 @@ server {
 
     server_name {{ $s.ServerName }};
     status_zone {{ $s.StatusZone }};
-
     set $resource_type "virtualserver";
-    set $resource_name "{{$s.ServerName}}";
-    set $resource_namespace "{{$s.Namespace}}";
+    set $resource_name "{{$s.VSName}}";
+    set $resource_namespace "{{$s.VSNamespace}}";
 
     {{ with $ssl := $s.SSL }}
         {{ if $s.TLSPassthrough }}
