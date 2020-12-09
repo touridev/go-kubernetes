@@ -21,6 +21,15 @@ const (
 	serverTokensAnnotation               = "nginx.org/server-tokens"
 	serverSnippetsAnnotation             = "nginx.org/server-snippets"
 	locationSnippetsAnnotation           = "nginx.org/location-snippets"
+	proxyConnectTimeoutAnnotation        = "nginx.org/proxy-connect-timeout"
+	proxyReadTimeoutAnnotation           = "nginx.org/proxy-read-timeout"
+	proxySendTimeoutAnnotation           = "nginx.org/proxy-send-timeout"
+	proxyHideHeadersAnnotation           = "nginx.org/proxy-hide-headers"
+	proxyPassHeadersAnnotation           = "nginx.org/proxy-pass-headers"
+	clientMaxBodySizeAnnotation          = "nginx.org/client-max-body-size"
+	redirectToHTTPSAnnotation            = "nginx.org/redirect-to-https"
+	sslRedirectAnnotation                = "ingress.kubernetes.io/ssl-redirect"
+	proxyBufferingAnnotation             = "nginx.org/proxy-buffering"
 )
 
 type annotationValidationContext struct {
@@ -64,8 +73,26 @@ var (
 			validateRequiredAnnotation,
 			validateBoolAnnotation,
 		},
-		serverSnippetsAnnotation: {},
-		locationSnippetsAnnotation: {},
+		serverSnippetsAnnotation:      {},
+		locationSnippetsAnnotation:    {},
+		proxyConnectTimeoutAnnotation: {},
+		proxyReadTimeoutAnnotation:    {},
+		proxySendTimeoutAnnotation:    {},
+		proxyHideHeadersAnnotation:    {},
+		proxyPassHeadersAnnotation:    {},
+		clientMaxBodySizeAnnotation:   {},
+		redirectToHTTPSAnnotation: {
+			validateRequiredAnnotation,
+			validateBoolAnnotation,
+		},
+		sslRedirectAnnotation: {
+			validateRequiredAnnotation,
+			validateBoolAnnotation,
+		},
+		proxyBufferingAnnotation: {
+			validateRequiredAnnotation,
+			validateBoolAnnotation,
+		},
 	}
 	nginxAnnotationNames = sortedAnnotationNames(nginxAnnotationValidations)
 
@@ -102,8 +129,26 @@ var (
 		serverTokensAnnotation: {
 			validateRequiredAnnotation,
 		},
-		serverSnippetsAnnotation: {},
-		locationSnippetsAnnotation: {},
+		serverSnippetsAnnotation:      {},
+		locationSnippetsAnnotation:    {},
+		proxyConnectTimeoutAnnotation: {},
+		proxyReadTimeoutAnnotation:    {},
+		proxySendTimeoutAnnotation:    {},
+		proxyHideHeadersAnnotation:    {},
+		proxyPassHeadersAnnotation:    {},
+		clientMaxBodySizeAnnotation:   {},
+		redirectToHTTPSAnnotation: {
+			validateRequiredAnnotation,
+			validateBoolAnnotation,
+		},
+		sslRedirectAnnotation: {
+			validateRequiredAnnotation,
+			validateBoolAnnotation,
+		},
+		proxyBufferingAnnotation: {
+			validateRequiredAnnotation,
+			validateBoolAnnotation,
+		},
 	}
 	nginxPlusAnnotationNames = sortedAnnotationNames(nginxPlusAnnotationValidations)
 )

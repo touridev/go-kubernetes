@@ -114,8 +114,9 @@ func parseAnnotations(ingEx *IngressEx, baseCfgParams *ConfigParams, isPlus bool
 		parsedSlowStart, err := ParseTime(slowStart)
 		if err != nil {
 			glog.Error(err)
+		} else {
+			cfgParams.SlowStart = parsedSlowStart
 		}
-		cfgParams.SlowStart = parsedSlowStart
 	}
 
 	if serverTokens, exists, err := GetMapKeyAsBool(ingEx.Ingress.Annotations, "nginx.org/server-tokens", ingEx.Ingress); exists {

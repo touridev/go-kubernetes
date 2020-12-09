@@ -256,14 +256,14 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 				"nginx.org/server-snippets": "snippet-1",
 			},
 			expectedErrors: nil,
-			msg:            "valid nginx.org/server-snippets annotation, single-line",
+			msg:            "valid nginx.org/server-snippets annotation, single-value",
 		},
 		{
 			annotations: map[string]string{
 				"nginx.org/server-snippets": "snippet-1\nsnippet-2\nsnippet-3",
 			},
 			expectedErrors: nil,
-			msg:            "valid nginx.org/server-snippets annotation, multi-line",
+			msg:            "valid nginx.org/server-snippets annotation, multi-value",
 		},
 
 		{
@@ -271,14 +271,127 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 				"nginx.org/location-snippets": "snippet-1",
 			},
 			expectedErrors: nil,
-			msg:            "valid nginx.org/location-snippets annotation",
+			msg:            "valid nginx.org/location-snippets annotation, single-value",
 		},
 		{
 			annotations: map[string]string{
 				"nginx.org/location-snippets": "snippet-1\nsnippet-2\nsnippet-3",
 			},
 			expectedErrors: nil,
-			msg:            "valid nginx.org/location-snippets annotation, multi-line",
+			msg:            "valid nginx.org/location-snippets annotation, multi-value",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-connect-timeout": "10s",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-connect-timeout annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-read-timeout": "10s",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-read-timeout annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-send-timeout": "10s",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-send-timeout annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-hide-headers": "header-1",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-hide-headers annotation, single-value",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-hide-headers": "header-1,header-2,header-3",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-hide-headers annotation, multi-value",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-pass-headers": "header-1",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-pass-headers annotation, single-value",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-pass-headers": "header-1,header-2,header-3",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-pass-headers annotation, multi-value",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/client-max-body-size": "16M",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/client-max-body-size annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/redirect-to-https": "true",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/redirect-to-https annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/redirect-to-https": "not_a_boolean",
+			},
+			expectedErrors: []string{
+				`annotations.nginx.org/redirect-to-https: Invalid value: "not_a_boolean": must be a valid boolean`,
+			},
+			msg: "invalid nginx.org/redirect-to-https annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"ingress.kubernetes.io/ssl-redirect": "true",
+			},
+			expectedErrors: nil,
+			msg:            "valid ingress.kubernetes.io/ssl-redirect annotation",
+		},
+		{
+			annotations: map[string]string{
+				"ingress.kubernetes.io/ssl-redirect": "not_a_boolean",
+			},
+			expectedErrors: []string{
+				`annotations.ingress.kubernetes.io/ssl-redirect: Invalid value: "not_a_boolean": must be a valid boolean`,
+			},
+			msg: "invalid ingress.kubernetes.io/ssl-redirect annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-buffering": "true",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-buffering annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-buffering": "not_a_boolean",
+			},
+			expectedErrors: []string{
+				`annotations.nginx.org/proxy-buffering: Invalid value: "not_a_boolean": must be a valid boolean`,
+			},
+			msg: "invalid nginx.org/proxy-buffering annotation",
 		},
 	}
 
@@ -494,14 +607,14 @@ func TestValidateNginxPlusIngressAnnotations(t *testing.T) {
 				"nginx.org/server-snippets": "snippet-1",
 			},
 			expectedErrors: nil,
-			msg:            "valid nginx.org/server-snippets annotation, single-line",
+			msg:            "valid nginx.org/server-snippets annotation, single-value",
 		},
 		{
 			annotations: map[string]string{
 				"nginx.org/server-snippets": "snippet-1\nsnippet-2\nsnippet-3",
 			},
 			expectedErrors: nil,
-			msg:            "valid nginx.org/server-snippets annotation, multi-line",
+			msg:            "valid nginx.org/server-snippets annotation, multi-value",
 		},
 
 		{
@@ -509,14 +622,127 @@ func TestValidateNginxPlusIngressAnnotations(t *testing.T) {
 				"nginx.org/location-snippets": "snippet-1",
 			},
 			expectedErrors: nil,
-			msg:            "valid nginx.org/location-snippets annotation",
+			msg:            "valid nginx.org/location-snippets annotation, single-value",
 		},
 		{
 			annotations: map[string]string{
 				"nginx.org/location-snippets": "snippet-1\nsnippet-2\nsnippet-3",
 			},
 			expectedErrors: nil,
-			msg:            "valid nginx.org/location-snippets annotation, multi-line",
+			msg:            "valid nginx.org/location-snippets annotation, multi-value",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-connect-timeout": "10s",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-connect-timeout annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-read-timeout": "10s",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-read-timeout annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-send-timeout": "10s",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-send-timeout annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-hide-headers": "header-1",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-hide-headers annotation, single-value",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-hide-headers": "header-1,header-2,header-3",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-hide-headers annotation, multi-value",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-pass-headers": "header-1",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-pass-headers annotation, single-value",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-pass-headers": "header-1,header-2,header-3",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-pass-headers annotation, multi-value",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/client-max-body-size": "16M",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/client-max-body-size annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/redirect-to-https": "true",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/redirect-to-https annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/redirect-to-https": "not_a_boolean",
+			},
+			expectedErrors: []string{
+				`annotations.nginx.org/redirect-to-https: Invalid value: "not_a_boolean": must be a valid boolean`,
+			},
+			msg: "invalid nginx.org/redirect-to-https annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"ingress.kubernetes.io/ssl-redirect": "true",
+			},
+			expectedErrors: nil,
+			msg:            "valid ingress.kubernetes.io/ssl-redirect annotation",
+		},
+		{
+			annotations: map[string]string{
+				"ingress.kubernetes.io/ssl-redirect": "not_a_boolean",
+			},
+			expectedErrors: []string{
+				`annotations.ingress.kubernetes.io/ssl-redirect: Invalid value: "not_a_boolean": must be a valid boolean`,
+			},
+			msg: "invalid ingress.kubernetes.io/ssl-redirect annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-buffering": "true",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/proxy-buffering annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-buffering": "not_a_boolean",
+			},
+			expectedErrors: []string{
+				`annotations.nginx.org/proxy-buffering: Invalid value: "not_a_boolean": must be a valid boolean`,
+			},
+			msg: "invalid nginx.org/proxy-buffering annotation",
 		},
 	}
 
