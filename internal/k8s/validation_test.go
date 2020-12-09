@@ -240,6 +240,46 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			},
 			msg: "invalid nginx.com/slow-start annotation, nginx plus only",
 		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/server-tokens": "custom_setting",
+			},
+			expectedErrors: []string{
+				`annotations.nginx.org/server-tokens: Invalid value: "custom_setting": must be a valid boolean`,
+			},
+			msg: "invalid nginx.org/server-tokens annotation, must be a boolean",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/server-snippets": "snippet-1",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/server-snippets annotation, single-line",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/server-snippets": "snippet-1\nsnippet-2\nsnippet-3",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/server-snippets annotation, multi-line",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/location-snippets": "snippet-1",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/location-snippets annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/location-snippets": "snippet-1\nsnippet-2\nsnippet-3",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/location-snippets annotation, multi-line",
+		},
 	}
 
 	for _, test := range tests {
@@ -439,6 +479,44 @@ func TestValidateNginxPlusIngressAnnotations(t *testing.T) {
 				`annotations.nginx.com/slow-start: Invalid value: "not_a_time": must be a valid time`,
 			},
 			msg: "invalid nginx.com/slow-start annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/server-tokens": "custom_setting",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/server-tokens annotation",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/server-snippets": "snippet-1",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/server-snippets annotation, single-line",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/server-snippets": "snippet-1\nsnippet-2\nsnippet-3",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/server-snippets annotation, multi-line",
+		},
+
+		{
+			annotations: map[string]string{
+				"nginx.org/location-snippets": "snippet-1",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/location-snippets annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/location-snippets": "snippet-1\nsnippet-2\nsnippet-3",
+			},
+			expectedErrors: nil,
+			msg:            "valid nginx.org/location-snippets annotation, multi-line",
 		},
 	}
 

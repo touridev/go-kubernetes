@@ -18,6 +18,9 @@ const (
 	healthChecksMandatoryAnnotation      = "nginx.com/health-checks-mandatory"
 	healthChecksMandatoryQueueAnnotation = "nginx.com/health-checks-mandatory-queue"
 	slowStartAnnotation                  = "nginx.com/slow-start"
+	serverTokensAnnotation               = "nginx.org/server-tokens"
+	serverSnippetsAnnotation             = "nginx.org/server-snippets"
+	locationSnippetsAnnotation           = "nginx.org/location-snippets"
 )
 
 type annotationValidationContext struct {
@@ -57,6 +60,12 @@ var (
 		slowStartAnnotation: {
 			validatePlusOnlyAnnotation,
 		},
+		serverTokensAnnotation: {
+			validateRequiredAnnotation,
+			validateBoolAnnotation,
+		},
+		serverSnippetsAnnotation: {},
+		locationSnippetsAnnotation: {},
 	}
 	nginxAnnotationNames = sortedAnnotationNames(nginxAnnotationValidations)
 
@@ -90,6 +99,11 @@ var (
 			validateRequiredAnnotation,
 			validateTimeAnnotation,
 		},
+		serverTokensAnnotation: {
+			validateRequiredAnnotation,
+		},
+		serverSnippetsAnnotation: {},
+		locationSnippetsAnnotation: {},
 	}
 	nginxPlusAnnotationNames = sortedAnnotationNames(nginxPlusAnnotationValidations)
 )
