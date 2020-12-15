@@ -9,8 +9,8 @@ RUN ln -sf /proc/1/fd/1 /var/log/nginx/access.log \
 	&& ln -sf /proc/1/fd/2 /var/log/nginx/error.log
 
 RUN mkdir -p /var/lib/nginx \
-	&& mkdir -p /etc/nginx/secrets \
-	&& mkdir -p /etc/nginx/stream-conf.d \
+		/etc/nginx/secrets \
+		/etc/nginx/stream-conf.d \
 	&& apt-get update \
 	&& apt-get install -y libcap2-bin \
 	&& setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx \

@@ -9,8 +9,8 @@ RUN ln -sf /proc/1/fd/1 /var/log/nginx/access.log \
 	&& ln -sf /proc/1/fd/2 /var/log/nginx/error.log
 
 RUN mkdir -p /etc/nginx/secrets \
-	&& mkdir -p /etc/nginx/stream-conf.d \
-	&& mkdir -p /var/lib/nginx \
+		/etc/nginx/stream-conf.d \
+		/var/lib/nginx \
 	&& apk add --no-cache libcap \
 	&& setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx \
 	          'cap_net_bind_service=+ep' /usr/sbin/nginx-debug \

@@ -22,8 +22,8 @@ RUN set -x \
 	&& echo "module_hotfixes=true" >> /etc/yum.repos.d/nginx.repo \
 	&& yum install -y nginx-${NGINX_VERSION} \
 	&& mkdir -p /var/lib/nginx \
-	&& mkdir -p /etc/nginx/secrets \
-	&& mkdir -p /etc/nginx/stream-conf.d \
+		/etc/nginx/secrets \
+		/etc/nginx/stream-conf.d \
 	&& setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx \
 	          'cap_net_bind_service=+ep' /usr/sbin/nginx-debug \
 	&& chown -R nginx:0 /etc/nginx \

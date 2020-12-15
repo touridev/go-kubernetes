@@ -68,8 +68,8 @@ RUN ln -sf /proc/1/fd/1 /var/log/nginx/access.log \
 COPY --from=tracer-downloader /usr/local/lib/libjaegertracing_plugin.so /usr/local/lib/libjaegertracing_plugin.so
 
 RUN mkdir -p /var/lib/nginx \
-	&& mkdir -p /etc/nginx/secrets \
-	&& mkdir -p /etc/nginx/stream-conf.d \
+		/etc/nginx/secrets \
+		/etc/nginx/stream-conf.d \
 	&& chown -R nginx:0 /etc/nginx \
 			    /var/cache/nginx \
 			    /var/lib/nginx/ \
