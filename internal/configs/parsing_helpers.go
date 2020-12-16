@@ -225,6 +225,19 @@ func ParseSize(s string) (string, error) {
 	return "", errors.New("Invalid size string")
 }
 
+// https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffers
+var proxyBuffersRegexp = regexp.MustCompile(`^\d+ \d+[kKmM]?$`)
+
+// ParseProxyBuffersSpec ensures that the string value is a valid proxy buffer spec
+func ParseProxyBuffersSpec(s string) (string, error) {
+	s = strings.TrimSpace(s)
+
+	if proxyBuffersRegexp.MatchString(s) {
+		return s, nil
+	}
+	return "", errors.New("Invalid proxy buffers string")
+}
+
 // ParsePortList ensures that the string is a comma-separated list of port numbers
 func ParsePortList(s string) ([]int, error) {
 	var ports []int

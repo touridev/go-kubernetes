@@ -556,6 +556,19 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			expectedErrors:        nil,
 			msg:                   "valid nginx.org/proxy-connect-timeout annotation",
 		},
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-connect-timeout": "not_a_time",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                false,
+			appProtectEnabled:     false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/proxy-connect-timeout: Invalid value: "not_a_time": must be a time`,
+			},
+			msg: "invalid nginx.org/proxy-connect-timeout annotation",
+		},
 
 		{
 			annotations: map[string]string{
@@ -568,6 +581,19 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			expectedErrors:        nil,
 			msg:                   "valid nginx.org/proxy-read-timeout annotation",
 		},
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-read-timeout": "not_a_time",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                false,
+			appProtectEnabled:     false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/proxy-read-timeout: Invalid value: "not_a_time": must be a time`,
+			},
+			msg: "invalid nginx.org/proxy-read-timeout annotation",
+		},
 
 		{
 			annotations: map[string]string{
@@ -579,6 +605,19 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			internalRoutesEnabled: false,
 			expectedErrors:        nil,
 			msg:                   "valid nginx.org/proxy-send-timeout annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-send-timeout": "not_a_time",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                false,
+			appProtectEnabled:     false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/proxy-send-timeout: Invalid value: "not_a_time": must be a time`,
+			},
+			msg: "invalid nginx.org/proxy-send-timeout annotation",
 		},
 
 		{
@@ -637,6 +676,19 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			internalRoutesEnabled: false,
 			expectedErrors:        nil,
 			msg:                   "valid nginx.org/client-max-body-size annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/client-max-body-size": "not_an_offset",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                false,
+			appProtectEnabled:     false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/client-max-body-size: Invalid value: "not_an_offset": must be an offset`,
+			},
+			msg: "invalid nginx.org/client-max-body-size annotation",
 		},
 
 		{
@@ -906,6 +958,19 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			expectedErrors:        nil,
 			msg:                   "valid nginx.org/proxy-buffers annotation",
 		},
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-buffers": "not_a_proxy_buffers_spec",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                false,
+			appProtectEnabled:     false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/proxy-buffers: Invalid value: "not_a_proxy_buffers_spec": must be a proxy buffer spec`,
+			},
+			msg: "invalid nginx.org/proxy-buffers annotation",
+		},
 
 		{
 			annotations: map[string]string{
@@ -917,6 +982,19 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			internalRoutesEnabled: false,
 			expectedErrors:        nil,
 			msg:                   "valid nginx.org/proxy-buffer-size annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-buffer-size": "not_a_size",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                false,
+			appProtectEnabled:     false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/proxy-buffer-size: Invalid value: "not_a_size": must be a size`,
+			},
+			msg: "invalid nginx.org/proxy-buffer-size annotation",
 		},
 
 		{
@@ -930,6 +1008,19 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			expectedErrors:        nil,
 			msg:                   "valid nginx.org/proxy-max-temp-file-size annotation",
 		},
+		{
+			annotations: map[string]string{
+				"nginx.org/proxy-max-temp-file-size": "not_a_size",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                false,
+			appProtectEnabled:     false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/proxy-max-temp-file-size: Invalid value: "not_a_size": must be a size`,
+			},
+			msg: "invalid nginx.org/proxy-max-temp-file-size annotation",
+		},
 
 		{
 			annotations: map[string]string{
@@ -941,6 +1032,19 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			internalRoutesEnabled: false,
 			expectedErrors:        nil,
 			msg:                   "valid nginx.org/upstream-zone-size annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/upstream-zone-size": "not a size",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                false,
+			appProtectEnabled:     false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/upstream-zone-size: Invalid value: "not a size": must be a size`,
+			},
+			msg: "invalid nginx.org/upstream-zone-size annotation",
 		},
 
 		{
@@ -1131,6 +1235,19 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 		},
 		{
 			annotations: map[string]string{
+				"nginx.org/max-fails": "-100",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                false,
+			appProtectEnabled:     false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/max-fails: Invalid value: "-100": must be a non-negative integer`,
+			},
+			msg: "invalid nginx.org/max-fails annotation, negative number",
+		},
+		{
+			annotations: map[string]string{
 				"nginx.org/max-fails": "not_a_number",
 			},
 			specServices:          map[string]bool{},
@@ -1138,9 +1255,9 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			appProtectEnabled:     false,
 			internalRoutesEnabled: false,
 			expectedErrors: []string{
-				`annotations.nginx.org/max-fails: Invalid value: "not_a_number": must be an integer`,
+				`annotations.nginx.org/max-fails: Invalid value: "not_a_number": must be a non-negative integer`,
 			},
-			msg: "invalid nginx.org/max-fails annotation",
+			msg: "invalid nginx.org/max-fails annotation, not a number",
 		},
 
 		{
@@ -1156,6 +1273,19 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 		},
 		{
 			annotations: map[string]string{
+				"nginx.org/max-conns": "-100",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                false,
+			appProtectEnabled:     false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/max-conns: Invalid value: "-100": must be a non-negative integer`,
+			},
+			msg: "invalid nginx.org/max-conns annotation, negative number",
+		},
+		{
+			annotations: map[string]string{
 				"nginx.org/max-conns": "not_a_number",
 			},
 			specServices:          map[string]bool{},
@@ -1163,7 +1293,7 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			appProtectEnabled:     false,
 			internalRoutesEnabled: false,
 			expectedErrors: []string{
-				`annotations.nginx.org/max-conns: Invalid value: "not_a_number": must be an integer`,
+				`annotations.nginx.org/max-conns: Invalid value: "not_a_number": must be a non-negative integer`,
 			},
 			msg: "invalid nginx.org/max-conns annotation",
 		},
@@ -1178,6 +1308,19 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			internalRoutesEnabled: false,
 			expectedErrors:        nil,
 			msg:                   "valid nginx.org/fail-timeout annotation",
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/fail-timeout": "not_a_time",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                false,
+			appProtectEnabled:     false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/fail-timeout: Invalid value: "not_a_time": must be a time`,
+			},
+			msg: "invalid nginx.org/fail-timeout annotation",
 		},
 
 		{

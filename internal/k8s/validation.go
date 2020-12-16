@@ -112,14 +112,26 @@ var (
 			validateRequiredAnnotation,
 			validateServerTokensAnnotation,
 		},
-		serverSnippetsAnnotation:      {},
-		locationSnippetsAnnotation:    {},
-		proxyConnectTimeoutAnnotation: {},
-		proxyReadTimeoutAnnotation:    {},
-		proxySendTimeoutAnnotation:    {},
-		proxyHideHeadersAnnotation:    {},
-		proxyPassHeadersAnnotation:    {},
-		clientMaxBodySizeAnnotation:   {},
+		serverSnippetsAnnotation:   {},
+		locationSnippetsAnnotation: {},
+		proxyConnectTimeoutAnnotation: {
+			validateRequiredAnnotation,
+			validateTimeAnnotation,
+		},
+		proxyReadTimeoutAnnotation: {
+			validateRequiredAnnotation,
+			validateTimeAnnotation,
+		},
+		proxySendTimeoutAnnotation: {
+			validateRequiredAnnotation,
+			validateTimeAnnotation,
+		},
+		proxyHideHeadersAnnotation: {},
+		proxyPassHeadersAnnotation: {},
+		clientMaxBodySizeAnnotation: {
+			validateRequiredAnnotation,
+			validateOffsetAnnotation,
+		},
 		redirectToHTTPSAnnotation: {
 			validateRequiredAnnotation,
 			validateBoolAnnotation,
@@ -151,10 +163,22 @@ var (
 			validateRequiredAnnotation,
 			validateBoolAnnotation,
 		},
-		proxyBuffersAnnotation:         {},
-		proxyBufferSizeAnnotation:      {},
-		proxyMaxTempFileSizeAnnotation: {},
-		upstreamZoneSizeAnnotation:     {},
+		proxyBuffersAnnotation: {
+			validateRequiredAnnotation,
+			validateProxyBuffersAnnotation,
+		},
+		proxyBufferSizeAnnotation: {
+			validateRequiredAnnotation,
+			validateSizeAnnotation,
+		},
+		proxyMaxTempFileSizeAnnotation: {
+			validateRequiredAnnotation,
+			validateSizeAnnotation,
+		},
+		upstreamZoneSizeAnnotation: {
+			validateRequiredAnnotation,
+			validateSizeAnnotation,
+		},
 		jwtRealmAnnotation: {
 			validatePlusOnlyAnnotation,
 		},
@@ -181,13 +205,16 @@ var (
 		},
 		maxFailsAnnotation: {
 			validateRequiredAnnotation,
-			validateIntAnnotation,
+			validateUint64Annotation,
 		},
 		maxConnsAnnotation: {
 			validateRequiredAnnotation,
-			validateIntAnnotation,
+			validateUint64Annotation,
 		},
-		failTimeoutAnnotation: {},
+		failTimeoutAnnotation: {
+			validateRequiredAnnotation,
+			validateTimeAnnotation,
+		},
 		appProtectEnableAnnotation: {
 			validateAppProtectOnlyAnnotation,
 			validateRequiredAnnotation,
@@ -400,6 +427,30 @@ func validateTimeAnnotation(context *annotationValidationContext) field.ErrorLis
 	allErrs := field.ErrorList{}
 	if _, err := configs.ParseTime(context.value); err != nil {
 		return append(allErrs, field.Invalid(context.fieldPath, context.value, "must be a time"))
+	}
+	return allErrs
+}
+
+func validateOffsetAnnotation(context *annotationValidationContext) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if _, err := configs.ParseOffset(context.value); err != nil {
+		return append(allErrs, field.Invalid(context.fieldPath, context.value, "must be an offset"))
+	}
+	return allErrs
+}
+
+func validateSizeAnnotation(context *annotationValidationContext) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if _, err := configs.ParseSize(context.value); err != nil {
+		return append(allErrs, field.Invalid(context.fieldPath, context.value, "must be a size"))
+	}
+	return allErrs
+}
+
+func validateProxyBuffersAnnotation(context *annotationValidationContext) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if _, err := configs.ParseProxyBuffersSpec(context.value); err != nil {
+		return append(allErrs, field.Invalid(context.fieldPath, context.value, "must be a proxy buffer spec"))
 	}
 	return allErrs
 }
