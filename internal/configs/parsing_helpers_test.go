@@ -423,6 +423,26 @@ func TestParseSize(t *testing.T) {
 	}
 }
 
+func TestParseProxyBuffersSpec(t *testing.T) {
+	var testsWithValidInput = []string{"1 1k", "10 24k", "2 2K", "6 3m", "128 3M"}
+	var invalidInput = []string{"-1", "-6 2k", "", "blah", "16k", "10M", "2 4g", "3 4G"}
+	for _, test := range testsWithValidInput {
+		result, err := ParseProxyBuffersSpec(test)
+		if err != nil {
+			t.Errorf("TestParseProxyBuffersSpec(%q) returned an error for valid input", test)
+		}
+		if test != result {
+			t.Errorf("TestParseProxyBuffersSpec(%q) returned %q expected %q", test, result, test)
+		}
+	}
+	for _, test := range invalidInput {
+		result, err := ParseProxyBuffersSpec(test)
+		if err == nil {
+			t.Errorf("TestParseProxyBuffersSpec(%q) didn't return error. Returned: %q", test, result)
+		}
+	}
+}
+
 func TestVerifyThresholds(t *testing.T) {
 	validInput := []string{
 		"high=3 low=1",
