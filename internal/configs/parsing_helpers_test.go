@@ -429,7 +429,7 @@ func TestParseProxyBuffersSpec(t *testing.T) {
 	for _, test := range testsWithValidInput {
 		result, err := ParseProxyBuffersSpec(test)
 		if err != nil {
-			t.Errorf("TestParseProxyBuffersSpec(%q) returned an error for valid input", test)
+			t.Errorf("ParseProxyBuffersSpec(%q) returned an error for valid input", test)
 		}
 		if test != result {
 			t.Errorf("TestParseProxyBuffersSpec(%q) returned %q expected %q", test, result, test)
