@@ -32,12 +32,14 @@ import (
 	latCollector "github.com/nginxinc/kubernetes-ingress/internal/metrics/collectors"
 )
 
-const pemFileNameForMissingTLSSecret = "/etc/nginx/secrets/default"
-const pemFileNameForWildcardTLSSecret = "/etc/nginx/secrets/wildcard"
-const appProtectPolicyFolder = "/etc/nginx/waf/nac-policies/"
-const appProtectLogConfFolder = "/etc/nginx/waf/nac-logconfs/"
-const appProtectUserSigFolder = "/etc/nginx/waf/nac-usersigs/"
-const appProtectUserSigIndex = "/etc/nginx/waf/nac-usersigs/index.conf"
+const (
+	pemFileNameForMissingTLSSecret  = "/etc/nginx/secrets/default"
+	pemFileNameForWildcardTLSSecret = "/etc/nginx/secrets/wildcard"
+	appProtectPolicyFolder          = "/etc/nginx/waf/nac-policies/"
+	appProtectLogConfFolder         = "/etc/nginx/waf/nac-logconfs/"
+	appProtectUserSigFolder         = "/etc/nginx/waf/nac-usersigs/"
+	appProtectUserSigIndex          = "/etc/nginx/waf/nac-usersigs/index.conf"
+)
 
 // DefaultServerSecretName is the filename of the Secret with a TLS cert and a key for the default server.
 const DefaultServerSecretName = "default"
@@ -50,6 +52,9 @@ const JWTKeyKey = "jwk"
 
 // CAKey is the key of the data field of a Secret where the cert must be stored.
 const CAKey = "ca.crt"
+
+// ClientSecretKey is the key of the data field of a Secret where the OIDC client secret must be stored.
+const ClientSecretKey = "client-secret"
 
 // SPIFFE filenames and modes
 const (
@@ -373,7 +378,8 @@ func (cnf *Configurator) updateVirtualServerMetricsLabels(virtualServerEx *Virtu
 		newZonesNames := []string{virtualServerEx.VirtualServer.Spec.Host}
 
 		serverZoneLabels[virtualServerEx.VirtualServer.Spec.Host] = []string{
-			"virtualserver", virtualServerEx.VirtualServer.Name, virtualServerEx.VirtualServer.Namespace}
+			"virtualserver", virtualServerEx.VirtualServer.Name, virtualServerEx.VirtualServer.Namespace,
+		}
 
 		newZones[virtualServerEx.VirtualServer.Spec.Host] = true
 
@@ -504,7 +510,8 @@ func (cnf *Configurator) updateTransportServerMetricsLabels(transportServerEx *T
 	newZonesNames := []string{zoneName}
 
 	streamServerZoneLabels[zoneName] = []string{
-		"transportserver", transportServerEx.TransportServer.Name, transportServerEx.TransportServer.Namespace}
+		"transportserver", transportServerEx.TransportServer.Name, transportServerEx.TransportServer.Namespace,
+	}
 
 	newZones[zoneName] = true
 	removedZones := findRemovedKeys(cnf.metricLabelsIndex.transportServerServerZones[key], newZones)
@@ -1077,7 +1084,6 @@ func (cnf *Configurator) UpdateConfig(cfgParams *ConfigParams, ingExes []*Ingres
 // might be removed from NGINX.
 func (cnf *Configurator) UpdateGlobalConfiguration(globalConfiguration *conf_v1alpha1.GlobalConfiguration,
 	transportServerExes []*TransportServerEx) (updatedTransportServerExes []*TransportServerEx, deletedTransportServerExes []*TransportServerEx, err error) {
-
 	cnf.globalCfgParams = ParseGlobalConfiguration(globalConfiguration, cnf.staticCfgParams.TLSPassthrough)
 
 	for _, tsEx := range transportServerExes {
@@ -1428,6 +1434,9 @@ func (cnf *Configurator) AddOrUpdateSecret(secret *api_v1.Secret) string {
 		return cnf.addOrUpdateCASecret(secret)
 	case secrets.SecretTypeJWK:
 		return cnf.addOrUpdateJWKSecret(secret)
+	case secrets.SecretTypeOIDC:
+		// OIDC ClientSecret is not required on the filesystem, it is written directly to the config file.
+		return ""
 	default:
 		return cnf.addOrUpdateTLSSecret(secret)
 	}

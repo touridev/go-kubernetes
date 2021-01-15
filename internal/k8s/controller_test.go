@@ -31,7 +31,7 @@ func TestHasCorrectIngressClass(t *testing.T) {
 	incorrectIngressClass := "gce"
 	emptyClass := ""
 
-	var testsWithoutIngressClassOnly = []struct {
+	testsWithoutIngressClassOnly := []struct {
 		lbc      *LoadBalancerController
 		ing      *networking.Ingress
 		expected bool
@@ -90,7 +90,7 @@ func TestHasCorrectIngressClass(t *testing.T) {
 		},
 	}
 
-	var testsWithIngressClassOnly = []struct {
+	testsWithIngressClassOnly := []struct {
 		lbc      *LoadBalancerController
 		ing      *networking.Ingress
 		expected bool
@@ -225,7 +225,6 @@ func TestHasCorrectIngressClass(t *testing.T) {
 				test.lbc.ingressClass, test.lbc.useIngressClassOnly, ingressClassKey, classAnnotation, result, test.expected)
 		}
 	}
-
 }
 
 func TestHasCorrectIngressClassVS(t *testing.T) {
@@ -236,7 +235,7 @@ func TestHasCorrectIngressClassVS(t *testing.T) {
 		metricsCollector:    collectors.NewControllerFakeCollector(),
 	}
 
-	var testsWithIngressClassOnlyVS = []struct {
+	testsWithIngressClassOnlyVS := []struct {
 		lbc      *LoadBalancerController
 		ing      *conf_v1.VirtualServer
 		expected bool
@@ -280,7 +279,7 @@ func TestHasCorrectIngressClassVS(t *testing.T) {
 		useIngressClassOnly: false,
 		metricsCollector:    collectors.NewControllerFakeCollector(),
 	}
-	var testsWithoutIngressClassOnlyVS = []struct {
+	testsWithoutIngressClassOnlyVS := []struct {
 		lbc      *LoadBalancerController
 		ing      *conf_v1.VirtualServer
 		expected bool
@@ -515,7 +514,6 @@ func TestFindProbeForPods(t *testing.T) {
 	if probe != nil {
 		t.Errorf("ServicePort.Port mismatch: %+v", probe)
 	}
-
 }
 
 func TestGetServicePortForIngressPort(t *testing.T) {
@@ -828,7 +826,7 @@ func TestGetPolicies(t *testing.T) {
 
 	expectedPolicies := []*conf_v1.Policy{validPolicy}
 	expectedErrors := []error{
-		errors.New("Policy default/invalid-policy is invalid: spec: Invalid value: \"\": must specify exactly one of: `accessControl`, `rateLimit`, `ingressMTLS`, `egressMTLS`, `jwt`"),
+		errors.New("Policy default/invalid-policy is invalid: spec: Invalid value: \"\": must specify exactly one of: `accessControl`, `rateLimit`, `ingressMTLS`, `egressMTLS`, `jwt`, `oidc`"),
 		errors.New("Policy nginx-ingress/valid-policy doesn't exist"),
 		errors.New("Failed to get policy nginx-ingress/some-policy: GetByKey error"),
 	}
@@ -1136,6 +1134,17 @@ func TestFindPoliciesForSecret(t *testing.T) {
 			},
 		},
 	}
+	oidcPol := &conf_v1.Policy{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "oidc-policy",
+			Namespace: "default",
+		},
+		Spec: conf_v1.PolicySpec{
+			OIDC: &conf_v1.OIDC{
+				ClientSecret: "oidc-secret",
+			},
+		},
+	}
 
 	tests := []struct {
 		policies        []*conf_v1.Policy
@@ -1207,6 +1216,20 @@ func TestFindPoliciesForSecret(t *testing.T) {
 			expected:        []*conf_v1.Policy{egTLSPol2},
 			msg:             "Find policy in default ns, ignore other types",
 		},
+		{
+			policies:        []*conf_v1.Policy{oidcPol},
+			secretNamespace: "default",
+			secretName:      "oidc-secret",
+			expected:        []*conf_v1.Policy{oidcPol},
+			msg:             "Find policy in default ns",
+		},
+		{
+			policies:        []*conf_v1.Policy{ingTLSPol, oidcPol},
+			secretNamespace: "default",
+			secretName:      "oidc-secret",
+			expected:        []*conf_v1.Policy{oidcPol},
+			msg:             "Find policy in default ns, ignore other types",
+		},
 	}
 	for _, test := range tests {
 		result := findPoliciesForSecret(test.policies, test.secretNamespace, test.secretName)
@@ -1226,6 +1249,20 @@ func errorComparer(e1, e2 error) bool {
 
 func TestAddJWTSecrets(t *testing.T) {
 	invalidErr := errors.New("invalid")
+	validJWKSecret := &v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "valid-jwk-secret",
+			Namespace: "default",
+		},
+		Type: secrets.SecretTypeJWK,
+	}
+	invalidJWKSecret := &v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "invalid-jwk-secret",
+			Namespace: "default",
+		},
+		Type: secrets.SecretTypeJWK,
+	}
 
 	tests := []struct {
 		policies           []*conf_v1.Policy
@@ -1250,8 +1287,8 @@ func TestAddJWTSecrets(t *testing.T) {
 			},
 			expectedSecretRefs: map[string]*secrets.SecretReference{
 				"default/valid-jwk-secret": {
-					Type: secrets.SecretTypeJWK,
-					Path: "/etc/nginx/secrets/default-valid-jwk-secret",
+					Secret: validJWKSecret,
+					Path:   "/etc/nginx/secrets/default-valid-jwk-secret",
 				},
 			},
 			wantErr: false,
@@ -1298,8 +1335,8 @@ func TestAddJWTSecrets(t *testing.T) {
 			},
 			expectedSecretRefs: map[string]*secrets.SecretReference{
 				"default/invalid-jwk-secret": {
-					Type:  secrets.SecretTypeJWK,
-					Error: invalidErr,
+					Secret: invalidJWKSecret,
+					Error:  invalidErr,
 				},
 			},
 			wantErr: true,
@@ -1308,26 +1345,14 @@ func TestAddJWTSecrets(t *testing.T) {
 	}
 
 	lbc := LoadBalancerController{
-		secretStore: secrets.NewFakeSecretsStore(map[string]*secrets.StoredSecret{
+		secretStore: secrets.NewFakeSecretsStore(map[string]*secrets.SecretReference{
 			"default/valid-jwk-secret": {
-				Secret: &v1.Secret{
-					ObjectMeta: meta_v1.ObjectMeta{
-						Name:      "valid-jwk-secret",
-						Namespace: "default",
-					},
-					Type: secrets.SecretTypeJWK,
-				},
-				Path: "/etc/nginx/secrets/default-valid-jwk-secret",
+				Secret: validJWKSecret,
+				Path:   "/etc/nginx/secrets/default-valid-jwk-secret",
 			},
 			"default/invalid-jwk-secret": {
-				Secret: &v1.Secret{
-					ObjectMeta: meta_v1.ObjectMeta{
-						Name:      "invalid-jwk-secret",
-						Namespace: "default",
-					},
-					Type: secrets.SecretTypeJWK,
-				},
-				ValidationErr: invalidErr,
+				Secret: invalidJWKSecret,
+				Error:  invalidErr,
 			},
 		}),
 	}
@@ -1348,6 +1373,20 @@ func TestAddJWTSecrets(t *testing.T) {
 
 func TestAddIngressMTLSSecret(t *testing.T) {
 	invalidErr := errors.New("invalid")
+	validSecret := &v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "valid-ingress-mtls-secret",
+			Namespace: "default",
+		},
+		Type: secrets.SecretTypeCA,
+	}
+	invalidSecret := &v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "invalid-ingress-mtls-secret",
+			Namespace: "default",
+		},
+		Type: secrets.SecretTypeCA,
+	}
 
 	tests := []struct {
 		policies           []*conf_v1.Policy
@@ -1371,8 +1410,8 @@ func TestAddIngressMTLSSecret(t *testing.T) {
 			},
 			expectedSecretRefs: map[string]*secrets.SecretReference{
 				"default/valid-ingress-mtls-secret": {
-					Type: secrets.SecretTypeCA,
-					Path: "/etc/nginx/secrets/default-valid-ingress-mtls-secret",
+					Secret: validSecret,
+					Path:   "/etc/nginx/secrets/default-valid-ingress-mtls-secret",
 				},
 			},
 			wantErr: false,
@@ -1418,8 +1457,8 @@ func TestAddIngressMTLSSecret(t *testing.T) {
 			},
 			expectedSecretRefs: map[string]*secrets.SecretReference{
 				"default/invalid-ingress-mtls-secret": {
-					Type:  secrets.SecretTypeCA,
-					Error: invalidErr,
+					Secret: invalidSecret,
+					Error:  invalidErr,
 				},
 			},
 			wantErr: true,
@@ -1428,26 +1467,14 @@ func TestAddIngressMTLSSecret(t *testing.T) {
 	}
 
 	lbc := LoadBalancerController{
-		secretStore: secrets.NewFakeSecretsStore(map[string]*secrets.StoredSecret{
+		secretStore: secrets.NewFakeSecretsStore(map[string]*secrets.SecretReference{
 			"default/valid-ingress-mtls-secret": {
-				Secret: &v1.Secret{
-					ObjectMeta: meta_v1.ObjectMeta{
-						Name:      "valid-ingress-mtls-secret",
-						Namespace: "default",
-					},
-					Type: secrets.SecretTypeCA,
-				},
-				Path: "/etc/nginx/secrets/default-valid-ingress-mtls-secret",
+				Secret: validSecret,
+				Path:   "/etc/nginx/secrets/default-valid-ingress-mtls-secret",
 			},
 			"default/invalid-ingress-mtls-secret": {
-				Secret: &v1.Secret{
-					ObjectMeta: meta_v1.ObjectMeta{
-						Name:      "invalid-ingress-mtls-secret",
-						Namespace: "default",
-					},
-					Type: secrets.SecretTypeCA,
-				},
-				ValidationErr: invalidErr,
+				Secret: invalidSecret,
+				Error:  invalidErr,
 			},
 		}),
 	}
@@ -1468,6 +1495,34 @@ func TestAddIngressMTLSSecret(t *testing.T) {
 
 func TestAddEgressMTLSSecrets(t *testing.T) {
 	invalidErr := errors.New("invalid")
+	validMTLSSecret := &v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "valid-egress-mtls-secret",
+			Namespace: "default",
+		},
+		Type: api_v1.SecretTypeTLS,
+	}
+	validTrustedSecret := &v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "valid-egress-trusted-secret",
+			Namespace: "default",
+		},
+		Type: secrets.SecretTypeCA,
+	}
+	invalidMTLSSecret := &v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "invalid-egress-mtls-secret",
+			Namespace: "default",
+		},
+		Type: api_v1.SecretTypeTLS,
+	}
+	invalidTrustedSecret := &v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "invalid-egress-trusted-secret",
+			Namespace: "default",
+		},
+		Type: secrets.SecretTypeCA,
+	}
 
 	tests := []struct {
 		policies           []*conf_v1.Policy
@@ -1491,8 +1546,8 @@ func TestAddEgressMTLSSecrets(t *testing.T) {
 			},
 			expectedSecretRefs: map[string]*secrets.SecretReference{
 				"default/valid-egress-mtls-secret": {
-					Type: api_v1.SecretTypeTLS,
-					Path: "/etc/nginx/secrets/default-valid-egress-mtls-secret",
+					Secret: validMTLSSecret,
+					Path:   "/etc/nginx/secrets/default-valid-egress-mtls-secret",
 				},
 			},
 			wantErr: false,
@@ -1514,8 +1569,8 @@ func TestAddEgressMTLSSecrets(t *testing.T) {
 			},
 			expectedSecretRefs: map[string]*secrets.SecretReference{
 				"default/valid-egress-trusted-secret": {
-					Type: secrets.SecretTypeCA,
-					Path: "/etc/nginx/secrets/default-valid-egress-trusted-secret",
+					Secret: validTrustedSecret,
+					Path:   "/etc/nginx/secrets/default-valid-egress-trusted-secret",
 				},
 			},
 			wantErr: false,
@@ -1538,12 +1593,12 @@ func TestAddEgressMTLSSecrets(t *testing.T) {
 			},
 			expectedSecretRefs: map[string]*secrets.SecretReference{
 				"default/valid-egress-mtls-secret": {
-					Type: api_v1.SecretTypeTLS,
-					Path: "/etc/nginx/secrets/default-valid-egress-mtls-secret",
+					Secret: validMTLSSecret,
+					Path:   "/etc/nginx/secrets/default-valid-egress-mtls-secret",
 				},
 				"default/valid-egress-trusted-secret": {
-					Type: secrets.SecretTypeCA,
-					Path: "/etc/nginx/secrets/default-valid-egress-trusted-secret",
+					Secret: validTrustedSecret,
+					Path:   "/etc/nginx/secrets/default-valid-egress-trusted-secret",
 				},
 			},
 			wantErr: false,
@@ -1589,8 +1644,8 @@ func TestAddEgressMTLSSecrets(t *testing.T) {
 			},
 			expectedSecretRefs: map[string]*secrets.SecretReference{
 				"default/invalid-egress-mtls-secret": {
-					Type:  api_v1.SecretTypeTLS,
-					Error: invalidErr,
+					Secret: invalidMTLSSecret,
+					Error:  invalidErr,
 				},
 			},
 			wantErr: true,
@@ -1612,8 +1667,8 @@ func TestAddEgressMTLSSecrets(t *testing.T) {
 			},
 			expectedSecretRefs: map[string]*secrets.SecretReference{
 				"default/invalid-egress-trusted-secret": {
-					Type:  secrets.SecretTypeCA,
-					Error: invalidErr,
+					Secret: invalidTrustedSecret,
+					Error:  invalidErr,
 				},
 			},
 			wantErr: true,
@@ -1622,46 +1677,22 @@ func TestAddEgressMTLSSecrets(t *testing.T) {
 	}
 
 	lbc := LoadBalancerController{
-		secretStore: secrets.NewFakeSecretsStore(map[string]*secrets.StoredSecret{
+		secretStore: secrets.NewFakeSecretsStore(map[string]*secrets.SecretReference{
 			"default/valid-egress-mtls-secret": {
-				Secret: &v1.Secret{
-					ObjectMeta: meta_v1.ObjectMeta{
-						Name:      "valid-egress-mtls-secret",
-						Namespace: "default",
-					},
-					Type: api_v1.SecretTypeTLS,
-				},
-				Path: "/etc/nginx/secrets/default-valid-egress-mtls-secret",
+				Secret: validMTLSSecret,
+				Path:   "/etc/nginx/secrets/default-valid-egress-mtls-secret",
 			},
 			"default/valid-egress-trusted-secret": {
-				Secret: &v1.Secret{
-					ObjectMeta: meta_v1.ObjectMeta{
-						Name:      "valid-egress-trusted-secret",
-						Namespace: "default",
-					},
-					Type: secrets.SecretTypeCA,
-				},
-				Path: "/etc/nginx/secrets/default-valid-egress-trusted-secret",
+				Secret: validTrustedSecret,
+				Path:   "/etc/nginx/secrets/default-valid-egress-trusted-secret",
 			},
 			"default/invalid-egress-mtls-secret": {
-				Secret: &v1.Secret{
-					ObjectMeta: meta_v1.ObjectMeta{
-						Name:      "invalid-egress-mtls-secret",
-						Namespace: "default",
-					},
-					Type: api_v1.SecretTypeTLS,
-				},
-				ValidationErr: invalidErr,
+				Secret: invalidMTLSSecret,
+				Error:  invalidErr,
 			},
 			"default/invalid-egress-trusted-secret": {
-				Secret: &v1.Secret{
-					ObjectMeta: meta_v1.ObjectMeta{
-						Name:      "invalid-egress-trusted-secret",
-						Namespace: "default",
-					},
-					Type: secrets.SecretTypeCA,
-				},
-				ValidationErr: invalidErr,
+				Secret: invalidTrustedSecret,
+				Error:  invalidErr,
 			},
 		}),
 	}
@@ -1675,6 +1706,129 @@ func TestAddEgressMTLSSecrets(t *testing.T) {
 		}
 		if diff := cmp.Diff(test.expectedSecretRefs, result, cmp.Comparer(errorComparer)); diff != "" {
 			t.Errorf("addEgressMTLSSecretRefs() '%v' mismatch (-want +got):\n%s", test.msg, diff)
+		}
+	}
+}
+
+func TestAddOidcSecret(t *testing.T) {
+	invalidErr := errors.New("invalid")
+	validSecret := &v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "valid-oidc-secret",
+			Namespace: "default",
+		},
+		Data: map[string][]byte{
+			"client-secret": nil,
+		},
+		Type: secrets.SecretTypeOIDC,
+	}
+	invalidSecret := &v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "invalid-oidc-secret",
+			Namespace: "default",
+		},
+		Type: secrets.SecretTypeOIDC,
+	}
+
+	tests := []struct {
+		policies           []*conf_v1.Policy
+		expectedSecretRefs map[string]*secrets.SecretReference
+		wantErr            bool
+		msg                string
+	}{
+		{
+			policies: []*conf_v1.Policy{
+				{
+					ObjectMeta: meta_v1.ObjectMeta{
+						Name:      "oidc-policy",
+						Namespace: "default",
+					},
+					Spec: conf_v1.PolicySpec{
+						OIDC: &conf_v1.OIDC{
+							ClientSecret: "valid-oidc-secret",
+						},
+					},
+				},
+			},
+			expectedSecretRefs: map[string]*secrets.SecretReference{
+				"default/valid-oidc-secret": {
+					Secret: validSecret,
+				},
+			},
+			wantErr: false,
+			msg:     "test getting valid secret",
+		},
+		{
+			policies:           []*conf_v1.Policy{},
+			expectedSecretRefs: map[string]*secrets.SecretReference{},
+			wantErr:            false,
+			msg:                "test getting valid secret with no policy",
+		},
+		{
+			policies: []*conf_v1.Policy{
+				{
+					ObjectMeta: meta_v1.ObjectMeta{
+						Name:      "oidc-policy",
+						Namespace: "default",
+					},
+					Spec: conf_v1.PolicySpec{
+						AccessControl: &conf_v1.AccessControl{
+							Allow: []string{"127.0.0.1"},
+						},
+					},
+				},
+			},
+			expectedSecretRefs: map[string]*secrets.SecretReference{},
+			wantErr:            false,
+			msg:                "test getting valid secret with wrong policy",
+		},
+		{
+			policies: []*conf_v1.Policy{
+				{
+					ObjectMeta: meta_v1.ObjectMeta{
+						Name:      "oidc-policy",
+						Namespace: "default",
+					},
+					Spec: conf_v1.PolicySpec{
+						OIDC: &conf_v1.OIDC{
+							ClientSecret: "invalid-oidc-secret",
+						},
+					},
+				},
+			},
+			expectedSecretRefs: map[string]*secrets.SecretReference{
+				"default/invalid-oidc-secret": {
+					Secret: invalidSecret,
+					Error:  invalidErr,
+				},
+			},
+			wantErr: true,
+			msg:     "test getting invalid secret",
+		},
+	}
+
+	lbc := LoadBalancerController{
+		secretStore: secrets.NewFakeSecretsStore(map[string]*secrets.SecretReference{
+			"default/valid-oidc-secret": {
+				Secret: validSecret,
+			},
+			"default/invalid-oidc-secret": {
+				Secret: invalidSecret,
+				Error:  invalidErr,
+			},
+		}),
+	}
+
+	for _, test := range tests {
+		result := make(map[string]*secrets.SecretReference)
+
+		err := lbc.addOIDCSecretRefs(result, test.policies)
+		if (err != nil) != test.wantErr {
+			t.Errorf("addOIDCSecretRefs() returned %v, for the case of %v", err, test.msg)
+		}
+
+		if diff := cmp.Diff(test.expectedSecretRefs, result, cmp.Comparer(errorComparer)); diff != "" {
+			t.Errorf("addOIDCSecretRefs() '%v' mismatch (-want +got):\n%s", test.msg, diff)
 		}
 	}
 }
