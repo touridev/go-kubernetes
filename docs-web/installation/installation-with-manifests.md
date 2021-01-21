@@ -209,8 +209,17 @@ $ kubectl get pods --namespace=nginx-ingress
     ```
     $ kubectl delete namespace nginx-ingress
     ```
-2. Delete the ClusterRole and ClusterRoleBinding created in that step:
+1. Delete the ClusterRole and ClusterRoleBinding:
     ```
     $ kubectl delete clusterrole nginx-ingress
     $ kubectl delete clusterrolebinding nginx-ingress
+    ```
+1. Delete the Custom Resource Definitions:
+
+    **Note**: This step will also remove all associated Custom Resources.
+
+    **Note**: There are two different sets of custom resource definitions: one for Kubernetes <= v1.15 and one for Kubernetes >= v1.16. For Kubernetes <= v1.15 substitute `crds` with `crds-v1beta1` in the following command.
+
+    ```
+    $ kubectl delete -f common/crds/
     ```
