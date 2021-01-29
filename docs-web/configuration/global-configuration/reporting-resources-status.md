@@ -111,3 +111,43 @@ The Ingress controller must be configured to report a VirtualServer or VirtualSe
 See the docs about [ConfigMap keys](/nginx-ingress-controller/configuration/global-configuration/configmap-resource) and [Command-line arguments](/nginx-ingress-controller/configuration/global-configuration/command-line-arguments).
 
 Notes: The Ingress controller does not clear the status of VirtualServer and VirtualServerRoute resources when it is being shut down.
+
+## Policy Resources
+
+A Policy resource includes the status field with information about the state of the resource.
+You can see the status in the ouput of the `kubectl get policy` command as shown below:
+```
+$ kubectl get policy
+  NAME              STATE   AGE
+  webapp-policy     Valid   30s
+```
+In order to see additional addresses or extra information about the `Status` of the resource, use the following command:
+```
+$ kubectl describe policy <NAME>
+. . .
+Status:
+  Message:  Configuration for default/webapp-policy was added or updated
+  Reason:   AddedOrUpdated
+  State:    Valid
+```
+
+### Status Specification 
+The following fields are reported in Policy status:
+
+```eval_rst
+.. list-table::
+   :header-rows: 1
+
+   * - Field
+     - Description
+     - Type
+   * - ``State``
+     - Current state of the resource. Can be ``Valid`` or ``Invalid``. For more information, refer to the ``message`` field.
+     - ``string``
+   * - ``Reason``
+     - The reason of the last update.
+     - ``string``
+   * - ``Message``
+     - Additional information about the state.
+     - ``string``
+```

@@ -469,3 +469,64 @@ func TestIsRequiredPort(t *testing.T) {
 		}
 	}
 }
+
+func TestHasPolicyStatusChanged(t *testing.T) {
+
+	state := "Valid"
+	reason := "AddedOrUpdated"
+	msg := "Configuration was added or updated"
+
+	tests := []struct {
+		expected bool
+		pol      conf_v1.Policy
+	}{
+		{
+			expected: false,
+			pol: conf_v1.Policy{
+				Status: conf_v1.PolicyStatus{
+					State:   state,
+					Reason:  reason,
+					Message: msg,
+				},
+			},
+		},
+		{
+			expected: true,
+			pol: conf_v1.Policy{
+				Status: conf_v1.PolicyStatus{
+					State:   "DifferentState",
+					Reason:  reason,
+					Message: msg,
+				},
+			},
+		},
+		{
+			expected: true,
+			pol: conf_v1.Policy{
+				Status: conf_v1.PolicyStatus{
+					State:   state,
+					Reason:  "DifferentReason",
+					Message: msg,
+				},
+			},
+		},
+		{
+			expected: true,
+			pol: conf_v1.Policy{
+				Status: conf_v1.PolicyStatus{
+					State:   state,
+					Reason:  reason,
+					Message: "DifferentMessage",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		changed := hasPolicyStatusChanged(&test.pol, state, reason, msg)
+
+		if changed != test.expected {
+			t.Errorf("hasPolicyStatusChanged(%v, %v, %v, %v) returned %v but expected %v.", test.pol, state, reason, msg, changed, test.expected)
+		}
+	}
+}

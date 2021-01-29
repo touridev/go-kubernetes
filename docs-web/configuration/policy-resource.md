@@ -651,4 +651,15 @@ Events:
 ```
 Note how the events section includes a Warning event with the Rejected reason.
 
+Additionally, this information is also available in the `status` field of the Policy resource. Note the Status section of the Policy:
+
+```
+$ kubectl describe pol webapp-policy
+. . .
+Status:
+  Message:  Policy default/webapp-policy is invalid and was rejected: spec.accessControl.allow[0]: Invalid value: "10.0.0.": must be a CIDR or IP
+  Reason:   Rejected
+  State:    Invalid
+```
+
 **Note**: If you make an existing resource invalid, the Ingress Controller will reject it.

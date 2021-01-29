@@ -16,7 +16,15 @@ spec:
     singular: policy
   scope: Namespaced
   versions:
-    - name: v1
+    - additionalPrinterColumns:
+        - description: Current state of the Policy. If the resource has a valid status, it means it has been validated and accepted by the Ingress Controller.
+          jsonPath: .status.state
+          name: State
+          type: string
+        - jsonPath: .metadata.creationTimestamp
+          name: Age
+          type: date
+      name: v1
       schema:
         openAPIV3Schema:
           description: Policy defines a Policy for VirtualServer and VirtualServerRoute resources.
@@ -128,8 +136,20 @@ spec:
                       type: integer
                     zoneSize:
                       type: string
+            status:
+              description: PolicyStatus is the status of the policy resource
+              type: object
+              properties:
+                message:
+                  type: string
+                reason:
+                  type: string
+                state:
+                  type: string
       served: true
       storage: true
+      subresources:
+        status: {}
 status:
   acceptedNames:
     kind: ""

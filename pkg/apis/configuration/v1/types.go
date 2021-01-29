@@ -318,13 +318,24 @@ type VirtualServerRouteStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:validation:Optional
 // +kubebuilder:resource:shortName=pol
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.state`,description="Current state of the Policy. If the resource has a valid status, it means it has been validated and accepted by the Ingress Controller."
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // Policy defines a Policy for VirtualServer and VirtualServerRoute resources.
 type Policy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec PolicySpec `json:"spec"`
+	Spec   PolicySpec   `json:"spec"`
+	Status PolicyStatus `json:"status"`
+}
+
+// PolicyStatus is the status of the policy resource
+type PolicyStatus struct {
+	State   string `json:"state"`
+	Reason  string `json:"reason"`
+	Message string `json:"message"`
 }
 
 // PolicySpec is the spec of the Policy resource.

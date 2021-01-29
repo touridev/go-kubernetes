@@ -6,6 +6,14 @@ metadata:
   creationTimestamp: null
   name: policies.k8s.nginx.org
 spec:
+  additionalPrinterColumns:
+    - JSONPath: .status.state
+      description: Current state of the Policy. If the resource has a valid status, it means it has been validated and accepted by the Ingress Controller.
+      name: State
+      type: string
+    - JSONPath: .metadata.creationTimestamp
+      name: Age
+      type: date
   group: k8s.nginx.org
   names:
     kind: Policy
@@ -16,6 +24,8 @@ spec:
     singular: policy
   preserveUnknownFields: false
   scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: Policy defines a Policy for VirtualServer and VirtualServerRoute resources.
@@ -127,6 +137,16 @@ spec:
                   type: integer
                 zoneSize:
                   type: string
+        status:
+          description: PolicyStatus is the status of the policy resource
+          type: object
+          properties:
+            message:
+              type: string
+            reason:
+              type: string
+            state:
+              type: string
   version: v1
   versions:
     - name: v1

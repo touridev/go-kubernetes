@@ -40,6 +40,7 @@ type statusUpdater struct {
 	ingressLister            *storeToIngressLister
 	virtualServerLister      cache.Store
 	virtualServerRouteLister cache.Store
+	policyLister             cache.Store
 	confClient               k8s_nginx.Interface
 }
 
@@ -557,4 +558,55 @@ func (su *statusUpdater) generateExternalEndpointsFromStatus(status []api_v1.Loa
 	}
 
 	return externalEndpoints
+}
+
+func hasPolicyStatusChanged(pol *v1.Policy, state string, reason string, message string) bool {
+	return pol.Status.State != state || pol.Status.Reason != reason || pol.Status.Message != message
+}
+
+// UpdatePolicyStatus updates the status of a Policy.
+func (su *statusUpdater) UpdatePolicyStatus(pol *v1.Policy, state string, reason string, message string) error {
+	// Get an up-to-date Policy from the Store
+	polLatest, exists, err := su.policyLister.Get(pol)
+	if err != nil {
+		glog.V(3).Infof("error getting policy from Store: %v", err)
+		return err
+	}
+	if !exists {
+		glog.V(3).Infof("Policy doesn't exist in Store")
+		return nil
+	}
+
+	polCopy := polLatest.(*v1.Policy)
+
+	if !hasPolicyStatusChanged(polCopy, state, reason, message) {
+		return nil
+	}
+
+	polCopy.Status.State = state
+	polCopy.Status.Reason = reason
+	polCopy.Status.Message = message
+
+	_, err = su.confClient.K8sV1().Policies(polCopy.Namespace).UpdateStatus(context.TODO(), polCopy, metav1.UpdateOptions{})
+	if err != nil {
+		glog.V(3).Infof("error setting Policy %v/%v status, retrying: %v", polCopy.Namespace, polCopy.Name, err)
+		return su.retryUpdatePolicyStatus(polCopy)
+	}
+
+	return nil
+}
+
+func (su *statusUpdater) retryUpdatePolicyStatus(polCopy *v1.Policy) error {
+	pol, err := su.confClient.K8sV1().Policies(polCopy.Namespace).Get(context.TODO(), polCopy.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	pol.Status = polCopy.Status
+	_, err = su.confClient.K8sV1().Policies(pol.Namespace).UpdateStatus(context.TODO(), pol, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

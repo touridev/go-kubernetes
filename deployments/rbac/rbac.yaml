@@ -76,6 +76,7 @@ rules:
   resources:
   - virtualservers/status
   - virtualserverroutes/status
+  - policies/status
   verbs:
   - update
 - apiGroups:
