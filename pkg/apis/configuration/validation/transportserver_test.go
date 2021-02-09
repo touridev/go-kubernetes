@@ -410,6 +410,56 @@ func TestValidateUpstreamParameters(t *testing.T) {
 	}
 }
 
+func TestValidateSessionParameters(t *testing.T) {
+	tests := []struct {
+		parameters *v1alpha1.SessionParameters
+		msg        string
+	}{
+		{
+			parameters: nil,
+			msg:        "nil parameters",
+		},
+		{
+			parameters: &v1alpha1.SessionParameters{},
+			msg:        "Non-nil parameters",
+		},
+		{
+			parameters: &v1alpha1.SessionParameters{
+				Timeout: "60s",
+			},
+			msg: "valid parameters",
+		},
+	}
+
+	for _, test := range tests {
+		allErrs := validateSessionParameters(test.parameters, field.NewPath("sessionParameters"))
+		if len(allErrs) > 0 {
+			t.Errorf("validateSessionParameters() returned errors %v for valid input for the case of %s", allErrs, test.msg)
+		}
+	}
+}
+
+func TestValidateSessionParametersFails(t *testing.T) {
+	tests := []struct {
+		parameters *v1alpha1.SessionParameters
+		msg        string
+	}{
+		{
+			parameters: &v1alpha1.SessionParameters{
+				Timeout: "-1s",
+			},
+			msg: "invalid timeout",
+		},
+	}
+
+	for _, test := range tests {
+		allErrs := validateSessionParameters(test.parameters, field.NewPath("sessionParameters"))
+		if len(allErrs) == 0 {
+			t.Errorf("validateSessionParameters() returned no errors for invalid input: %v", test.msg)
+		}
+	}
+}
+
 func TestValidateUDPUpstreamParameter(t *testing.T) {
 	validInput := []struct {
 		parameter *int
