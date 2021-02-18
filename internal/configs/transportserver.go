@@ -97,13 +97,12 @@ func generateStreamUpstreams(transportServerEx *TransportServerEx, upstreamNamer
 	var upstreams []version2.StreamUpstream
 
 	for _, u := range transportServerEx.TransportServer.Spec.Upstreams {
-		name := upstreamNamer.GetNameForUpstream(u.Name)
 
 		// subselector is not supported yet in TransportServer upstreams. That's why we pass "nil" here
 		endpointsKey := GenerateEndpointsKey(transportServerEx.TransportServer.Namespace, u.Service, nil, uint16(u.Port))
 		endpoints := transportServerEx.Endpoints[endpointsKey]
 
-		ups := generateStreamUpstream(name, endpoints, isPlus)
+		ups := generateStreamUpstream(&u, upstreamNamer, endpoints, isPlus)
 
 		ups.UpstreamLabels.Service = u.Service
 		ups.UpstreamLabels.ResourceType = "transportserver"
@@ -116,12 +115,18 @@ func generateStreamUpstreams(transportServerEx *TransportServerEx, upstreamNamer
 	return upstreams
 }
 
-func generateStreamUpstream(upstreamName string, endpoints []string, isPlus bool) version2.StreamUpstream {
+func generateStreamUpstream(upstream *conf_v1alpha1.Upstream, upstreamNamer *upstreamNamer, endpoints []string, isPlus bool) version2.StreamUpstream {
 	var upsServers []version2.StreamUpstreamServer
+
+	name := upstreamNamer.GetNameForUpstream(upstream.Name)
+	maxFails := generateIntFromPointer(upstream.MaxFails, 1)
+	failTimeout := generateTime(upstream.FailTimeout, "10s")
 
 	for _, e := range endpoints {
 		s := version2.StreamUpstreamServer{
-			Address: e,
+			Address:     e,
+			MaxFails:    maxFails,
+			FailTimeout: failTimeout,
 		}
 
 		upsServers = append(upsServers, s)
@@ -129,12 +134,14 @@ func generateStreamUpstream(upstreamName string, endpoints []string, isPlus bool
 
 	if !isPlus && len(endpoints) == 0 {
 		upsServers = append(upsServers, version2.StreamUpstreamServer{
-			Address: nginxNonExistingUnixSocket,
+			Address:     nginxNonExistingUnixSocket,
+			MaxFails:    maxFails,
+			FailTimeout: failTimeout,
 		})
 	}
 
 	return version2.StreamUpstream{
-		Name:    upstreamName,
+		Name:    name,
 		Servers: upsServers,
 	}
 }
