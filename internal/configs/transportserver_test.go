@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/nginxinc/kubernetes-ingress/internal/configs/version2"
 	conf_v1alpha1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1alpha1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -134,6 +135,7 @@ func TestGenerateTransportServerConfigForTCP(t *testing.T) {
 			ProxyNextUpstreamTries:   0,
 			ProxyNextUpstreamTimeout: "0s",
 			ProxyTimeout:             "50s",
+			HealthCheck:              nil,
 		},
 	}
 
@@ -217,6 +219,7 @@ func TestGenerateTransportServerConfigForTLSPasstrhough(t *testing.T) {
 			ProxyNextUpstreamTimeout: "0s",
 			ProxyNextUpstreamTries:   0,
 			ProxyTimeout:             "10m",
+			HealthCheck:              nil,
 		},
 	}
 
@@ -244,9 +247,10 @@ func TestGenerateTransportServerConfigForUDP(t *testing.T) {
 				},
 				Upstreams: []conf_v1alpha1.Upstream{
 					{
-						Name:    "udp-app",
-						Service: "udp-app-svc",
-						Port:    5001,
+						Name:        "udp-app",
+						Service:     "udp-app-svc",
+						Port:        5001,
+						HealthCheck: &conf_v1alpha1.HealthCheck{},
 					},
 				},
 				UpstreamParameters: &conf_v1alpha1.UpstreamParameters{
@@ -304,6 +308,7 @@ func TestGenerateTransportServerConfigForUDP(t *testing.T) {
 			ProxyNextUpstreamTimeout: "0s",
 			ProxyNextUpstreamTries:   0,
 			ProxyTimeout:             "10m",
+			HealthCheck:              nil,
 		},
 	}
 
@@ -342,6 +347,115 @@ func TestGenerateUnixSocket(t *testing.T) {
 	result = generateUnixSocket(transportServerEx)
 	if result != expected {
 		t.Errorf("generateUnixSocket() returned %q but expected %q", result, expected)
+	}
+}
+
+func TestGenerateTransportServerHealthChecks(t *testing.T) {
+	upstreamName := "dns-tcp"
+	tests := []struct {
+		upstreams []conf_v1alpha1.Upstream
+		expected  *version2.StreamHealthCheck
+		msg       string
+	}{
+		{
+			upstreams: []conf_v1alpha1.Upstream{
+				{
+					Name: "dns-tcp",
+					HealthCheck: &conf_v1alpha1.HealthCheck{
+						Enabled:  false,
+						Timeout:  "30s",
+						Jitter:   "30s",
+						Port:     80,
+						Interval: "20s",
+						Passes:   4,
+						Fails:    5,
+					},
+				},
+			},
+			expected: nil,
+			msg:      "health checks disabled",
+		},
+		{
+			upstreams: []conf_v1alpha1.Upstream{
+				{
+					Name:        "dns-tcp",
+					HealthCheck: &conf_v1alpha1.HealthCheck{},
+				},
+			},
+			expected: nil,
+			msg:      "empty health check",
+		},
+		{
+			upstreams: []conf_v1alpha1.Upstream{
+				{
+					Name: "dns-tcp",
+					HealthCheck: &conf_v1alpha1.HealthCheck{
+						Enabled:  true,
+						Timeout:  "40s",
+						Jitter:   "30s",
+						Port:     88,
+						Interval: "20s",
+						Passes:   4,
+						Fails:    5,
+					},
+				},
+			},
+			expected: &version2.StreamHealthCheck{
+				Enabled:  true,
+				Timeout:  "40s",
+				Jitter:   "30s",
+				Port:     88,
+				Interval: "20s",
+				Passes:   4,
+				Fails:    5,
+			},
+			msg: "valid health checks",
+		},
+		{
+			upstreams: []conf_v1alpha1.Upstream{
+				{
+					Name: "dns-tcp",
+					HealthCheck: &conf_v1alpha1.HealthCheck{
+						Enabled:  true,
+						Timeout:  "40s",
+						Jitter:   "30s",
+						Port:     88,
+						Interval: "20s",
+						Passes:   4,
+						Fails:    5,
+					},
+				},
+				{
+					Name: "dns-tcp-2",
+					HealthCheck: &conf_v1alpha1.HealthCheck{
+						Enabled:  false,
+						Timeout:  "50s",
+						Jitter:   "60s",
+						Port:     89,
+						Interval: "10s",
+						Passes:   9,
+						Fails:    7,
+					},
+				},
+			},
+			expected: &version2.StreamHealthCheck{
+				Enabled:  true,
+				Timeout:  "40s",
+				Jitter:   "30s",
+				Port:     88,
+				Interval: "20s",
+				Passes:   4,
+				Fails:    5,
+			},
+			msg: "valid 2 health checks",
+		},
+	}
+
+	for _, test := range tests {
+		result := generateTransportServerHealthCheck(upstreamName, test.upstreams)
+		if diff := cmp.Diff(test.expected, result); diff != "" {
+			t.Errorf("generateTransportServerHealthCheck() '%v' mismatch (-want +got):\n%s", test.msg, diff)
+		}
 	}
 }
 

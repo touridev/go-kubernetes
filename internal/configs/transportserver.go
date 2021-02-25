@@ -34,6 +34,8 @@ func generateTransportServerConfig(transportServerEx *TransportServerEx, listene
 
 	upstreams := generateStreamUpstreams(transportServerEx, upstreamNamer, isPlus)
 
+	healthCheck := generateTransportServerHealthCheck(transportServerEx.TransportServer.Spec.Action.Pass,
+		transportServerEx.TransportServer.Spec.Upstreams)
 	var proxyRequests, proxyResponses *int
 	var connectTimeout, nextUpstreamTimeout string
 	var nextUpstream bool
@@ -80,6 +82,7 @@ func generateTransportServerConfig(transportServerEx *TransportServerEx, listene
 			ProxyNextUpstream:        nextUpstream,
 			ProxyNextUpstreamTimeout: generateTime(nextUpstreamTimeout, "0"),
 			ProxyNextUpstreamTries:   nextUpstreamTries,
+			HealthCheck:              healthCheck,
 		},
 		Upstreams: upstreams,
 	}
@@ -113,6 +116,48 @@ func generateStreamUpstreams(transportServerEx *TransportServerEx, upstreamNamer
 	}
 
 	return upstreams
+}
+
+func generateTransportServerHealthCheck(upstreamHealthCheckName string, upstreams []conf_v1alpha1.Upstream) *version2.StreamHealthCheck {
+	var hc *version2.StreamHealthCheck
+	for _, u := range upstreams {
+		if u.Name == upstreamHealthCheckName {
+			if u.HealthCheck == nil || !u.HealthCheck.Enabled {
+				return nil
+			}
+			hc = generateTransportServerHealthCheckWithDefaults(u)
+
+			hc.Enabled = u.HealthCheck.Enabled
+			hc.Interval = generateTime(u.HealthCheck.Interval)
+			hc.Jitter = generateTime(u.HealthCheck.Jitter)
+			hc.Timeout = generateTime(u.HealthCheck.Timeout)
+
+			if u.HealthCheck.Fails > 0 {
+				hc.Fails = u.HealthCheck.Fails
+			}
+
+			if u.HealthCheck.Passes > 0 {
+				hc.Passes = u.HealthCheck.Passes
+			}
+
+			if u.HealthCheck.Port > 0 {
+				hc.Port = u.HealthCheck.Port
+			}
+		}
+	}
+	return hc
+}
+
+func generateTransportServerHealthCheckWithDefaults(up conf_v1alpha1.Upstream) *version2.StreamHealthCheck {
+	return &version2.StreamHealthCheck{
+		Enabled:  false,
+		Timeout:  "5s",
+		Jitter:   "0",
+		Port:     up.Port,
+		Interval: "5s",
+		Passes:   1,
+		Fails:    1,
+	}
 }
 
 func generateStreamUpstream(upstream *conf_v1alpha1.Upstream, upstreamNamer *upstreamNamer, endpoints []string, isPlus bool) version2.StreamUpstream {

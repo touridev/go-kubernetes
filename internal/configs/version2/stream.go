@@ -37,6 +37,18 @@ type StreamServer struct {
 	ProxyNextUpstream        bool
 	ProxyNextUpstreamTimeout string
 	ProxyNextUpstreamTries   int
+	HealthCheck              *StreamHealthCheck
+}
+
+// StreamHealthCheck defines a health check for a StreamUpstream in a StreamServer.
+type StreamHealthCheck struct {
+	Enabled  bool
+	Interval string
+	Port     int
+	Passes   int
+	Jitter   string
+	Fails    int
+	Timeout  string
 }
 
 // TLSPassthroughHostsConfig defines a mapping between TLS Passthrough hosts and the corresponding unix sockets.

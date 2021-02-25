@@ -14,6 +14,7 @@ This document is the reference documentation for the TransportServer resource. T
   - [TransportServer Specification](#transportserver-specification)
     - [Listener](#listener)
     - [Upstream](#upstream)
+      - [Upstream.Healthcheck](#upstream-healthcheck)
     - [UpstreamParameters](#upstreamparameters)
     - [SessionParameters](#sessionparameters)
     - [Action](#action)
@@ -189,7 +190,68 @@ failTimeout: 30s
      - Sets the `time <https://nginx.org/en/docs/stream/ngx_stream_upstream_module.html#fail_timeout>`_ during which the specified number of unsuccessful attempts to communicate with the server should happen to consider the server unavailable and the period of time the server will be considered unavailable. The default is ``10s``.
      - ``string``
      - No
+   * - ``healthCheck``
+     - The health check configuration for the Upstream. See the `health_check <https://nginx.org/en/docs/stream/ngx_stream_upstream_hc_module.html#health_check>`_ directive. Note: this feature is supported only in NGINX Plus.
+     - `healthcheck <#upstream-healthcheck>`_
+     - No
 
+```
+
+### Upstream.Healthcheck
+
+The Healthcheck defines an [active health check](https://nginx.org/en/docs/stream/ngx_stream_upstream_hc_module.html?#health_check). In the example below we enable a health check for an upstream and configure all the available parameters:
+
+```yaml
+name: secure-app 
+service: secure-app
+port: 8443
+healthCheck:
+  enable: true
+  interval: 20s
+  timeout: 30s
+  jitter: 3s
+  fails: 5
+  passes: 5
+  port: 8080
+
+```
+
+```eval_rst
+.. list-table::
+   :header-rows: 1
+
+   * - Field
+     - Description
+     - Type
+     - Required
+   * - ``enable``
+     - Enables a health check for an upstream server. The default is ``false``.
+     - ``boolean``
+     - No
+   * - ``interval``
+     - The interval between two consecutive health checks. The default is ``5s``.
+     - ``string``
+     - No
+   * - ``timeout``
+     - This overrides the timeout set by `proxy_timeout <http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_timeout>`_ which is set in `SessionParameters` for health checks. The default value is ``5s``.
+     - ``string``
+     - No
+   * - ``jitter``
+     - The time within which each health check will be randomly delayed. By default, there is no delay.
+     - ``string``
+     - No
+   * - ``fails``
+     - The number of consecutive failed health checks of a particular upstream server after which this server will be considered unhealthy. The default is ``1``.
+     - ``integer``
+     - No
+   * - ``passes``
+     - The number of consecutive passed health checks of a particular upstream server after which the server will be considered healthy. The default is ``1``.
+     - ``integer``
+     - No
+   * - ``port``
+     - The port used for health check requests. By default, the port of the upstream is used. Note: in contrast with the port of the upstream, this port is not a service port, but a port of a pod.
+     - ``integer``
+     - No
 ```
 
 ### UpstreamParameters
