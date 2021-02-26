@@ -5838,6 +5838,33 @@ func TestGenerateHealthCheck(t *testing.T) {
 			expected:     nil,
 			msg:          "HealthCheck not enabled",
 		},
+		{
+			upstream: conf_v1.Upstream{
+				HealthCheck: &conf_v1.HealthCheck{
+					Enable:         true,
+					Interval:       "1m 5s",
+					Jitter:         "2m 3s",
+					ConnectTimeout: "1m 10s",
+					SendTimeout:    "1m 20s",
+					ReadTimeout:    "1m 30s",
+				},
+			},
+			upstreamName: upstreamName,
+			expected: &version2.HealthCheck{
+				Name:                upstreamName,
+				ProxyConnectTimeout: "1m10s",
+				ProxySendTimeout:    "1m20s",
+				ProxyReadTimeout:    "1m30s",
+				ProxyPass:           fmt.Sprintf("http://%v", upstreamName),
+				URI:                 "/",
+				Interval:            "1m5s",
+				Jitter:              "2m3s",
+				Fails:               1,
+				Passes:              1,
+				Headers:             make(map[string]string),
+			},
+			msg: "HealthCheck with time parameters have correct format",
+		},
 	}
 
 	baseCfgParams := &ConfigParams{

@@ -1224,11 +1224,11 @@ func generateHealthCheck(
 	}
 
 	if upstream.HealthCheck.Interval != "" {
-		hc.Interval = upstream.HealthCheck.Interval
+		hc.Interval = generateTime(upstream.HealthCheck.Interval)
 	}
 
 	if upstream.HealthCheck.Jitter != "" {
-		hc.Jitter = upstream.HealthCheck.Jitter
+		hc.Jitter = generateTime(upstream.HealthCheck.Jitter)
 	}
 
 	if upstream.HealthCheck.Fails > 0 {
@@ -1244,15 +1244,15 @@ func generateHealthCheck(
 	}
 
 	if upstream.HealthCheck.ConnectTimeout != "" {
-		hc.ProxyConnectTimeout = upstream.HealthCheck.ConnectTimeout
+		hc.ProxyConnectTimeout = generateTime(upstream.HealthCheck.ConnectTimeout)
 	}
 
 	if upstream.HealthCheck.ReadTimeout != "" {
-		hc.ProxyReadTimeout = upstream.HealthCheck.ReadTimeout
+		hc.ProxyReadTimeout = generateTime(upstream.HealthCheck.ReadTimeout)
 	}
 
 	if upstream.HealthCheck.SendTimeout != "" {
-		hc.ProxySendTimeout = upstream.HealthCheck.SendTimeout
+		hc.ProxySendTimeout = generateTime(upstream.HealthCheck.SendTimeout)
 	}
 
 	for _, h := range upstream.HealthCheck.Headers {
