@@ -1292,7 +1292,7 @@ func generateApResourceFileContent(apResource *unstructured.Unstructured) []byte
 	return data
 }
 
-// AddOrUpdateAppProtectResource updates Ingresses that use App Protect Resources
+// AddOrUpdateAppProtectResource updates Ingresses and VirtualServers that use App Protect Resources
 func (cnf *Configurator) AddOrUpdateAppProtectResource(resource *unstructured.Unstructured, ingExes []*IngressEx, mergeableIngresses []*MergeableIngresses, vsExes []*VirtualServerEx) (Warnings, error) {
 	allWarnings := newWarnings()
 
@@ -1327,9 +1327,9 @@ func (cnf *Configurator) AddOrUpdateAppProtectResource(resource *unstructured.Un
 	return allWarnings, nil
 }
 
-// DeleteAppProtectPolicy updates Ingresses that use AP Policy after that policy is deleted
+// DeleteAppProtectPolicy updates Ingresses and VirtualServers that use AP Policy after that policy is deleted
 func (cnf *Configurator) DeleteAppProtectPolicy(polNamespaceName string, ingExes []*IngressEx, mergeableIngresses []*MergeableIngresses, vsExes []*VirtualServerEx) (Warnings, error) {
-	if len(ingExes) > 0 || len(mergeableIngresses) > 0 {
+	if len(ingExes)+len(mergeableIngresses)+len(vsExes) > 0 {
 		fName := strings.Replace(polNamespaceName, "/", "_", 1)
 		polFileName := appProtectPolicyFolder + fName
 		cnf.nginxManager.DeleteAppProtectResourceFile(polFileName)
@@ -1368,9 +1368,9 @@ func (cnf *Configurator) DeleteAppProtectPolicy(polNamespaceName string, ingExes
 	return allWarnings, nil
 }
 
-// DeleteAppProtectLogConf updates Ingresses that use AP Log Configuration after that policy is deleted
+// DeleteAppProtectLogConf updates Ingresses and VirtualServers that use AP Log Configuration after that policy is deleted
 func (cnf *Configurator) DeleteAppProtectLogConf(logConfNamespaceName string, ingExes []*IngressEx, mergeableIngresses []*MergeableIngresses, vsExes []*VirtualServerEx) (Warnings, error) {
-	if len(ingExes) > 0 || len(mergeableIngresses) > 0 {
+	if len(ingExes)+len(mergeableIngresses)+len(vsExes) > 0 {
 		fName := strings.Replace(logConfNamespaceName, "/", "_", 1)
 		logConfFileName := appProtectLogConfFolder + fName
 		cnf.nginxManager.DeleteAppProtectResourceFile(logConfFileName)
@@ -1408,8 +1408,10 @@ func (cnf *Configurator) DeleteAppProtectLogConf(logConfNamespaceName string, in
 	return allWarnings, nil
 }
 
-// RefreshAppProtectUserSigs writes all valid uds files to fs and reloads
-func (cnf *Configurator) RefreshAppProtectUserSigs(userSigs []*unstructured.Unstructured, delPols []string, ingExes []*IngressEx, mergeableIngresses []*MergeableIngresses) (Warnings, error) {
+// RefreshAppProtectUserSigs writes all valid UDS files to fs and reloads NGINX
+func (cnf *Configurator) RefreshAppProtectUserSigs(
+	userSigs []*unstructured.Unstructured, delPols []string, ingExes []*IngressEx, mergeableIngresses []*MergeableIngresses, vsExes []*VirtualServerEx,
+) (Warnings, error) {
 	allWarnings := newWarnings()
 	for _, ingEx := range ingExes {
 		warnings, err := cnf.addOrUpdateIngress(ingEx)
@@ -1423,6 +1425,14 @@ func (cnf *Configurator) RefreshAppProtectUserSigs(userSigs []*unstructured.Unst
 		warnings, err := cnf.addOrUpdateMergeableIngress(m)
 		if err != nil {
 			return allWarnings, fmt.Errorf("Error adding or updating mergeableIngress %v/%v: %v", m.Master.Ingress.Namespace, m.Master.Ingress.Name, err)
+		}
+		allWarnings.Add(warnings)
+	}
+
+	for _, v := range vsExes {
+		warnings, err := cnf.addOrUpdateVirtualServer(v)
+		if err != nil {
+			return allWarnings, fmt.Errorf("Error adding or updating VirtualServer %v/%v: %v", v.VirtualServer.Namespace, v.VirtualServer.Name, err)
 		}
 		allWarnings.Add(warnings)
 	}
@@ -1443,8 +1453,7 @@ func (cnf *Configurator) RefreshAppProtectUserSigs(userSigs []*unstructured.Unst
 	return allWarnings, cnf.nginxManager.Reload(nginx.ReloadForOtherUpdate)
 }
 
-// AddInternalRouteConfig adds internal route server to NGINX Configuration and
-// reloads NGINX
+// AddInternalRouteConfig adds internal route server to NGINX Configuration and reloads NGINX
 func (cnf *Configurator) AddInternalRouteConfig() error {
 	cnf.staticCfgParams.EnableInternalRoutes = true
 	cnf.staticCfgParams.PodName = os.Getenv("POD_NAME")
