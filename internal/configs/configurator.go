@@ -1182,16 +1182,6 @@ func (cnf *Configurator) GetVirtualServerCounts() (vsCount int, vsrCount int) {
 	return vsCount, vsrCount
 }
 
-func (cnf *Configurator) CheckIfListenerExists(transportServerListener *conf_v1alpha1.TransportServerListener) bool {
-	listener, exists := cnf.globalCfgParams.Listeners[transportServerListener.Name]
-
-	if !exists {
-		return false
-	}
-
-	return transportServerListener.Protocol == listener.Protocol
-}
-
 // AddOrUpdateSpiffeCerts writes Spiffe certs and keys to disk and reloads NGINX
 func (cnf *Configurator) AddOrUpdateSpiffeCerts(svidResponse *workload.X509SVIDs) error {
 	svid := svidResponse.Default()

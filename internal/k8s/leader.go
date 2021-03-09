@@ -78,6 +78,11 @@ func createLeaderHandler(lbc *LoadBalancerController) leaderelection.LeaderCallb
 				if err != nil {
 					glog.V(3).Infof("error updating Policies status when starting leading: %v", err)
 				}
+
+				err = lbc.updateTransportServersStatusFromEvents()
+				if err != nil {
+					glog.V(3).Infof("error updating TransportServers status when starting leading: %v", err)
+				}
 			}
 		},
 		OnStoppedLeading: func() {

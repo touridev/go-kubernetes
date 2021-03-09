@@ -234,58 +234,6 @@ func TestGetFileNameForVirtualServerFromKey(t *testing.T) {
 	}
 }
 
-func TestCheckIfListenerExists(t *testing.T) {
-	tests := []struct {
-		listener conf_v1alpha1.TransportServerListener
-		expected bool
-		msg      string
-	}{
-		{
-			listener: conf_v1alpha1.TransportServerListener{
-				Name:     "tcp-listener",
-				Protocol: "TCP",
-			},
-			expected: true,
-			msg:      "name and protocol match",
-		},
-		{
-			listener: conf_v1alpha1.TransportServerListener{
-				Name:     "some-listener",
-				Protocol: "TCP",
-			},
-			expected: false,
-			msg:      "only protocol matches",
-		},
-		{
-			listener: conf_v1alpha1.TransportServerListener{
-				Name:     "tcp-listener",
-				Protocol: "UDP",
-			},
-			expected: false,
-			msg:      "only name matches",
-		},
-	}
-
-	cnf, err := createTestConfigurator()
-	if err != nil {
-		t.Errorf("Failed to create a test configurator: %v", err)
-	}
-
-	cnf.globalCfgParams.Listeners = map[string]Listener{
-		"tcp-listener": {
-			Port:     53,
-			Protocol: "TCP",
-		},
-	}
-
-	for _, test := range tests {
-		result := cnf.CheckIfListenerExists(&test.listener)
-		if result != test.expected {
-			t.Errorf("CheckIfListenerExists() returned %v but expected %v for the case of %q", result, test.expected, test.msg)
-		}
-	}
-}
-
 func TestGetFileNameForTransportServer(t *testing.T) {
 	transportServer := &conf_v1alpha1.TransportServer{
 		ObjectMeta: meta_v1.ObjectMeta{

@@ -6,6 +6,17 @@ metadata:
   creationTimestamp: null
   name: transportservers.k8s.nginx.org
 spec:
+  additionalPrinterColumns:
+    - JSONPath: .status.state
+      description: Current state of the VirtualServer. If the resource has a valid status, it means it has been validated and accepted by the Ingress Controller.
+      name: State
+      type: string
+    - JSONPath: .status.reason
+      name: Reason
+      type: string
+    - JSONPath: .metadata.creationTimestamp
+      name: Age
+      type: date
   group: k8s.nginx.org
   names:
     kind: TransportServer
@@ -16,6 +27,8 @@ spec:
     singular: transportserver
   preserveUnknownFields: false
   scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: TransportServer defines the TransportServer resource.
@@ -107,6 +120,16 @@ spec:
                     type: integer
                   service:
                     type: string
+        status:
+          description: TransportServerStatus defines the status for the TransportServer resource.
+          type: object
+          properties:
+            message:
+              type: string
+            reason:
+              type: string
+            state:
+              type: string
   version: v1alpha1
   versions:
     - name: v1alpha1

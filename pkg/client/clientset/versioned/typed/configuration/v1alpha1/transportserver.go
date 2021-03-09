@@ -24,6 +24,7 @@ type TransportServersGetter interface {
 type TransportServerInterface interface {
 	Create(ctx context.Context, transportServer *v1alpha1.TransportServer, opts v1.CreateOptions) (*v1alpha1.TransportServer, error)
 	Update(ctx context.Context, transportServer *v1alpha1.TransportServer, opts v1.UpdateOptions) (*v1alpha1.TransportServer, error)
+	UpdateStatus(ctx context.Context, transportServer *v1alpha1.TransportServer, opts v1.UpdateOptions) (*v1alpha1.TransportServer, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
 	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.TransportServer, error)
@@ -112,6 +113,22 @@ func (c *transportServers) Update(ctx context.Context, transportServer *v1alpha1
 		Namespace(c.ns).
 		Resource("transportservers").
 		Name(transportServer.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(transportServer).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *transportServers) UpdateStatus(ctx context.Context, transportServer *v1alpha1.TransportServer, opts v1.UpdateOptions) (result *v1alpha1.TransportServer, err error) {
+	result = &v1alpha1.TransportServer{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("transportservers").
+		Name(transportServer.Name).
+		SubResource("status").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(transportServer).
 		Do(ctx).

@@ -297,6 +297,7 @@ func NewLoadBalancerController(input NewLoadBalancerControllerInput) *LoadBalanc
 		ingressLister:            &lbc.ingressLister,
 		virtualServerLister:      lbc.virtualServerLister,
 		virtualServerRouteLister: lbc.virtualServerRouteLister,
+		transportServerLister:    lbc.transportServerLister,
 		policyLister:             lbc.policyLister,
 		keyFunc:                  keyFunc,
 		confClient:               input.ConfClient,
@@ -865,11 +866,9 @@ func (lbc *LoadBalancerController) syncTransportServer(task task) {
 
 	if !tsExists {
 		glog.V(2).Infof("Deleting TransportServer: %v\n", key)
-
 		changes, problems = lbc.configuration.DeleteTransportServer(key)
 	} else {
 		glog.V(2).Infof("Adding or Updating TransportServer: %v\n", key)
-
 		ts := obj.(*conf_v1alpha1.TransportServer)
 		changes, problems = lbc.configuration.AddOrUpdateTransportServer(ts)
 	}
@@ -977,14 +976,17 @@ func (lbc *LoadBalancerController) processProblems(problems []ConfigurationProbl
 				if err != nil {
 					glog.Errorf("Error when updating the status for VirtualServer %v/%v: %v", obj.Namespace, obj.Name, err)
 				}
+			case *conf_v1alpha1.TransportServer:
+				err := lbc.statusUpdater.UpdateTransportServerStatus(obj, state, p.Reason, p.Message)
+				if err != nil {
+					glog.Errorf("Error when updating the status for TransportServer %v/%v: %v", obj.Namespace, obj.Name, err)
+				}
 			case *conf_v1.VirtualServerRoute:
 				var emptyVSes []*conf_v1.VirtualServer
 				err := lbc.statusUpdater.UpdateVirtualServerRouteStatusWithReferencedBy(obj, state, p.Reason, p.Message, emptyVSes)
 				if err != nil {
 					glog.Errorf("Error when updating the status for VirtualServerRoute %v/%v: %v", obj.Namespace, obj.Name, err)
 				}
-			case *conf_v1alpha1.TransportServer:
-				// do nothing until the TransportServer supports status
 			}
 		}
 	}
@@ -1018,7 +1020,7 @@ func (lbc *LoadBalancerController) processChanges(changes []ResourceChange) {
 				tsEx := lbc.createTransportServerEx(impl.TransportServer, impl.ListenerPort)
 
 				addOrUpdateErr := lbc.configurator.AddOrUpdateTransportServer(tsEx)
-				lbc.updateTransportServerEvents(impl, addOrUpdateErr)
+				lbc.updateTransportServerStatusAndEvents(impl, addOrUpdateErr)
 			}
 		} else if c.Op == Delete {
 			switch impl := c.Resource.(type) {
@@ -1346,7 +1348,7 @@ func (lbc *LoadBalancerController) updateResourcesStatusAndEvents(resources []Re
 				lbc.updateRegularIngressStatusAndEvents(impl, warnings, operationErr)
 			}
 		case *TransportServerConfiguration:
-			lbc.updateTransportServerEvents(impl, operationErr)
+			lbc.updateTransportServerStatusAndEvents(impl, operationErr)
 		}
 	}
 }
@@ -1453,25 +1455,35 @@ func (lbc *LoadBalancerController) updateRegularIngressStatusAndEvents(ingConfig
 	}
 }
 
-func (lbc *LoadBalancerController) updateTransportServerEvents(tsConfig *TransportServerConfiguration, operationErr error) {
+func (lbc *LoadBalancerController) updateTransportServerStatusAndEvents(tsConfig *TransportServerConfiguration, operationErr error) {
 	eventTitle := "AddedOrUpdated"
 	eventType := api_v1.EventTypeNormal
 	eventWarningMessage := ""
+	state := conf_v1.StateValid
 
 	if len(tsConfig.Warnings) > 0 {
 		eventType = api_v1.EventTypeWarning
 		eventTitle = "AddedOrUpdatedWithWarning"
 		eventWarningMessage = fmt.Sprintf("with warning(s): %s", formatWarningMessages(tsConfig.Warnings))
+		state = conf_v1.StateWarning
 	}
 
 	if operationErr != nil {
 		eventType = api_v1.EventTypeWarning
 		eventTitle = "AddedOrUpdatedWithError"
 		eventWarningMessage = fmt.Sprintf("%s; but was not applied: %v", eventWarningMessage, operationErr)
+		state = conf_v1.StateInvalid
 	}
 
 	msg := fmt.Sprintf("Configuration for %v was added or updated %s", getResourceKey(&tsConfig.TransportServer.ObjectMeta), eventWarningMessage)
 	lbc.recorder.Eventf(tsConfig.TransportServer, eventType, eventTitle, msg)
+
+	if lbc.reportCustomResourceStatusEnabled() {
+		err := lbc.statusUpdater.UpdateTransportServerStatus(tsConfig.TransportServer, state, eventTitle, msg)
+		if err != nil {
+			glog.Errorf("Error when updating the status for TransportServer %v/%v: %v", tsConfig.TransportServer.Namespace, tsConfig.TransportServer.Name, err)
+		}
+	}
 }
 
 func (lbc *LoadBalancerController) updateVirtualServerStatusAndEvents(vsConfig *VirtualServerConfiguration, warnings configs.Warnings, operationErr error) {
@@ -1953,6 +1965,43 @@ func (lbc *LoadBalancerController) updatePoliciesStatus() error {
 
 	if len(allErrs) != 0 {
 		return fmt.Errorf("not all Policies statuses were updated: %v", allErrs)
+	}
+
+	return nil
+}
+
+func (lbc *LoadBalancerController) updateTransportServersStatusFromEvents() error {
+	var allErrs []error
+	for _, obj := range lbc.transportServerLister.List() {
+		ts := obj.(*conf_v1alpha1.TransportServer)
+
+		events, err := lbc.client.CoreV1().Events(ts.Namespace).List(context.TODO(),
+			meta_v1.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.name=%v,involvedObject.uid=%v", ts.Name, ts.UID)})
+		if err != nil {
+			allErrs = append(allErrs, fmt.Errorf("error trying to get events for TransportServer %v/%v: %v", ts.Namespace, ts.Name, err))
+			break
+		}
+
+		if len(events.Items) == 0 {
+			continue
+		}
+
+		var timestamp time.Time
+		var latestEvent api_v1.Event
+		for _, event := range events.Items {
+			if event.CreationTimestamp.After(timestamp) {
+				latestEvent = event
+			}
+		}
+
+		err = lbc.statusUpdater.UpdateTransportServerStatus(ts, getStatusFromEventTitle(latestEvent.Reason), latestEvent.Reason, latestEvent.Message)
+		if err != nil {
+			allErrs = append(allErrs, err)
+		}
+	}
+
+	if len(allErrs) > 0 {
+		return fmt.Errorf("not all TransportServers statuses were updated: %v", allErrs)
 	}
 
 	return nil

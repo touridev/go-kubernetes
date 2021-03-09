@@ -115,7 +115,7 @@ Notes: The Ingress controller does not clear the status of VirtualServer and Vir
 ## Policy Resources
 
 A Policy resource includes the status field with information about the state of the resource.
-You can see the status in the ouput of the `kubectl get policy` command as shown below:
+You can see the status in the output of the `kubectl get policy` command as shown below:
 ```
 $ kubectl get policy
   NAME              STATE   AGE
@@ -151,3 +151,45 @@ The following fields are reported in Policy status:
      - Additional information about the state.
      - ``string``
 ```
+
+
+## TransportServer Resources
+
+A TransportServer resource includes the status field with information about the state of the resource.
+You can see the status in the output of the `kubectl get transportserver` command as shown below:
+```
+$ kubectl get transportserver
+  NAME      STATE   REASON           AGE
+  dns-tcp   Valid   AddedOrUpdated   47m
+```
+In order to see additional addresses or extra information about the `Status` of the resource, use the following command:
+```
+$ kubectl describe transportserver <NAME>
+. . .
+Status:
+  Message:  Configuration for default/dns-tcp was added or updated
+  Reason:   AddedOrUpdated
+  State:    Valid
+```
+
+### Status Specification
+The following fields are reported in TransportServer status:
+
+```eval_rst
+.. list-table::
+   :header-rows: 1
+
+   * - Field
+     - Description
+     - Type
+   * - ``State``
+     - Current state of the resource. Can be ``Valid`` or ``Invalid``. For more information, refer to the ``message`` field.
+     - ``string``
+   * - ``Reason``
+     - The reason of the last update.
+     - ``string``
+   * - ``Message``
+     - Additional information about the state.
+     - ``string``
+```
+

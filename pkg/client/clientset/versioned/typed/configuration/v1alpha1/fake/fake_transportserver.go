@@ -86,6 +86,18 @@ func (c *FakeTransportServers) Update(ctx context.Context, transportServer *v1al
 	return obj.(*v1alpha1.TransportServer), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeTransportServers) UpdateStatus(ctx context.Context, transportServer *v1alpha1.TransportServer, opts v1.UpdateOptions) (*v1alpha1.TransportServer, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(transportserversResource, "status", c.ns, transportServer), &v1alpha1.TransportServer{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha1.TransportServer), err
+}
+
 // Delete takes name of the transportServer and deletes it. Returns an error if one occurs.
 func (c *FakeTransportServers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
