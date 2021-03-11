@@ -1474,16 +1474,25 @@ func generateLocation(path string, upstreamName string, upstream conf_v1.Upstrea
 }
 
 func generateProxySetHeaders(proxy *conf_v1.ActionProxy) []version2.Header {
-	if proxy == nil || proxy.RequestHeaders == nil {
-		return nil
+	var headers []version2.Header
+
+	hasHostHeader := false
+
+	if proxy != nil && proxy.RequestHeaders != nil {
+		for _, h := range proxy.RequestHeaders.Set {
+			headers = append(headers, version2.Header{
+				Name:  h.Name,
+				Value: h.Value,
+			})
+
+			if strings.ToLower(h.Name) == "host" {
+				hasHostHeader = true
+			}
+		}
 	}
 
-	var headers []version2.Header
-	for _, h := range proxy.RequestHeaders.Set {
-		headers = append(headers, version2.Header{
-			Name:  h.Name,
-			Value: h.Value,
-		})
+	if !hasHostHeader {
+		headers = append(headers, version2.Header{Name: "Host", Value: "$host"})
 	}
 
 	return headers
