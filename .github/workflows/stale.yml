@@ -17,3 +17,4 @@ jobs:
           stale-issue-label: 'stale'
           stale-pr-label: 'stale'
           exempt-all-pr-assignees: true
+          operations-per-run: 100
