@@ -381,7 +381,7 @@ func TestParseTime(t *testing.T) {
 		{"100y", "100y"},
 		{"600", "600s"},
 	}
-	var invalidInput = []string{"5s 5s", "ss", "rM", "m0m", "s1s", "-5s", "", "1L", "11 11"}
+	var invalidInput = []string{"5s 5s", "ss", "rM", "m0m", "s1s", "-5s", "", "1L", "11 11", " ", "   "}
 
 	for _, test := range testsWithValidInput {
 		result, err := ParseTime(test.input)

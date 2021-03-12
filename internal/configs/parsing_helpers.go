@@ -187,8 +187,8 @@ var timeRegexp = regexp.MustCompile(`^(\d+y)??\s*(\d+M)??\s*(\d+w)??\s*(\d+d)??\
 
 // ParseTime ensures that the string value in the annotation is a valid time.
 func ParseTime(s string) (string, error) {
-	if s == "" || !timeRegexp.MatchString(s) {
-		return "", errors.New("Invalid time string")
+	if s == "" || strings.TrimSpace(s) == "" || !timeRegexp.MatchString(s) {
+		return "", errors.New("invalid time string")
 	}
 	units := timeRegexp.FindStringSubmatch(s)
 	years := units[1]
