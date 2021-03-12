@@ -309,10 +309,17 @@ func TestValidateUpstreams(t *testing.T) {
 					ProxyNextUpstreamTimeout: "10s",
 					ProxyNextUpstreamTries:   5,
 				},
+				{
+					Name:         "upstream3",
+					Service:      "test-3",
+					Port:         80,
+					UseClusterIP: true,
+				},
 			},
 			expectedUpstreamNames: map[string]sets.Empty{
 				"upstream1": {},
 				"upstream2": {},
+				"upstream3": {},
 			},
 			msg: "2 valid upstreams",
 		},
@@ -541,6 +548,21 @@ func TestValidateUpstreamsFails(t *testing.T) {
 				"upstream1": {},
 			},
 			msg: "invalid value for subselector",
+		},
+		{
+			upstreams: []v1.Upstream{
+				{
+					Name:         "upstream1",
+					Service:      "test-1",
+					Subselector:  map[string]string{"version": "test"},
+					UseClusterIP: true,
+					Port:         80,
+				},
+			},
+			expectedUpstreamNames: map[string]sets.Empty{
+				"upstream1": {},
+			},
+			msg: "invalid use of subselector with use-cluster-ip",
 		},
 	}
 
@@ -3755,7 +3777,8 @@ func TestValidateErrorPageHeaderFails(t *testing.T) {
 		{
 			Name:  "Header-Name",
 			Value: "${invalid_var}",
-		}, {
+		},
+		{
 			Name:  "Header-Name",
 			Value: `unescaped "`,
 		},

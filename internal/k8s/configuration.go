@@ -339,6 +339,7 @@ type Configuration struct {
 
 	secretReferenceChecker     *secretReferenceChecker
 	serviceReferenceChecker    *serviceReferenceChecker
+	endpointReferenceChecker   *serviceReferenceChecker
 	policyReferenceChecker     *policyReferenceChecker
 	appPolicyReferenceChecker  *appProtectResourceReferenceChecker
 	appLogConfReferenceChecker *appProtectResourceReferenceChecker
@@ -375,7 +376,8 @@ func NewConfiguration(
 		globalConfigurationValidator: globalConfigurationValidator,
 		transportServerValidator:     transportServerValidator,
 		secretReferenceChecker:       newSecretReferenceChecker(isPlus),
-		serviceReferenceChecker:      newServiceReferenceChecker(),
+		serviceReferenceChecker:      newServiceReferenceChecker(false),
+		endpointReferenceChecker:     newServiceReferenceChecker(true),
 		policyReferenceChecker:       newPolicyReferenceChecker(),
 		appPolicyReferenceChecker:    newAppProtectResourceReferenceChecker(configs.AppProtectPolicyAnnotation),
 		appLogConfReferenceChecker:   newAppProtectResourceReferenceChecker(configs.AppProtectLogConfAnnotation),
@@ -809,7 +811,7 @@ func (c *Configuration) FindResourcesForService(svcNamespace string, svcName str
 // FindResourcesForEndpoints finds resources that reference the specified endpoints.
 func (c *Configuration) FindResourcesForEndpoints(endpointsNamespace string, endpointsName string) []Resource {
 	// Resources reference not endpoints but the corresponding service, which has the same namespace and name
-	return c.FindResourcesForService(endpointsNamespace, endpointsName)
+	return c.findResourcesForResourceReference(endpointsNamespace, endpointsName, c.endpointReferenceChecker)
 }
 
 // FindResourcesForSecret finds resources that reference the specified secret.

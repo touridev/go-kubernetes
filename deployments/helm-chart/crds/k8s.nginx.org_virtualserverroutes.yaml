@@ -585,6 +585,8 @@ spec:
                         properties:
                           enable:
                             type: boolean
+                      use-cluster-ip:
+                        type: boolean
             status:
               description: VirtualServerRouteStatus defines the status for the VirtualServerRoute resource.
               type: object

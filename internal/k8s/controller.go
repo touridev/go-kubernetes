@@ -2277,35 +2277,48 @@ func (lbc *LoadBalancerController) createVirtualServerEx(virtualServer *conf_v1.
 	for _, u := range virtualServer.Spec.Upstreams {
 		endpointsKey := configs.GenerateEndpointsKey(virtualServer.Namespace, u.Service, u.Subselector, u.Port)
 
-		var podEndps []podEndpoint
-		var err error
-
-		if len(u.Subselector) > 0 {
-			podEndps, err = lbc.getEndpointsForSubselector(virtualServer.Namespace, u)
-		} else {
-			var external bool
-			podEndps, external, err = lbc.getEndpointsForUpstream(virtualServer.Namespace, u.Service, u.Port)
-
-			if err == nil && external && lbc.isNginxPlus {
-				externalNameSvcs[configs.GenerateExternalNameSvcKey(virtualServer.Namespace, u.Service)] = true
+		var endps []string
+		if u.UseClusterIP {
+			s, err := lbc.getServiceForUpstream(virtualServer.Namespace, u.Service, u.Port)
+			if err != nil {
+				glog.Warningf("Error getting Service for Upstream %v: %v", u.Service, err)
+			} else {
+				endps = append(endps, fmt.Sprintf("%s:%d", s.Spec.ClusterIP, u.Port))
 			}
-		}
 
-		if err != nil {
-			glog.Warningf("Error getting Endpoints for Upstream %v: %v", u.Name, err)
-		}
+		} else {
+			var podEndps []podEndpoint
+			var err error
 
-		endps := getIPAddressesFromEndpoints(podEndps)
-		endpoints[endpointsKey] = endps
+			if len(u.Subselector) > 0 {
+				podEndps, err = lbc.getEndpointsForSubselector(virtualServer.Namespace, u)
+			} else {
+				var external bool
+				podEndps, external, err = lbc.getEndpointsForUpstream(virtualServer.Namespace, u.Service, u.Port)
 
-		if (lbc.isNginxPlus && lbc.isPrometheusEnabled) || lbc.isLatencyMetricsEnabled {
-			for _, endpoint := range podEndps {
-				podsByIP[endpoint.Address] = configs.PodInfo{
-					Name:         endpoint.PodName,
-					MeshPodOwner: endpoint.MeshPodOwner,
+				if err == nil && external && lbc.isNginxPlus {
+					externalNameSvcs[configs.GenerateExternalNameSvcKey(virtualServer.Namespace, u.Service)] = true
+				}
+			}
+
+			if err != nil {
+				glog.Warningf("Error getting Endpoints for Upstream %v: %v", u.Name, err)
+			}
+
+			endps = getIPAddressesFromEndpoints(podEndps)
+
+			if (lbc.isNginxPlus && lbc.isPrometheusEnabled) || lbc.isLatencyMetricsEnabled {
+				for _, endpoint := range podEndps {
+					podsByIP[endpoint.Address] = configs.PodInfo{
+						Name:         endpoint.PodName,
+						MeshPodOwner: endpoint.MeshPodOwner,
+					}
 				}
 			}
 		}
+
+		endpoints[endpointsKey] = endps
+
 	}
 
 	for _, r := range virtualServer.Spec.Routes {
@@ -2366,33 +2379,44 @@ func (lbc *LoadBalancerController) createVirtualServerEx(virtualServer *conf_v1.
 		for _, u := range vsr.Spec.Upstreams {
 			endpointsKey := configs.GenerateEndpointsKey(vsr.Namespace, u.Service, u.Subselector, u.Port)
 
-			var podEndps []podEndpoint
-			var err error
-			if len(u.Subselector) > 0 {
-				podEndps, err = lbc.getEndpointsForSubselector(vsr.Namespace, u)
-			} else {
-				var external bool
-				podEndps, external, err = lbc.getEndpointsForUpstream(vsr.Namespace, u.Service, u.Port)
-
-				if err == nil && external && lbc.isNginxPlus {
-					externalNameSvcs[configs.GenerateExternalNameSvcKey(vsr.Namespace, u.Service)] = true
+			var endps []string
+			if u.UseClusterIP {
+				s, err := lbc.getServiceForUpstream(vsr.Namespace, u.Service, u.Port)
+				if err != nil {
+					glog.Warningf("Error getting Service for Upstream %v: %v", u.Service, err)
+				} else {
+					endps = append(endps, fmt.Sprintf("%s:%d", s.Spec.ClusterIP, u.Port))
 				}
-			}
-			if err != nil {
-				glog.Warningf("Error getting Endpoints for Upstream %v: %v", u.Name, err)
-			}
 
-			endps := getIPAddressesFromEndpoints(podEndps)
-			endpoints[endpointsKey] = endps
+			} else {
+				var podEndps []podEndpoint
+				var err error
+				if len(u.Subselector) > 0 {
+					podEndps, err = lbc.getEndpointsForSubselector(vsr.Namespace, u)
+				} else {
+					var external bool
+					podEndps, external, err = lbc.getEndpointsForUpstream(vsr.Namespace, u.Service, u.Port)
 
-			if lbc.isNginxPlus || lbc.isLatencyMetricsEnabled {
-				for _, endpoint := range podEndps {
-					podsByIP[endpoint.Address] = configs.PodInfo{
-						Name:         endpoint.PodName,
-						MeshPodOwner: endpoint.MeshPodOwner,
+					if err == nil && external && lbc.isNginxPlus {
+						externalNameSvcs[configs.GenerateExternalNameSvcKey(vsr.Namespace, u.Service)] = true
+					}
+				}
+				if err != nil {
+					glog.Warningf("Error getting Endpoints for Upstream %v: %v", u.Name, err)
+				}
+
+				endps = getIPAddressesFromEndpoints(podEndps)
+
+				if lbc.isNginxPlus || lbc.isLatencyMetricsEnabled {
+					for _, endpoint := range podEndps {
+						podsByIP[endpoint.Address] = configs.PodInfo{
+							Name:         endpoint.PodName,
+							MeshPodOwner: endpoint.MeshPodOwner,
+						}
 					}
 				}
 			}
+			endpoints[endpointsKey] = endps
 		}
 	}
 

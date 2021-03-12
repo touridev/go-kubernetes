@@ -189,9 +189,9 @@ name: access-control
    * - ``name``
      - The name of a policy. If the policy doesn't exist or invalid, NGINX will respond with an error response with the `500` status code.
      - ``string``
-     - Yes 
+     - Yes
    * - ``namespace``
-     - The namespace of a policy. If not specified, the namespace of the VirtualServer resource is used. 
+     - The namespace of a policy. If not specified, the namespace of the VirtualServer resource is used.
      - ``string``
      - No
 ```
@@ -218,7 +218,7 @@ The route defines rules for matching client requests to actions like passing a r
      - ``string``
      - Yes
    * - ``policies``
-     - A list of policies. The policies override the policies of the same type defined in the ``spec`` of the VirtualServer. See `Applying Policies </nginx-ingress-controller/configuration/policy-resource/#applying-policies>`_ for more details. 
+     - A list of policies. The policies override the policies of the same type defined in the ``spec`` of the VirtualServer. See `Applying Policies </nginx-ingress-controller/configuration/policy-resource/#applying-policies>`_ for more details.
      - `[]policy <#virtualserver-policy>`_
      - No
    * - ``action``
@@ -351,7 +351,7 @@ action:
      - ``string``
      - Yes
    * - ``policies``
-     - A list of policies. The policies override *all* policies defined in the route of the VirtualServer that references this resource. The policies also override the policies of the same type defined in the ``spec`` of the VirtualServer. See `Applying Policies </nginx-ingress-controller/configuration/policy-resource/#applying-policies>`_ for more details. 
+     - A list of policies. The policies override *all* policies defined in the route of the VirtualServer that references this resource. The policies also override the policies of the same type defined in the ``spec`` of the VirtualServer. See `Applying Policies </nginx-ingress-controller/configuration/policy-resource/#applying-policies>`_ for more details.
      - `[]policy <#virtualserver-policy>`_
      - No
    * - ``action``
@@ -426,6 +426,10 @@ tls:
    * - ``subselector``
      - Selects the pods within the service using label keys and values. By default, all pods of the service are selected. Note: the specified labels are expected to be present in the pods when they are created. If the pod labels are updated, the Ingress Controller will not see that change until the number of the pods is changed.
      - ``map[string]string``
+     - No
+   * - ``use-cluster-ip``
+     - Enables using the Cluster IP and port of the service instead of the default behavior of using the IP and port of the pods. When this field is enabled, the fields that configure NGINX behavior related to multiple upstream servers (like ``lb-method`` and ``next-upstream``) will have no effect, as the Ingress Controller will configure NGINX with only one upstream server that will match the service Cluster IP.
+     - ``boolean``
      - No
    * - ``port``
      - The port of the service. If the service doesn't define that port, NGINX will assume the service has zero endpoints and return a ``502`` response for requests for this upstream. The port must fall into the range ``1..65535``.
@@ -945,13 +949,13 @@ The RequestHeaders field modifies the headers of the request to the proxied upst
 
 The header defines an HTTP Header:
 ```yaml
-name: My-Header 
+name: My-Header
 value: My-Value
 ```
 
 It is possible to override the default value of the `Host` header, which the Ingress Controller sets to [`$host`](https://nginx.org/en/docs/http/ngx_http_core_module.html#var_host):
 ```yaml
-name: Host 
+name: Host
 value: example.com
 ```
 
@@ -1013,8 +1017,8 @@ The ResponseHeaders field modifies the headers of the response to the client.
 
 The addHeader defines an HTTP Header with an optional `always` field:
 ```yaml
-name: My-Header 
-value: My-Value 
+name: My-Header
+value: My-Value
 always: true
 ```
 
@@ -1464,7 +1468,7 @@ Additionally, this information is also available in the `status` field of the Vi
 
 ```
 $ kubectl describe vs cafe
-. . . 
+. . .
 Status:
   External Endpoints:
     Ip:        12.13.23.123

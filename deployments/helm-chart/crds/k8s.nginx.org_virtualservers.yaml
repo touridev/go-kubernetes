@@ -615,6 +615,8 @@ spec:
                         properties:
                           enable:
                             type: boolean
+                      use-cluster-ip:
+                        type: boolean
             status:
               description: VirtualServerStatus defines the status for the VirtualServer resource.
               type: object

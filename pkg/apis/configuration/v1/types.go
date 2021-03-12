@@ -77,6 +77,7 @@ type Upstream struct {
 	SlowStart                string            `json:"slow-start"`
 	Queue                    *UpstreamQueue    `json:"queue"`
 	SessionCookie            *SessionCookie    `json:"sessionCookie"`
+	UseClusterIP             bool              `json:"use-cluster-ip"`
 }
 
 // UpstreamBuffers defines Buffer Configuration for an Upstream.

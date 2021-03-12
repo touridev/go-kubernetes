@@ -430,7 +430,7 @@ func TestServiceIsReferencedByIngressAndMinion(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		rc := newServiceReferenceChecker()
+		rc := newServiceReferenceChecker(false)
 
 		result := rc.IsReferencedByIngress(test.serviceNamespace, test.serviceName, test.ing)
 		if result != test.expected {
@@ -547,7 +547,7 @@ func TestServiceIsReferencedByVirtualServerAndVirtualServerRoutes(t *testing.T) 
 	}
 
 	for _, test := range tests {
-		rc := newServiceReferenceChecker()
+		rc := newServiceReferenceChecker(false)
 
 		result := rc.IsReferencedByVirtualServer(test.serviceNamespace, test.serviceName, test.vs)
 		if result != test.expected {
@@ -626,7 +626,7 @@ func TestIsServiceReferencedByTransportServer(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		rc := newServiceReferenceChecker()
+		rc := newServiceReferenceChecker(false)
 
 		result := rc.IsReferencedByTransportServer(test.serviceNamespace, test.serviceName, test.ts)
 		if result != test.expected {
@@ -1041,6 +1041,132 @@ func TestIsPolicyIsReferenced(t *testing.T) {
 		if result != test.expected {
 			t.Errorf("isPolicyReferenced() returned %v but expected %v for the case of %s", result,
 				test.expected, test.msg)
+		}
+	}
+}
+
+func TestEndpointIsReferencedByVirtualServerAndVirtualServerRoutes(t *testing.T) {
+	tests := []struct {
+		vs               *conf_v1.VirtualServer
+		vsr              *conf_v1.VirtualServerRoute
+		serviceNamespace string
+		serviceName      string
+		expected         bool
+		msg              string
+	}{
+		{
+			vs: &conf_v1.VirtualServer{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "default",
+				},
+				Spec: conf_v1.VirtualServerSpec{
+					Upstreams: []conf_v1.Upstream{
+						{
+							Service: "test-service",
+						},
+					},
+				},
+			},
+			vsr: &conf_v1.VirtualServerRoute{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "default",
+				},
+				Spec: conf_v1.VirtualServerRouteSpec{
+					Upstreams: []conf_v1.Upstream{
+						{
+							Service: "test-service",
+						},
+					},
+				},
+			},
+			serviceNamespace: "default",
+			serviceName:      "test-service",
+			expected:         true,
+			msg:              "service is referenced in an upstream",
+		},
+		{
+			vs: &conf_v1.VirtualServer{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "default",
+				},
+				Spec: conf_v1.VirtualServerSpec{
+					Upstreams: []conf_v1.Upstream{
+						{
+							Service:      "test-service",
+							UseClusterIP: true,
+						},
+					},
+				},
+			},
+			vsr: &conf_v1.VirtualServerRoute{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "default",
+				},
+				Spec: conf_v1.VirtualServerRouteSpec{
+					Upstreams: []conf_v1.Upstream{
+						{
+							Service:      "test-service",
+							UseClusterIP: true,
+						},
+					},
+				},
+			},
+			serviceNamespace: "default",
+			serviceName:      "test-service",
+			expected:         false,
+			msg:              "upstream uses clusterIP",
+		},
+		{
+			vs: &conf_v1.VirtualServer{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "default",
+				},
+				Spec: conf_v1.VirtualServerSpec{
+					Upstreams: []conf_v1.Upstream{
+						{
+							Service:      "test-service",
+							UseClusterIP: true,
+						},
+						{
+							Service: "test-service",
+						},
+					},
+				},
+			},
+			vsr: &conf_v1.VirtualServerRoute{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "default",
+				},
+				Spec: conf_v1.VirtualServerRouteSpec{
+					Upstreams: []conf_v1.Upstream{
+						{
+							Service:      "test-service",
+							UseClusterIP: true,
+						},
+						{
+							Service: "test-service",
+						},
+					},
+				},
+			},
+			serviceNamespace: "default",
+			serviceName:      "test-service",
+			expected:         true,
+			msg:              "one upstream without Cluster IP",
+		},
+	}
+
+	for _, test := range tests {
+		rc := newServiceReferenceChecker(true)
+
+		result := rc.IsReferencedByVirtualServer(test.serviceNamespace, test.serviceName, test.vs)
+		if result != test.expected {
+			t.Errorf("IsReferencedByVirtualServer() returned %v but expected %v for the case of %s", result, test.expected, test.msg)
+		}
+
+		result = rc.IsReferencedByVirtualServerRoute(test.serviceNamespace, test.serviceName, test.vsr)
+		if result != test.expected {
+			t.Errorf("IsReferencedByVirtualServerRoute() returned %v but expected %v for the case of %s", result, test.expected, test.msg)
 		}
 	}
 }

@@ -81,10 +81,12 @@ func (rc *secretReferenceChecker) IsReferencedByTransportServer(secretNamespace 
 	return false
 }
 
-type serviceReferenceChecker struct{}
+type serviceReferenceChecker struct {
+	hasClusterIP bool
+}
 
-func newServiceReferenceChecker() *serviceReferenceChecker {
-	return &serviceReferenceChecker{}
+func newServiceReferenceChecker(hasClusterIP bool) *serviceReferenceChecker {
+	return &serviceReferenceChecker{hasClusterIP}
 }
 
 func (rc *serviceReferenceChecker) IsReferencedByIngress(svcNamespace string, svcName string, ing *networking.Ingress) bool {
@@ -121,6 +123,9 @@ func (rc *serviceReferenceChecker) IsReferencedByVirtualServer(svcNamespace stri
 	}
 
 	for _, u := range vs.Spec.Upstreams {
+		if rc.hasClusterIP && u.UseClusterIP {
+			continue
+		}
 		if u.Service == svcName {
 			return true
 		}
@@ -135,6 +140,9 @@ func (rc *serviceReferenceChecker) IsReferencedByVirtualServerRoute(svcNamespace
 	}
 
 	for _, u := range vsr.Spec.Upstreams {
+		if rc.hasClusterIP && u.UseClusterIP {
+			continue
+		}
 		if u.Service == svcName {
 			return true
 		}
@@ -157,8 +165,7 @@ func (rc *serviceReferenceChecker) IsReferencedByTransportServer(svcNamespace st
 	return false
 }
 
-type policyReferenceChecker struct {
-}
+type policyReferenceChecker struct{}
 
 func newPolicyReferenceChecker() *policyReferenceChecker {
 	return &policyReferenceChecker{}
