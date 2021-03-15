@@ -537,6 +537,9 @@ def crd_ingress_controller_with_ap(
         print("------------------------- Register AP CRD -----------------------------------")
         ap_pol_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds-v1beta1/appprotect.f5.com_appolicies.yaml")
         ap_log_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds-v1beta1/appprotect.f5.com_aplogconfs.yaml")
+        vs_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds-v1beta1/k8s.nginx.org_virtualservers.yaml")
+        vsr_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds-v1beta1/k8s.nginx.org_virtualserverroutes.yaml")
+        pol_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds-v1beta1/k8s.nginx.org_policies.yaml")
         create_crd_from_yaml(
             kube_apis.api_extensions_v1_beta1,
             ap_pol_crd_name,
@@ -546,6 +549,21 @@ def crd_ingress_controller_with_ap(
             kube_apis.api_extensions_v1_beta1,
             ap_log_crd_name,
             f"{DEPLOYMENTS}/common/crds-v1beta1/appprotect.f5.com_aplogconfs.yaml",
+        )
+        create_crd_from_yaml(
+            kube_apis.api_extensions_v1_beta1,
+            vs_crd_name,
+            f"{DEPLOYMENTS}/common/crds-v1beta1/k8s.nginx.org_virtualservers.yaml",
+        )
+        create_crd_from_yaml(
+            kube_apis.api_extensions_v1_beta1,
+            vsr_crd_name,
+            f"{DEPLOYMENTS}/common/crds-v1beta1/k8s.nginx.org_virtualserverroutes.yaml",
+        )
+        create_crd_from_yaml(
+            kube_apis.api_extensions_v1_beta1,
+            pol_crd_name,
+            f"{DEPLOYMENTS}/common/crds-v1beta1/k8s.nginx.org_policies.yaml",
         )
 
         print("------------------------- Create IC -----------------------------------")
@@ -583,6 +601,15 @@ def crd_ingress_controller_with_ap(
         )
         delete_crd(
             kube_apis.api_extensions_v1_beta1, ap_log_crd_name,
+        )
+        delete_crd(
+            kube_apis.api_extensions_v1_beta1, vs_crd_name,
+        )
+        delete_crd(
+            kube_apis.api_extensions_v1_beta1, vsr_crd_name,
+        )
+        delete_crd(
+            kube_apis.api_extensions_v1_beta1, pol_crd_name,
         )
         print("Remove ap-rbac")
         cleanup_rbac(kube_apis.rbac_v1, rbac)
@@ -628,7 +655,7 @@ class VirtualServerSetup:
 
 @pytest.fixture(scope="class")
 def virtual_server_setup(
-    request, kube_apis, crd_ingress_controller, ingress_controller_endpoint, test_namespace
+    request, kube_apis, ingress_controller_endpoint, test_namespace
 ) -> VirtualServerSetup:
     """
     Prepare Virtual Server Example.
@@ -767,7 +794,7 @@ class VirtualServerRouteSetup:
 
 @pytest.fixture(scope="class")
 def v_s_route_setup(
-    request, kube_apis, crd_ingress_controller, ingress_controller_endpoint
+    request, kube_apis, ingress_controller_endpoint
 ) -> VirtualServerRouteSetup:
     """
     Prepare Virtual Server Route Example.

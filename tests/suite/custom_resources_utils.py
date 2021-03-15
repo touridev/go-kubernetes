@@ -132,6 +132,48 @@ def create_policy_from_yaml(custom_objects: CustomObjectsApi, yaml_manifest, nam
         raise
 
 
+def create_ap_waf_policy_from_yaml(
+    custom_objects: CustomObjectsApi,
+    yaml_manifest,
+    namespace,
+    ap_namespace,
+    waf_enable,
+    log_enable,
+    appolicy,
+    aplogconf,
+    logdest,
+) -> None:
+    """
+    Create a Policy based on yaml file.
+
+    :param custom_objects: CustomObjectsApi
+    :param yaml_manifest: an absolute path to file
+    :param namespace: namespace for test resources
+    :param ap_namespace: namespace for AppProtect resources
+    :param waf_enable: true/false
+    :param log_enable: true/false
+    :param appolicy: AppProtect policy name
+    :param aplogconf: Logconf name
+    :param logdest: AP log destination (syslog)
+    :return: None
+    """
+    with open(yaml_manifest) as f:
+        dep = yaml.safe_load(f)
+    try:
+        dep["spec"]["waf"]["enable"] = waf_enable
+        dep["spec"]["waf"]["apPolicy"] = f"{ap_namespace}/{appolicy}"
+        dep["spec"]["waf"]["securityLog"]["enable"] = log_enable
+        dep["spec"]["waf"]["securityLog"]["apLogConf"] = f"{ap_namespace}/{aplogconf}"
+        dep["spec"]["waf"]["securityLog"]["logDest"] = f"{logdest}"
+
+        custom_objects.create_namespaced_custom_object(
+            "k8s.nginx.org", "v1", namespace, "policies", dep
+        )
+        print(f"Policy created: {dep}")
+    except ApiException:
+        logging.exception(f"Exception occurred while creating Policy: {dep['metadata']['name']}")
+        raise
+
 def delete_policy(custom_objects: CustomObjectsApi, name, namespace) -> None:
     """
     Delete a Policy.
@@ -273,7 +315,7 @@ def delete_and_create_ap_policy_from_yaml(
     :return:
     """
     print(f"Update an AP Policy: {name}")
-    
+
     try:
         delete_ap_policy(custom_objects, name, namespace)
         create_ap_policy_from_yaml(custom_objects, yaml_manifest, namespace)
