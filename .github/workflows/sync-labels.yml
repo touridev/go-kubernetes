@@ -28,4 +28,4 @@ jobs:
         with:
           repository: ${{ matrix.repo }}
           token: ${{ secrets.NGINX_PAT }}
-          prune: false
+          prune: true
