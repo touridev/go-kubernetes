@@ -18,7 +18,8 @@ You can define App Protect policies for your Ingress resources by creating an `A
 
  > **Note**: The fields `policy.signature-requirements[].minRevisionDatetime` and `policy.signature-requirements[].maxRevisionDatetime` are not currently supported.
 
- > **Note**: [The Advanced gRPC Protection for Unary Traffic](/nginx-app-protect/configuration/#advanced-grpc-protection-for-unary-traffic) is not currently supported.
+ > **Note**: [The Advanced gRPC Protection for Unary Traffic](/nginx-app-protect/configuration/#advanced-grpc-protection-for-unary-traffic) only supports providing an `idl-file` inline. The fields `policy.idl-files[].link`, `policy.idl-files[].$ref`, and 
+ `policy.idl-files[].file` are not supported. The IDL file should be provided in field `policy.idl-files[].contents`. The value of this field can be base64 encoded. In this case the field `policy.idl-files[].isBase64` should be set to `true`.
 
 To add any [App Protect policy](/nginx-app-protect/policy/#policy) to an Ingress resource:
 
