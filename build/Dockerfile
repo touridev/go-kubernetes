@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.0-experimental
-ARG NGINX_VERSION=1.19.8
+ARG NGINX_VERSION=1.19.9
 ARG BUILD_OS=debian
 
 ############################################# Base image for Debian #############################################
@@ -129,7 +129,8 @@ LABEL name="NGINX Ingress Controller" \
 
 RUN set -x \
 	&& groupadd --system --gid 101 nginx \
-	&& useradd --system --gid nginx --no-create-home --home-dir /nonexistent --comment "nginx user" --shell /bin/false --uid 101 nginx
+	&& useradd --system --gid nginx --no-create-home --home-dir /nonexistent --comment "nginx user" --shell /bin/false --uid 101 nginx \
+	&& yum update -y openssl-libs
 
 
 RUN mkdir licenses
