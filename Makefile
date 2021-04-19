@@ -1,4 +1,4 @@
-VERSION = edge
+VERSION = 1.11.1
 TAG = $(VERSION)
 PREFIX = nginx/nginx-ingress
 TARGET ?= local
