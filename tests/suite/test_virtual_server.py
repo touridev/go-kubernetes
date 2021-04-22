@@ -7,7 +7,7 @@ from suite.custom_resources_utils import delete_crd, create_crd_from_yaml, \
     create_virtual_server_from_yaml, delete_virtual_server, patch_virtual_server_from_yaml
 from suite.resources_utils import patch_rbac, replace_service, read_service, \
     wait_before_test, delete_service, create_service_from_yaml
-from suite.yaml_utils import get_paths_from_vs_yaml, get_first_vs_host_from_yaml, get_name_from_yaml
+from suite.yaml_utils import get_paths_from_vs_yaml, get_first_host_from_yaml, get_name_from_yaml
 
 
 @pytest.mark.vs
@@ -36,7 +36,7 @@ class TestVirtualServer:
             f":{virtual_server_setup.public_endpoint.port}/{new_paths[0]}"
         new_backend_2_url = f"http://{virtual_server_setup.public_endpoint.public_ip}" \
             f":{virtual_server_setup.public_endpoint.port}/{new_paths[1]}"
-        new_host = get_first_vs_host_from_yaml(f"{TEST_DATA}/virtual-server/standard/virtual-server-updated.yaml")
+        new_host = get_first_host_from_yaml(f"{TEST_DATA}/virtual-server/standard/virtual-server-updated.yaml")
         wait_before_test(1)
         resp = requests.get(virtual_server_setup.backend_1_url,
                             headers={"host": virtual_server_setup.vs_host})

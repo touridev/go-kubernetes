@@ -10,7 +10,7 @@ from suite.resources_utils import get_first_pod_name, get_events, \
     wait_before_test, replace_configmap_from_yaml, create_service_from_yaml, \
     delete_namespace, create_namespace_with_name_from_yaml, read_service, replace_service, replace_configmap, \
     create_service_with_name, create_deployment_with_name, ensure_response_from_backend
-from suite.yaml_utils import get_paths_from_vsr_yaml, get_route_namespace_from_vs_yaml, get_first_vs_host_from_yaml
+from suite.yaml_utils import get_paths_from_vsr_yaml, get_route_namespace_from_vs_yaml, get_first_host_from_yaml
 
 
 class ReducedVirtualServerRouteSetup:
@@ -65,7 +65,7 @@ def vsr_externalname_setup(request, kube_apis,
     vs_name = create_virtual_server_from_yaml(kube_apis.custom_objects,
                                               f"{TEST_DATA}/{request.param['example']}/standard/virtual-server.yaml",
                                               ns_1)
-    vs_host = get_first_vs_host_from_yaml(f"{TEST_DATA}/{request.param['example']}/standard/virtual-server.yaml")
+    vs_host = get_first_host_from_yaml(f"{TEST_DATA}/{request.param['example']}/standard/virtual-server.yaml")
 
     print("------------------------- Deploy Virtual Server Route -----------------------------------")
     vsr_name = create_v_s_route_from_yaml(kube_apis.custom_objects,

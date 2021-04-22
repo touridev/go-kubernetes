@@ -7,7 +7,7 @@ from suite.custom_resources_utils import create_virtual_server_from_yaml, create
 from suite.fixtures import VirtualServerRoute
 from suite.resources_utils import ensure_response_from_backend, create_example_app, \
     wait_until_all_pods_are_ready, create_namespace_with_name_from_yaml, delete_namespace
-from suite.yaml_utils import get_paths_from_vsr_yaml, get_first_vs_host_from_yaml, get_route_namespace_from_vs_yaml
+from suite.yaml_utils import get_paths_from_vsr_yaml, get_first_host_from_yaml, get_route_namespace_from_vs_yaml
 
 
 def get_weights_of_splitting(file) -> []:
@@ -85,7 +85,7 @@ def vsr_canary_setup(request, kube_apis,
     vs_name = create_virtual_server_from_yaml(kube_apis.custom_objects,
                                               f"{TEST_DATA}/{request.param['example']}/standard/virtual-server.yaml",
                                               ns_1)
-    vs_host = get_first_vs_host_from_yaml(f"{TEST_DATA}/{request.param['example']}/standard/virtual-server.yaml")
+    vs_host = get_first_host_from_yaml(f"{TEST_DATA}/{request.param['example']}/standard/virtual-server.yaml")
 
     print("------------------------- Deploy Virtual Server Route -----------------------------------")
     vsr_name = create_v_s_route_from_yaml(kube_apis.custom_objects,

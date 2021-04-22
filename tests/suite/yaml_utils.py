@@ -47,7 +47,7 @@ def get_paths_from_vs_yaml(file) -> []:
     return res
 
 
-def get_first_vs_host_from_yaml(file) -> str:
+def get_first_host_from_yaml(file) -> str:
     """
     Parse yaml file and return first spec.host appeared.
 

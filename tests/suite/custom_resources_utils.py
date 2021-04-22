@@ -116,8 +116,25 @@ def read_ts(custom_objects: CustomObjectsApi, namespace, name) -> object:
     """
     return read_custom_resource_v1alpha1(custom_objects, namespace, "transportservers", name)
 
+def read_vs(custom_objects: CustomObjectsApi, namespace, name) -> object:
+    """
+    Read VirtualServer resource.
+    """
+    return read_custom_resource(custom_objects, namespace, "virtualservers", name)
 
-def read_ap_crd(custom_objects: CustomObjectsApi, namespace, plural, name) -> object:
+def read_vsr(custom_objects: CustomObjectsApi, namespace, name) -> object:
+    """
+    Read VirtualServerRoute resource.
+    """
+    return read_custom_resource(custom_objects, namespace, "virtualserverroutes", name)
+
+def read_policy(custom_objects: CustomObjectsApi, namespace, name) -> object:
+    """
+    Read Policy resource.
+    """
+    return read_custom_resource(custom_objects, namespace, "policies", name)
+
+def read_ap_custom_resource(custom_objects: CustomObjectsApi, namespace, plural, name) -> object:
     """
     Get AppProtect CRD information (kubectl describe output)
     :param custom_objects: CustomObjectsApi
@@ -229,28 +246,6 @@ def delete_policy(custom_objects: CustomObjectsApi, name, namespace) -> None:
     print(f"Policy was removed with name '{name}'")
 
 
-def read_policy(custom_objects: CustomObjectsApi, namespace, name) -> object:
-    """
-    Get policy information (kubectl describe output)
-
-    :param custom_objects: CustomObjectsApi
-    :param namespace: The policy's namespace	
-    :param name: policy's name
-    :return: object
-    """
-    print(f"Getting info for policy {name} in namespace {namespace}")
-    try:
-        response = custom_objects.get_namespaced_custom_object(
-            "k8s.nginx.org", "v1", namespace, "policies", name
-        )
-        pprint(response)
-        return response
-
-    except ApiException:
-        logging.exception(f"Exception occurred while reading Policy")
-        raise
-
-
 def create_virtual_server_from_yaml(
     custom_objects: CustomObjectsApi, yaml_manifest, namespace
 ) -> str:
@@ -278,7 +273,7 @@ def create_virtual_server_from_yaml(
         raise
 
 
-def patch_ts_from_yaml(custom_objects: CustomObjectsApi, yaml_manifest, namespace) -> dict:
+def create_ts_from_yaml(custom_objects: CustomObjectsApi, yaml_manifest, namespace) -> dict:
     """
     Create a TransportServer Resource based on yaml file.
 
@@ -372,7 +367,7 @@ def delete_resource(custom_objects: CustomObjectsApi, resource, namespace, plura
     kind = resource['kind']
     group, version = resource["apiVersion"].split("/")
 
-    print(f"Delete a: {kind}, name: {name}")
+    print(f"Delete a '{kind}' with name '{name}'")
 
     custom_objects.delete_namespaced_custom_object(
         group, version, namespace, plural, name
@@ -385,7 +380,7 @@ def delete_resource(custom_objects: CustomObjectsApi, resource, namespace, plura
         plural,
         name,
     )
-    print(f"Resource:{kind} was removed with name '{name}'")
+    print(f"Resource '{kind}' was removed with name '{name}'")
 
 
 def create_ap_logconf_from_yaml(custom_objects: CustomObjectsApi, yaml_manifest, namespace) -> str:

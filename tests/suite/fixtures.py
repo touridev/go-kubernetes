@@ -24,7 +24,7 @@ from suite.custom_resources_utils import (
     delete_v_s_route,
     create_crd_from_yaml,
     delete_crd,
-    patch_ts_from_yaml,
+    create_ts_from_yaml,
     create_gc_from_yaml,
     delete_ts,
     delete_gc,
@@ -65,7 +65,7 @@ from suite.resources_utils import (
     delete_items_from_yaml,
 )
 from suite.yaml_utils import (
-    get_first_vs_host_from_yaml,
+    get_first_host_from_yaml,
     get_paths_from_vs_yaml,
     get_paths_from_vsr_yaml,
     get_route_namespace_from_vs_yaml,
@@ -282,33 +282,20 @@ def ingress_controller_prerequisites(
     print("------------------------- Create IC Prerequisites  -----------------------------------")
     rbac = configure_rbac(kube_apis.rbac_v1)
     namespace = create_ns_and_sa_from_yaml(kube_apis.v1, f"{DEPLOYMENTS}/common/ns-and-sa.yaml")
-    k8sVersionBin = subprocess.run(
-                    [
-                        "kubectl",
-                        "version"
-                    ],
-                    capture_output=True
-                )
-    k8sVersion = (k8sVersionBin.stdout).decode('ascii')
+    k8sVersionBin = subprocess.run(["kubectl", "version"], capture_output=True)
+    k8sVersion = (k8sVersionBin.stdout).decode("ascii")
     serverVersion = k8sVersion[k8sVersion.find("Server Version:") :].lstrip()
     minorSerVer = serverVersion[serverVersion.find("Minor") :].lstrip()[0:10]
     k8sMinorVersion = int("".join(filter(str.isdigit, minorSerVer)))
-    if (k8sMinorVersion >= 18):
+    if k8sMinorVersion >= 18:
         print("Create IngressClass resources:")
+        subprocess.run(["kubectl", "apply", "-f", f"{DEPLOYMENTS}/common/ingress-class.yaml"])
         subprocess.run(
             [
                 "kubectl",
                 "apply",
                 "-f",
-                f"{DEPLOYMENTS}/common/ingress-class.yaml"
-            ]
-        )
-        subprocess.run(
-            [
-                "kubectl",
-                "apply",
-                "-f",
-                f"{TEST_DATA}/ingress-class/resource/custom-ingress-class-res.yaml"
+                f"{TEST_DATA}/ingress-class/resource/custom-ingress-class-res.yaml",
             ]
         )
     config_map_yaml = f"{DEPLOYMENTS}/common/nginx-config.yaml"
@@ -322,22 +309,15 @@ def ingress_controller_prerequisites(
     def fin():
         print("Clean up prerequisites")
         delete_namespace(kube_apis.v1, namespace)
-        if (k8sMinorVersion >= 18):
+        if k8sMinorVersion >= 18:
             print("Delete IngressClass resources:")
+            subprocess.run(["kubectl", "delete", "-f", f"{DEPLOYMENTS}/common/ingress-class.yaml"])
             subprocess.run(
                 [
                     "kubectl",
                     "delete",
                     "-f",
-                    f"{DEPLOYMENTS}/common/ingress-class.yaml"
-                ]
-            )
-            subprocess.run(
-                [
-                    "kubectl",
-                    "delete",
-                    "-f",
-                    f"{TEST_DATA}/ingress-class/resource/custom-ingress-class-res.yaml"
+                    f"{TEST_DATA}/ingress-class/resource/custom-ingress-class-res.yaml",
                 ]
             )
         cleanup_rbac(kube_apis.rbac_v1, rbac)
@@ -438,10 +418,16 @@ def crd_ingress_controller(
     namespace = ingress_controller_prerequisites.namespace
     name = "nginx-ingress"
     vs_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_virtualservers.yaml")
-    vsr_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_virtualserverroutes.yaml")
+    vsr_crd_name = get_name_from_yaml(
+        f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_virtualserverroutes.yaml"
+    )
     pol_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_policies.yaml")
-    ts_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_transportservers.yaml")
-    gc_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_globalconfigurations.yaml")
+    ts_crd_name = get_name_from_yaml(
+        f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_transportservers.yaml"
+    )
+    gc_crd_name = get_name_from_yaml(
+        f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_globalconfigurations.yaml"
+    )
 
     try:
         print("------------------------- Update ClusterRole -----------------------------------")
@@ -541,13 +527,25 @@ def crd_ingress_controller_with_ap(
         rbac = configure_rbac_with_ap(kube_apis.rbac_v1)
 
         print("------------------------- Register AP CRD -----------------------------------")
-        ap_pol_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds/appprotect.f5.com_appolicies.yaml")
-        ap_log_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds/appprotect.f5.com_aplogconfs.yaml")
-        ap_uds_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds/appprotect.f5.com_apusersigs.yaml")
-        vs_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_virtualservers.yaml")
-        vsr_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_virtualserverroutes.yaml")
+        ap_pol_crd_name = get_name_from_yaml(
+            f"{DEPLOYMENTS}/common/crds/appprotect.f5.com_appolicies.yaml"
+        )
+        ap_log_crd_name = get_name_from_yaml(
+            f"{DEPLOYMENTS}/common/crds/appprotect.f5.com_aplogconfs.yaml"
+        )
+        ap_uds_crd_name = get_name_from_yaml(
+            f"{DEPLOYMENTS}/common/crds/appprotect.f5.com_apusersigs.yaml"
+        )
+        vs_crd_name = get_name_from_yaml(
+            f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_virtualservers.yaml"
+        )
+        vsr_crd_name = get_name_from_yaml(
+            f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_virtualserverroutes.yaml"
+        )
         pol_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_policies.yaml")
-        ts_crd_name = get_name_from_yaml(f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_transportservers.yaml")
+        ts_crd_name = get_name_from_yaml(
+            f"{DEPLOYMENTS}/common/crds/k8s.nginx.org_transportservers.yaml"
+        )
         create_crd_from_yaml(
             kube_apis.api_extensions_v1,
             ap_pol_crd_name,
@@ -600,25 +598,32 @@ def crd_ingress_controller_with_ap(
     except Exception as ex:
         print(f"Failed to complete CRD IC fixture: {ex}\nClean up the cluster as much as possible.")
         delete_crd(
-            kube_apis.api_extensions_v1, ap_pol_crd_name,
+            kube_apis.api_extensions_v1,
+            ap_pol_crd_name,
         )
         delete_crd(
-            kube_apis.api_extensions_v1, ap_log_crd_name,
+            kube_apis.api_extensions_v1,
+            ap_log_crd_name,
         )
         delete_crd(
-            kube_apis.api_extensions_v1, ap_uds_crd_name,
+            kube_apis.api_extensions_v1,
+            ap_uds_crd_name,
         )
         delete_crd(
-            kube_apis.api_extensions_v1, vs_crd_name,
+            kube_apis.api_extensions_v1,
+            vs_crd_name,
         )
         delete_crd(
-            kube_apis.api_extensions_v1, vsr_crd_name,
+            kube_apis.api_extensions_v1,
+            vsr_crd_name,
         )
         delete_crd(
-            kube_apis.api_extensions_v1, pol_crd_name,
+            kube_apis.api_extensions_v1,
+            pol_crd_name,
         )
         delete_crd(
-            kube_apis.api_extensions_v1, ts_crd_name,
+            kube_apis.api_extensions_v1,
+            ts_crd_name,
         )
         print("Remove ap-rbac")
         cleanup_rbac(kube_apis.rbac_v1, rbac)
@@ -630,25 +635,32 @@ def crd_ingress_controller_with_ap(
     def fin():
         print("--------------Cleanup----------------")
         delete_crd(
-            kube_apis.api_extensions_v1, ap_pol_crd_name,
+            kube_apis.api_extensions_v1,
+            ap_pol_crd_name,
         )
         delete_crd(
-            kube_apis.api_extensions_v1, ap_log_crd_name,
+            kube_apis.api_extensions_v1,
+            ap_log_crd_name,
         )
         delete_crd(
-            kube_apis.api_extensions_v1, ap_uds_crd_name,
+            kube_apis.api_extensions_v1,
+            ap_uds_crd_name,
         )
         delete_crd(
-            kube_apis.api_extensions_v1, vs_crd_name,
+            kube_apis.api_extensions_v1,
+            vs_crd_name,
         )
         delete_crd(
-            kube_apis.api_extensions_v1, vsr_crd_name,
+            kube_apis.api_extensions_v1,
+            vsr_crd_name,
         )
         delete_crd(
-            kube_apis.api_extensions_v1, pol_crd_name,
+            kube_apis.api_extensions_v1,
+            pol_crd_name,
         )
         delete_crd(
-            kube_apis.api_extensions_v1, ts_crd_name,
+            kube_apis.api_extensions_v1,
+            ts_crd_name,
         )
         print("Remove ap-rbac")
         cleanup_rbac(kube_apis.rbac_v1, rbac)
@@ -714,7 +726,7 @@ def virtual_server_setup(
     )
     vs_source = f"{TEST_DATA}/{request.param['example']}/standard/virtual-server.yaml"
     vs_name = create_virtual_server_from_yaml(kube_apis.custom_objects, vs_source, test_namespace)
-    vs_host = get_first_vs_host_from_yaml(vs_source)
+    vs_host = get_first_host_from_yaml(vs_source)
     vs_paths = get_paths_from_vs_yaml(vs_source)
     if request.param["app_type"]:
         create_example_app(kube_apis, request.param["app_type"], test_namespace)
@@ -748,9 +760,7 @@ class TransportServerSetup:
 
 
 @pytest.fixture(scope="class")
-def transport_server_setup(
-        request, kube_apis, test_namespace
-) -> TransportServerSetup:
+def transport_server_setup(request, kube_apis, test_namespace) -> TransportServerSetup:
     """
     Prepare Transport Server Example.
 
@@ -764,7 +774,9 @@ def transport_server_setup(
     )
 
     # deploy global config
-    global_config_file = f"{TEST_DATA}/{request.param['example']}/standard/global-configuration.yaml"
+    global_config_file = (
+        f"{TEST_DATA}/{request.param['example']}/standard/global-configuration.yaml"
+    )
     gc_resource = create_gc_from_yaml(kube_apis.custom_objects, global_config_file, "nginx-ingress")
 
     # deploy dns
@@ -773,7 +785,9 @@ def transport_server_setup(
 
     # deploy transport server
     transport_server_file = f"{TEST_DATA}/{request.param['example']}/standard/transport-server.yaml"
-    ts_resource = patch_ts_from_yaml(kube_apis.custom_objects, transport_server_file, test_namespace)
+    ts_resource = create_ts_from_yaml(
+        kube_apis.custom_objects, transport_server_file, test_namespace
+    )
 
     wait_until_all_pods_are_ready(kube_apis.v1, test_namespace)
 
@@ -785,7 +799,7 @@ def transport_server_setup(
 
     request.addfinalizer(fin)
 
-    return TransportServerSetup(ts_resource['metadata']['name'], test_namespace)
+    return TransportServerSetup(ts_resource["metadata"]["name"], test_namespace)
 
 
 @pytest.fixture(scope="class")
@@ -887,9 +901,7 @@ class VirtualServerRouteSetup:
 
 
 @pytest.fixture(scope="class")
-def v_s_route_setup(
-    request, kube_apis, ingress_controller_endpoint
-) -> VirtualServerRouteSetup:
+def v_s_route_setup(request, kube_apis, ingress_controller_endpoint) -> VirtualServerRouteSetup:
     """
     Prepare Virtual Server Route Example.
 
@@ -919,7 +931,7 @@ def v_s_route_setup(
         f"{TEST_DATA}/{request.param['example']}/standard/virtual-server.yaml",
         ns_1,
     )
-    vs_host = get_first_vs_host_from_yaml(
+    vs_host = get_first_host_from_yaml(
         f"{TEST_DATA}/{request.param['example']}/standard/virtual-server.yaml"
     )
 

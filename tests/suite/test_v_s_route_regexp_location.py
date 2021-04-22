@@ -7,7 +7,7 @@ from suite.custom_resources_utils import patch_v_s_route_from_yaml, patch_virtua
     get_vs_nginx_template_conf, create_virtual_server_from_yaml, create_v_s_route_from_yaml
 from suite.resources_utils import wait_before_test, get_events, get_first_pod_name, \
     create_example_app, wait_until_all_pods_are_ready, ensure_response_from_backend
-from suite.yaml_utils import get_first_vs_host_from_yaml
+from suite.yaml_utils import get_first_host_from_yaml
 
 
 @pytest.mark.vsr
@@ -140,7 +140,7 @@ def vsr_regexp_setup(request, kube_apis,
     print("------------------------- Deploy Virtual Server -----------------------------------")
     vs_src_yaml = f"{TEST_DATA}/{request.param['example']}/additional-case/virtual-server-exact-over-all.yaml"
     vs_name = create_virtual_server_from_yaml(kube_apis.custom_objects, vs_src_yaml, test_namespace)
-    vs_host = get_first_vs_host_from_yaml(vs_src_yaml)
+    vs_host = get_first_host_from_yaml(vs_src_yaml)
 
     print("------------------------- Deploy VSRs -----------------------------------")
     for item in ['prefix', 'exact', 'regexp']:
