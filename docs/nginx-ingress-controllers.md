@@ -8,7 +8,7 @@ If you are unsure about which implementation you are using, check the container 
 
 ## The Key Differences
 
-The table below summarizes the key difference between nginxinc/kubernetes-ingress and kubernetes/ingress-nginx Ingress controllers. Note that the table has two columns for the nginxinc/kubernetes-ingress Ingress controller, as it can be used both with NGINX and NGINX Plus. For more information about nginxinc/kubernetes-ingress with NGINX Plus, read [here](nginx-plus.md). 
+The table below summarizes the key difference between nginxinc/kubernetes-ingress and kubernetes/ingress-nginx Ingress controllers. Note that the table has two columns for the nginxinc/kubernetes-ingress Ingress controller, as it can be used both with NGINX and NGINX Plus. For more information about nginxinc/kubernetes-ingress with NGINX Plus, read [here](nginx-plus.md).
 
 | Aspect or Feature | kubernetes/ingress-nginx | nginxinc/kubernetes-ingress with NGINX | nginxinc/kubernetes-ingress with NGINX Plus |
 | --- | --- | --- | --- |
@@ -26,7 +26,7 @@ The table below summarizes the key difference between nginxinc/kubernetes-ingres
 | JWT validation | Not supported | Not supported | Supported |
 | Session persistence | Supported via a third-party module | Not supported | Supported |
 | Canary testing (by header, cookie, weight) | Supported via annotations | Supported via custom resources | Supported via custom resources |
-| Configuration templates *1 | See the [template](https://github.com/kubernetes/ingress-nginx/blob/v1.11.0/rootfs/etc/nginx/template/nginx.tmpl) | See the [templates](../internal/configs/version1) | See the [templates](../internal/configs/version1) |
+| Configuration templates *1 | See the [template](https://github.com/kubernetes/ingress-nginx/blob/master/rootfs/etc/nginx/template/nginx.tmpl) | See the [templates](../internal/configs/version1) | See the [templates](../internal/configs/version1) |
 | **Load balancing configuration via Custom Resources** |
 | HTTP load balancing | Not supported | See [VirtualServer and VirtualServerRoute](https://docs.nginx.com/nginx-ingress-controller/configuration/virtualserver-and-virtualserverroute-resources/) resources | See [VirtualServer and VirtualServerRoute](https://docs.nginx.com/nginx-ingress-controller/configuration/virtualserver-and-virtualserverroute-resources/) resources |
 | TCP/UDP load balancing | Not supported | See [TransportServer](https://docs.nginx.com/nginx-ingress-controller/configuration/transportserver-resource/) resource | See [TransportServer](https://docs.nginx.com/nginx-ingress-controller/configuration/transportserver-resource/) resource |
