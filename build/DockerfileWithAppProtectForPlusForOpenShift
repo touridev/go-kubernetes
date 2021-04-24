@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.0-experimental
+# syntax=docker/dockerfile:1.2
 FROM registry.access.redhat.com/ubi7/ubi AS base
 
 LABEL name="NGINX Ingress Controller" \
@@ -96,7 +96,7 @@ COPY --chown=nginx:0 build/log-default.json /etc/nginx
 
 EXPOSE 80 443
 
-COPY internal/configs/version1/nginx-plus.ingress.tmpl \
+COPY --chown=nginx:0 internal/configs/version1/nginx-plus.ingress.tmpl \
 	internal/configs/version1/nginx-plus.tmpl \
 	internal/configs/version2/nginx-plus.virtualserver.tmpl \
 	internal/configs/version2/nginx-plus.transportserver.tmpl /
@@ -123,14 +123,24 @@ COPY nginx-ingress /
 
 
 FROM golang:1.16-alpine AS builder
-ARG VERSION
+ARG IC_VERSION
 ARG GIT_COMMIT
+ARG DATE
+ARG TARGETARCH
+
 WORKDIR /go/src/github.com/nginxinc/kubernetes-ingress/nginx-ingress/cmd/nginx-ingress
 COPY go.mod go.sum /go/src/github.com/nginxinc/kubernetes-ingress/nginx-ingress/
 RUN go mod download
 COPY . /go/src/github.com/nginxinc/kubernetes-ingress/nginx-ingress/
-RUN CGO_ENABLED=0 GO111MODULE=on go build -ldflags "-s -w -X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT}" -o /tmp/nginx-ingress
+RUN CGO_ENABLED=0 GO111MODULE=on GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags "-s -w -X main.version=${IC_VERSION} -X main.commit=${GIT_COMMIT} -X main.date=${DATE}" -o /tmp/nginx-ingress
 
 
 FROM base AS container
-COPY --from=builder /tmp/nginx-ingress /
+COPY --chown=nginx:0 --from=builder /tmp/nginx-ingress /
+
+
+FROM base AS goreleaser
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+COPY --chown=nginx:0 dist/kubernetes-ingress_linux_$TARGETARCH${TARGETVARIANT:+_7}/nginx-ingress /

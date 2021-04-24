@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.0-experimental
+# syntax=docker/dockerfile:1.2
 ARG BUILD_OS=debian
 
 ############################################# Base image for Debian #############################################
@@ -263,7 +263,7 @@ COPY --from=tracer-downloader /usr/local/lib/libjaegertracing_plugin.so /usr/loc
 
 
 ############################################# Create common files, permissions and setcap #############################################
-FROM $BUILD_OS as files
+FROM $BUILD_OS as common
 
 ARG PLUS
 
@@ -272,7 +272,7 @@ RUN mkdir -p /var/lib/nginx /etc/nginx/secrets /etc/nginx/stream-conf.d \
 	&& chown -R nginx:0 /etc/nginx /var/cache/nginx /var/lib/nginx \
 	&& rm -f /etc/nginx/conf.d/* /etc/apt/apt.conf.d/90nginx /etc/apt/sources.list.d/nginx-plus.list
 
-COPY internal/configs/version1/nginx$PLUS.ingress.tmpl \
+COPY --chown=nginx:0 internal/configs/version1/nginx$PLUS.ingress.tmpl \
 	internal/configs/version1/nginx$PLUS.tmpl \
 	internal/configs/version2/nginx$PLUS.virtualserver.tmpl \
 	internal/configs/version2/nginx$PLUS.transportserver.tmpl /
@@ -284,28 +284,36 @@ COPY internal/configs/version1/nginx$PLUS.ingress.tmpl \
 EXPOSE 80 443
 
 ENTRYPOINT ["/nginx-ingress"]
+USER nginx
 
 
 ############################################# Build nginx-ingress in golang container #############################################
 FROM golang:1.16-alpine AS builder
-ARG VERSION
+ARG IC_VERSION
 ARG GIT_COMMIT
+ARG DATE
+ARG TARGETARCH
+
 WORKDIR /go/src/github.com/nginxinc/kubernetes-ingress/nginx-ingress/cmd/nginx-ingress
 COPY go.mod go.sum /go/src/github.com/nginxinc/kubernetes-ingress/nginx-ingress/
 RUN go mod download
 COPY . /go/src/github.com/nginxinc/kubernetes-ingress/nginx-ingress/
-RUN CGO_ENABLED=0 GO111MODULE=on go build -ldflags "-s -w -X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT}" -o /nginx-ingress
+RUN CGO_ENABLED=0 GO111MODULE=on GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags "-s -w -X main.version=${IC_VERSION} -X main.commit=${GIT_COMMIT} -X main.date=${DATE}" -o /nginx-ingress
 
 
 ############################################# Create image with nginx-ingress built in container #############################################
-FROM files AS container
+FROM common AS container
 COPY --chown=nginx:0 --from=builder /nginx-ingress /
-
-USER nginx
 
 
 ############################################# Create image with nginx-ingress built locally #############################################
-FROM files AS local
+FROM common AS local
 COPY --chown=nginx:0 nginx-ingress /
 
-USER nginx
+
+############################################# Create image with nginx-ingress built by GoReleaser #############################################
+FROM common AS goreleaser
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+COPY --chown=nginx:0 dist/kubernetes-ingress_linux_$TARGETARCH${TARGETVARIANT:+_7}/nginx-ingress /

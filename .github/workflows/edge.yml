@@ -36,7 +36,6 @@ env:
   HELM_CHART_VERSION: 0.0.0-edge
   GIT_NAME: NGINX Kubernetes Team
   GIT_MAIL: kubernetes@nginx.com
-  VERSION: edge
 
 jobs:
 
@@ -46,6 +45,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Output Variables
         id: commit
         run: |
@@ -56,24 +57,26 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO_VERSION }}
+      - name: Determine GOPATH
+        run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
       - name: Check if CRDs changed
         run: |
           make update-crds && git diff --name-only --exit-code deployments/common/crds*
       - name: Check if Codegen changed
         run: |
           make update-codegen && git diff --name-only --exit-code pkg/**/zz_generated.deepcopy.go
-      - name: Build Binary
-        run: >
-          make build
-          VERSION=${{ env.VERSION }}
-          IC_VERSION=${{ env.VERSION }}-${{ steps.commit.outputs.sha }}
-          GIT_COMMIT=${{ steps.commit.outputs.sha }}
+      - name: Build binaries
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: --rm-dist --debug --skip-publish --snapshot
         env:
-          GOFLAGS: '-gcflags=-trimpath=${{ github.workspace }} -asmflags=-trimpath=${{ github.workspace }}'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOPATH: ${{ env.GOPATH }}
       - name: Store Artifacts in Cache
         uses: actions/cache@v2.1.5
         with:
-          path: ${{ github.workspace }}/nginx-ingress
+          path: ${{ github.workspace }}/dist
           key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
 
   unit-tests:
@@ -177,7 +180,7 @@ jobs:
       - name: Fetch Cached Artifacts
         uses: actions/cache@v2.1.5
         with:
-          path: ${{ github.workspace }}/nginx-ingress
+          path: ${{ github.workspace }}/dist
           key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
       - name: Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -197,7 +200,7 @@ jobs:
           context: '.'
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-          target: local
+          target: goreleaser
           tags: ${{ matrix.image }}:${{ matrix.tag }}
           load: true
           build-args: |
@@ -210,7 +213,7 @@ jobs:
           context: '.'
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-          target: local
+          target: goreleaser
           tags: ${{ matrix.image }}:${{ matrix.tag }}
           load: true
           secrets: |
@@ -225,7 +228,7 @@ jobs:
         with:
           file: build/Dockerfile
           context: '.'
-          target: local
+          target: goreleaser
           tags: ${{ matrix.image }}:${{ matrix.tag }}
           load: true
           secrets: |
@@ -302,7 +305,7 @@ jobs:
       - name: Fetch Cached Artifacts
         uses: actions/cache@v2.1.5
         with:
-          path: ${{ github.workspace }}/nginx-ingress
+          path: ${{ github.workspace }}/dist
           key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
       - name: Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -322,7 +325,7 @@ jobs:
           context: '.'
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-          target: local
+          target: goreleaser
           tags: nginx-plus-ingress-ap-openshift:${{ github.sha }}
           secrets: |
             "nginx-repo.crt=${{ secrets.KIC_NGINX_AP_CRT }}"
@@ -359,7 +362,7 @@ jobs:
       - name: Fetch Cached Artifacts
         uses: actions/cache@v2.1.5
         with:
-          path: ${{ github.workspace }}/nginx-ingress
+          path: ${{ github.workspace }}/dist
           key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
       - name: Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -379,7 +382,7 @@ jobs:
           context: '.'
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-          target: local
+          target: goreleaser
           tags: ${{ matrix.image }}:${{ matrix.tag }}
           load: true
           build-args: |
@@ -391,7 +394,7 @@ jobs:
           context: '.'
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-          target: local
+          target: goreleaser
           tags: ${{ matrix.image }}:${{ matrix.tag }}
           load: true
           secrets: |
@@ -469,10 +472,11 @@ jobs:
         id: commit
         run: |
           echo "::set-output name=sha::$(echo ${GITHUB_SHA} | cut -c1-7)"
+          echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
       - name: Fetch Cached Artifacts
         uses: actions/cache@v2.1.5
         with:
-          path: ${{ github.workspace }}/nginx-ingress
+          path: ${{ github.workspace }}/dist
           key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
       - name: Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -497,12 +501,13 @@ jobs:
           context: '.'
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-          target: local
+          target: goreleaser
           tags: nginx/${{ matrix.image }}:${{ matrix.tag }}
+          platforms: linux/arm,linux/arm64,linux/amd64,linux/ppc64le,linux/s390x
           push: true
           build-args: |
             BUILD_OS=${{ matrix.type }}
-            IC_VERSION=${{ env.VERSION }}-${{ steps.commit.outputs.sha }}
+            IC_VERSION=${{ steps.commit.outputs.tag }}-SNAPSHOT-${{ steps.commit.outputs.sha }}
 
   package-helm:
     name: Package Helm Chart

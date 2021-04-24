@@ -1,13 +1,15 @@
-VERSION = 1.11.1
-TAG = $(VERSION)
 PREFIX = nginx/nginx-ingress
+GIT_COMMIT = $(shell git rev-parse HEAD)
+GIT_COMMIT_SHORT = $(shell echo ${GIT_COMMIT} | cut -c1-7)
+GIT_TAG = $(shell git describe --tags --abbrev=0)
+DATE = $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+VERSION = $(GIT_TAG)-SNAPSHOT-$(GIT_COMMIT_SHORT)
+TAG = $(VERSION)
 TARGET ?= local
 
-override DOCKER_BUILD_OPTIONS += --build-arg IC_VERSION=$(VERSION)-$(GIT_COMMIT) --build-arg GIT_COMMIT=$(GIT_COMMIT) --build-arg VERSION=$(VERSION)
+override DOCKER_BUILD_OPTIONS += --build-arg IC_VERSION=$(VERSION) --build-arg GIT_COMMIT=$(GIT_COMMIT) --build-arg DATE=$(DATE)
 DOCKER_CMD = docker build $(DOCKER_BUILD_OPTIONS) --target $(TARGET) -f build/Dockerfile -t $(PREFIX):$(TAG) .
 PLUS_ARGS = --build-arg PLUS=-plus --secret id=nginx-repo.crt,src=nginx-repo.crt --secret id=nginx-repo.key,src=nginx-repo.key
-
-GIT_COMMIT = $(shell git rev-parse --short HEAD)
 
 export DOCKER_BUILDKIT = 1
 
@@ -50,7 +52,7 @@ build: ## Build Ingress Controller binary
 	@docker -v || (code=$$?; printf "\033[0;31mError\033[0m: there was a problem with Docker\n"; exit $$code)
 ifeq (${TARGET},local)
 	@go version || (code=$$?; printf "\033[0;31mError\033[0m: unable to build locally, try using the parameter TARGET=container\n"; exit $$code)
-	CGO_ENABLED=0 GO111MODULE=on GOFLAGS='$(GOFLAGS)' GOOS=linux go build -ldflags "-s -w -X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT}" -o nginx-ingress github.com/nginxinc/kubernetes-ingress/cmd/nginx-ingress
+	CGO_ENABLED=0 GO111MODULE=on GOOS=linux go build -trimpath -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${GIT_COMMIT} -X main.date=$(DATE)" -o nginx-ingress github.com/nginxinc/kubernetes-ingress/cmd/nginx-ingress
 endif
 
 .PHONY: debian-image
@@ -99,6 +101,7 @@ push: ## Docker push to $PREFIX and $TAG
 .PHONY: clean
 clean:  ## Remove nginx-ingress binary
 	-rm nginx-ingress
+	-rm -r dist
 
 .PHONY: deps
 deps: ## Add missing and remove unused modules, verify deps and dowload them to local cache

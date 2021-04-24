@@ -1,0 +1,32 @@
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    - make clean
+    - go mod tidy
+    - go mod verify
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm
+      - arm64
+      - ppc64le
+      - s390x
+    goarm:
+      - 7
+    flags:
+      - -trimpath
+    gcflags:
+      - all=-trimpath={{.Env.GOPATH}}
+    asmflags:
+      - all=-trimpath={{.Env.GOPATH}}
+    main: ./cmd/nginx-ingress/main.go
+    binary: nginx-ingress
+archives:
+- format: binary
+changelog:
+  skip: true
