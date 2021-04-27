@@ -11,7 +11,6 @@ from urllib.parse import urlparse
 def get_certificate(ip_address, host, port, timeout=10) -> str:
     """
     Get tls certificate.
-
     :param ip_address:
     :param host:
     :param port:
@@ -35,7 +34,6 @@ def get_certificate(ip_address, host, port, timeout=10) -> str:
 def get_server_certificate_subject(ip_address, host, port=443) -> dict:
     """
     Get tls certificate subject object.
-
     :param port: default is 443
     :param ip_address:
     :param host:
