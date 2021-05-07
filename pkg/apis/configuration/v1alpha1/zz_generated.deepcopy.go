@@ -293,6 +293,11 @@ func (in *Upstream) DeepCopyInto(out *Upstream) {
 		*out = new(int)
 		**out = **in
 	}
+	if in.MaxConns != nil {
+		in, out := &in.MaxConns, &out.MaxConns
+		*out = new(int)
+		**out = **in
+	}
 	if in.HealthCheck != nil {
 		in, out := &in.HealthCheck, &out.HealthCheck
 		*out = new(HealthCheck)

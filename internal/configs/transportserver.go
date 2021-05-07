@@ -172,13 +172,15 @@ func generateStreamUpstream(upstream *conf_v1alpha1.Upstream, upstreamNamer *ups
 
 	name := upstreamNamer.GetNameForUpstream(upstream.Name)
 	maxFails := generateIntFromPointer(upstream.MaxFails, 1)
+	maxConns := generateIntFromPointer(upstream.MaxConns, 0)
 	failTimeout := generateTimeWithDefault(upstream.FailTimeout, "10s")
 
 	for _, e := range endpoints {
 		s := version2.StreamUpstreamServer{
-			Address:     e,
-			MaxFails:    maxFails,
-			FailTimeout: failTimeout,
+			Address:        e,
+			MaxFails:       maxFails,
+			FailTimeout:    failTimeout,
+			MaxConnections: maxConns,
 		}
 
 		upsServers = append(upsServers, s)

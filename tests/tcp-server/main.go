@@ -31,11 +31,24 @@ func main() {
 
 func handleRequest(conn net.Conn) {
 	log.Println("accepted new connection")
-	defer conn.Close()
-	defer log.Println("closed connection")
+
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		log.Println("Error reading:", err.Error())
+		conn.Close()
+		return
+	}
+	instruction := string(buf[:n])
+	log.Printf("instruction:%v\n", instruction)
+	if instruction != "hold" {
+		defer conn.Close()
+		defer log.Println("closed connection")
+	}
+
 	address := conn.LocalAddr().String()
 	log.Printf("write data to connection: %v\n", address)
-	_, err := conn.Write([]byte(address))
+	_, err = conn.Write([]byte(address))
 	if err != nil {
 		log.Printf("error writing to connection: %v", err)
 		return

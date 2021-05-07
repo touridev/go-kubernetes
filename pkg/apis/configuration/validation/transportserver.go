@@ -164,7 +164,8 @@ func validateTransportServerUpstreams(upstreams []v1alpha1.Upstream, fieldPath *
 
 		allErrs = append(allErrs, validateServiceName(u.Service, idxPath.Child("service"))...)
 		allErrs = append(allErrs, validatePositiveIntOrZeroFromPointer(u.MaxFails, idxPath.Child("maxFails"))...)
-		allErrs = append(allErrs, validateTime((u.FailTimeout), idxPath.Child("failTimeout"))...)
+		allErrs = append(allErrs, validatePositiveIntOrZeroFromPointer(u.MaxFails, idxPath.Child("maxConns"))...)
+		allErrs = append(allErrs, validateTime(u.FailTimeout, idxPath.Child("failTimeout"))...)
 
 		for _, msg := range validation.IsValidPortNum(u.Port) {
 			allErrs = append(allErrs, field.Invalid(idxPath.Child("port"), u.Port, msg))

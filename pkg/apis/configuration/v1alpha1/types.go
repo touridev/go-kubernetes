@@ -90,6 +90,7 @@ type Upstream struct {
 	Port        int          `json:"port"`
 	FailTimeout string       `json:"failTimeout"`
 	MaxFails    *int         `json:"maxFails"`
+	MaxConns    *int         `json:"maxConns"`
 	HealthCheck *HealthCheck `json:"healthCheck"`
 }
 

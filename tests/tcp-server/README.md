@@ -21,8 +21,8 @@ If you make changes to the server:
   local version ```-> imagePullPolicy: Never```
    * Test the changes
  * Include the change as part of the commit that requires the tcp-server change
-   * Build the docker image with an increased version number ```docker build -t tcp-server:v2```
-   * Push the docker image to the public repo
+   * Build the docker image with an increased version number ```docker build -t tcp-server:2.1```
+   * Push the docker image to the public repo ```docker push seanoneillf5/tcp-server:2.1```
    * Update the tag [service yaml](../data/transport-server-tcp-load-balance/standard/service_deployment.yaml) to match 
 the new tag
    * Commit the tag change as part of the commit that requires the tcp-server change

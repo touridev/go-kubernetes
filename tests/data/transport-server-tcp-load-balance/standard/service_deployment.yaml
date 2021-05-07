@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: tcp-service
-          image: seanoneillf5/tcp-server:1.0
+          image: seanoneillf5/tcp-server:1.1
           ports:
             - containerPort: 3333
               name: tcp-server

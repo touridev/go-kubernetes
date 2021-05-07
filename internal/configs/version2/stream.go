@@ -16,9 +16,10 @@ type StreamUpstream struct {
 
 // StreamUpstreamServer defines a stream upstream server.
 type StreamUpstreamServer struct {
-	Address     string
-	MaxFails    int
-	FailTimeout string
+	Address        string
+	MaxFails       int
+	FailTimeout    string
+	MaxConnections int
 }
 
 // StreamServer defines a server in the stream module.
