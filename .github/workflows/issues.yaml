@@ -1,0 +1,26 @@
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  comment:
+    name: Issue comment
+    if: ${{ !github.event.issue.pull_request }}
+    runs-on: ubuntu-20.04
+    steps:
+      - name: text
+        id: controller
+        if: contains(github.event.issue.body, 'nginx.ingress.kubernetes.io')
+        run: |
+          text="\n\n I\'ve parsed the text of your issue and it looks like you might be mixing up the two Ingress Controllers, please take a look at this [page](https://github.com/nginxinc/kubernetes-ingress/blob/master/docs/nginx-ingress-controllers.md) to see the differences between \`nginxinc/kubernetes-ingress\` (this repo) and \`kubernetes/ingress-nginx\`."
+          echo "::set-output name=text::$text"
+      - uses: actions/github-script@v4
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Hi @${{github.event.issue.user.login}} thanks for reporting! \n\n Be sure to check out the [docs](https://docs.nginx.com/nginx-ingress-controller) while you wait for a human to take a look at this :slightly_smiling_face:${{ steps.controller.outputs.text }}\n\n Cheers!'
+            })
