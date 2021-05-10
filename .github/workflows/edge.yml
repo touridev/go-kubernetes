@@ -85,6 +85,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
+      - name: Determine Go version from go.mod
+        run: echo "GO_VERSION=$(grep "go 1." go.mod | cut -d " " -f 2)" >> $GITHUB_ENV
       - name: Setup Golang Environment
         uses: actions/setup-go@v2
         with:
@@ -121,7 +123,7 @@ jobs:
             type: oss
             ic-type: nginx-ingress
           - os: ubuntu-20.04
-            image: openshift
+            image: ubi
             tag: ${{ github.sha }}
             marker: 'ts'
             type: oss
@@ -133,7 +135,7 @@ jobs:
             type: oss
             ic-type: nginx-ingress
           - os: ubuntu-20.04
-            image: openshift-plus
+            image: ubi-plus
             tag: ${{ github.sha }}
             marker: 'ingresses'
             type: plus
@@ -169,7 +171,7 @@ jobs:
             type: plus
             ic-type: nginx-plus-ingress
           - os: ubuntu-20.04
-            image: debian-plus-ap
+            image: debian-plus-nap
             tag: ${{ github.sha }}-ap
             marker: 'appprotect'
             type: plus-ap
@@ -177,6 +179,10 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
+      - name: Output Variables
+        id: commit
+        run: |
+          echo "::set-output name=nginx_version::$(cat build/Dockerfile | grep -m1 "FROM nginx:" | cut -d":" -f2 | cut -d" " -f1)"
       - name: Fetch Cached Artifacts
         uses: actions/cache@v2.1.5
         with:
@@ -205,6 +211,7 @@ jobs:
           load: true
           build-args: |
             BUILD_OS=${{ matrix.image }}
+            NGINX_VERSION=${{ steps.commit.outputs.nginx_version }}
         if: matrix.type == 'oss'
       - name: Build Plus Docker Image ${{ matrix.image }}
         uses: docker/build-push-action@v2
@@ -466,7 +473,7 @@ jobs:
           - os: ubuntu-20.04
             image: nginx-ingress
             tag: edge-ubi
-            type: openshift
+            type: ubi
             platforms: linux/arm64,linux/amd64
     steps:
       - name: Checkout Repository
@@ -476,6 +483,7 @@ jobs:
         run: |
           echo "::set-output name=sha::$(echo ${GITHUB_SHA} | cut -c1-7)"
           echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
+          echo "::set-output name=nginx_version::$(cat build/Dockerfile | grep -m1 "FROM nginx:" | cut -d":" -f2 | cut -d" " -f1)"
       - name: Fetch Cached Artifacts
         uses: actions/cache@v2.1.5
         with:
@@ -515,6 +523,7 @@ jobs:
           build-args: |
             BUILD_OS=${{ matrix.type }}
             IC_VERSION=${{ steps.commit.outputs.tag }}-SNAPSHOT-${{ steps.commit.outputs.sha }}
+            NGINX_VERSION=${{ steps.commit.outputs.nginx_version }}
 
   package-helm:
     name: Package Helm Chart

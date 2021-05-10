@@ -63,6 +63,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
+      - name: Determine Go version from go.mod
+        run: echo "GO_VERSION=$(grep "go 1." go.mod | cut -d " " -f 2)" >> $GITHUB_ENV
       - name: Setup Golang Environment
         uses: actions/setup-go@v2
         with:
@@ -111,19 +113,19 @@ jobs:
             file: build/Dockerfile
             context: '.'
             target: goreleaser
-            image: openshift
+            image: ubi
             type: oss
           - os: ubuntu-20.04
             file: build/Dockerfile
             context: '.'
             target: goreleaser
-            image: openshift-plus
+            image: ubi-plus
             type: plus
           - os: ubuntu-20.04
             file: build/Dockerfile
             context: '.'
             target: goreleaser
-            image: debian-plus-ap
+            image: debian-plus-nap
             type: plus-ap
           - os: ubuntu-20.04
             file: build/DockerfileWithAppProtectForPlusForOpenShift
@@ -134,6 +136,10 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
+      - name: Output Variables
+        id: commit
+        run: |
+          echo "::set-output name=nginx_version::$(cat build/Dockerfile | grep -m1 "FROM nginx:" | cut -d":" -f2 | cut -d" " -f1)"
       - name: Fetch Cached Artifacts
         uses: actions/cache@v2.1.5
         with:
@@ -161,6 +167,7 @@ jobs:
           tags: ${{ matrix.image }}:${{ github.sha }}
           build-args: |
             BUILD_OS=${{ matrix.image }}
+            NGINX_VERSION=${{ steps.commit.outputs.nginx_version }}
         if: matrix.type == 'oss'
       - name: Build Plus Docker Image ${{ matrix.image }}
         uses: docker/build-push-action@v2
@@ -356,7 +363,7 @@ jobs:
             "nginx-repo.crt=${{ secrets.KIC_NGINX_AP_CRT }}"
             "nginx-repo.key=${{ secrets.KIC_NGINX_AP_KEY }}"
           build-args: |
-            BUILD_OS=debian-plus-ap
+            BUILD_OS=debian-plus-nap
             PLUS=-plus
         if: matrix.type == 'plus-ap'
       - name: Build Test-Runner Container

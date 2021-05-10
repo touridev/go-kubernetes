@@ -4,7 +4,7 @@ GIT_COMMIT_SHORT = $(shell echo ${GIT_COMMIT} | cut -c1-7)
 GIT_TAG = $(shell git describe --tags --abbrev=0)
 DATE = $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 VERSION = $(GIT_TAG)-SNAPSHOT-$(GIT_COMMIT_SHORT)
-TAG = $(VERSION)
+TAG = $(VERSION:v%=%)
 TARGET ?= local
 
 override DOCKER_BUILD_OPTIONS += --build-arg IC_VERSION=$(VERSION) --build-arg GIT_COMMIT=$(GIT_COMMIT) --build-arg DATE=$(DATE)
@@ -69,18 +69,18 @@ debian-image-plus: build ## Create Docker image for Ingress Controller (nginx pl
 
 .PHONY: debian-image-nap-plus
 debian-image-nap-plus: build ## Create Docker image for Ingress Controller (nginx plus with nap)
-	$(DOCKER_CMD) $(PLUS_ARGS) --build-arg BUILD_OS=debian-plus-ap
+	$(DOCKER_CMD) $(PLUS_ARGS) --build-arg BUILD_OS=debian-plus-nap
 
 .PHONY: openshift-image
-openshift-image: build ## Create Docker image for Ingress Controller (openshift)
-	$(DOCKER_CMD) --build-arg BUILD_OS=openshift
+openshift-image: build ## Create Docker image for Ingress Controller (ubi)
+	$(DOCKER_CMD) --build-arg BUILD_OS=ubi --build-arg NGINX_VERSION=$(shell cat build/Dockerfile | grep -m1 "FROM nginx:" | cut -d":" -f2 | cut -d" " -f1)
 
 .PHONY: openshift-image-plus
-openshift-image-plus: build ## Create Docker image for Ingress Controller (openshift with plus)
-	$(DOCKER_CMD) $(PLUS_ARGS) --build-arg BUILD_OS=openshift-plus
+openshift-image-plus: build ## Create Docker image for Ingress Controller (ubi with plus)
+	$(DOCKER_CMD) $(PLUS_ARGS) --build-arg BUILD_OS=ubi-plus
 
 .PHONY: openshift-image-nap-plus
-openshift-image-nap-plus: build ## Create Docker image for Ingress Controller (openshift with plus and nap)
+openshift-image-nap-plus: build ## Create Docker image for Ingress Controller (ubi with plus and nap)
 	docker build $(DOCKER_BUILD_OPTIONS) --target $(TARGET) $(PLUS_ARGS) --secret id=rhel_license,src=rhel_license -f build/DockerfileWithAppProtectForPlusForOpenShift -t $(PREFIX):$(TAG) .
 
 .PHONY: debian-image-opentracing

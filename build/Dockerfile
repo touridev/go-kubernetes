@@ -3,10 +3,6 @@ ARG BUILD_OS=debian
 
 ############################################# Base image for Debian #############################################
 FROM nginx:1.19.9 AS debian
-ARG IC_VERSION
-
-LABEL version=debian-nginx-$NGINX_VERSION-$IC_VERSION
-LABEL maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>"
 
 RUN apt-get update \
 	&& apt-get install --no-install-recommends --no-install-suggests -y libcap2-bin \
@@ -15,10 +11,6 @@ RUN apt-get update \
 
 ############################################# Base image for Alpine #############################################
 FROM nginx:1.19.9-alpine AS alpine
-ARG IC_VERSION
-
-LABEL version=alpine-nginx-$NGINX_VERSION-$IC_VERSION
-LABEL maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>"
 
 RUN apk add --no-cache libcap \
 	&& rm -rf /var/cache/apk/*
@@ -29,9 +21,6 @@ FROM debian:buster-slim AS debian-plus
 ARG IC_VERSION
 ENV NGINX_PLUS_VERSION 23-1~buster
 ENV NGINX_NJS_VERSION 23+0.5.0-1~buster
-
-LABEL version=debian-nginx-plus-$NGINX_PLUS_VERSION-$IC_VERSION
-LABEL maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>"
 
 RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode=0644 \
 	--mount=type=secret,id=nginx-repo.key,dst=/etc/ssl/nginx/nginx-repo.key,mode=0644 \
@@ -56,10 +45,8 @@ COPY --chown=nginx:0 internal/configs/oidc/* /etc/nginx/oidc/
 
 
 ############################################# Base image for Debian with NGINX Plus and App Protect #############################################
-FROM debian-plus as debian-plus-ap
+FROM debian-plus as debian-plus-nap
 ARG IC_VERSION
-
-LABEL version=debian-nginx-plus-ap-$NGINX_PLUS_VERSION-$IC_VERSION
 
 ENV APPPROTECT_MODULE_VERSION 23+3.462.0-1~buster
 ENV APPPROTECT_PLUGIN_VERSION 3.462.0-1~buster
@@ -116,51 +103,42 @@ COPY --chown=nginx:0 build/log-default.json /etc/nginx
 # RUN update-ca-certificates
 
 
-############################################# Base image for Openshift #############################################
-FROM registry.access.redhat.com/ubi8/ubi:8.3 AS openshift-base
+############################################# Base image for UBI #############################################
+FROM registry.access.redhat.com/ubi8/ubi:8.3 AS ubi-base
 
 LABEL name="NGINX Ingress Controller" \
 	description="The Ingress controller is an application that runs in a cluster and configures an HTTP load balancer according to Ingress resources." \
 	summary="The Ingress controller is an application that runs in a cluster and configures an HTTP load balancer according to Ingress resources." \
-	io.openshift.tags="nginx,ingress-controller,ingress,controller,kubernetes,openshift" \
-	maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>" \
-	vendor="NGINX Inc <kubernetes@nginx.com>"
+	io.openshift.tags="nginx,ingress-controller,ingress,controller,kubernetes,openshift"
 
 RUN set -x \
 	&& groupadd --system --gid 101 nginx \
-	&& useradd --system --gid nginx --no-create-home --home-dir /nonexistent --comment "nginx user" --shell /bin/false --uid 101 nginx \
-	&& yum update -y openssl-libs
-
+	&& useradd --system --gid nginx --no-create-home --home-dir /nonexistent --comment "nginx user" --shell /bin/false --uid 101 nginx
 
 RUN mkdir licenses
 COPY --chown=nginx:0 LICENSE /licenses
 
 
-############################################# Base image for Openshift OSS #############################################
-FROM openshift-base AS openshift
-ARG IC_VERSION
+############################################# Base image for UBI OSS #############################################
+FROM ubi-base AS ubi
 
-ENV NGINX_VERSION 1.19.9
+ARG NGINX_VERSION
 
-LABEL image-version=ubi-nginx-$NGINX_VERSION-$IC_VERSION
-
-RUN echo "[nginx]" >> /etc/yum.repos.d/nginx.repo \
+RUN rpm --import https://nginx.org/keys/nginx_signing.key \
+	&& echo "[nginx]" >> /etc/yum.repos.d/nginx.repo \
 	&& echo "name=nginx repo" >> /etc/yum.repos.d/nginx.repo \
 	&& echo "baseurl=https://nginx.org/packages/mainline/centos/8/\$basearch/" >> /etc/yum.repos.d/nginx.repo \
-	&& echo "gpgcheck=0" >> /etc/yum.repos.d/nginx.repo \
+	&& echo "gpgcheck=1" >> /etc/yum.repos.d/nginx.repo \
 	&& echo "enabled=1" >> /etc/yum.repos.d/nginx.repo \
 	&& echo "module_hotfixes=true" >> /etc/yum.repos.d/nginx.repo \
 	&& yum install -y nginx-${NGINX_VERSION} \
 	&& rm /etc/yum.repos.d/nginx.repo
 
 
-############################################# Base image for Openshift with NGINX Plus #############################################
-FROM openshift-base AS openshift-plus
-ARG IC_VERSION
+############################################# Base image for UBI with NGINX Plus #############################################
+FROM ubi-base AS ubi-plus
 
 ENV NGINX_PLUS_VERSION 23-1.el8.ngx
-
-LABEL image-version=ubi-nginx-$NGINX_PLUS_VERSION-$IC_VERSION
 
 RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode=0644 \
 	--mount=type=secret,id=nginx-repo.key,dst=/etc/ssl/nginx/nginx-repo.key,mode=0644 \
@@ -234,9 +212,6 @@ RUN set -x \
 ############################################# Build image for Opentracing #############################################
 FROM debian as opentracing
 ARG OPENTRACING_VERSION=1.6.0
-ARG IC_VERSION
-
-LABEL version=debian-nginx-opentracing-$NGINX_VERSION-$IC_VERSION
 
 COPY --from=opentracing-builder /nginx-${NGINX_VERSION}/objs/ngx_http_opentracing_module.so /usr/lib/nginx/modules/ngx_http_opentracing_module.so
 COPY --from=opentracing-builder /usr/local/lib/libopentracing.so.${OPENTRACING_VERSION} /usr/local/lib/libopentracing.so.1
@@ -247,9 +222,6 @@ RUN ldconfig
 
 ############################################# Build image for Opentracing with NGINX Plus #############################################
 FROM debian-plus as opentracing-plus
-ARG IC_VERSION
-
-LABEL version=debian-nginx-plus-opentracing-$NGINX_PLUS_VERSION-$IC_VERSION
 
 ENV NGINX_OPENTRACING_MODULE_VERSION 23+0.9.0-1~buster
 
@@ -266,10 +238,15 @@ COPY --from=tracer-downloader /usr/local/lib/libjaegertracing_plugin.so /usr/loc
 FROM $BUILD_OS as common
 
 ARG PLUS
+ARG BUILD_OS
+ARG IC_VERSION
+ARG GIT_COMMIT
+ARG DATE
 
 RUN mkdir -p /var/lib/nginx /etc/nginx/secrets /etc/nginx/stream-conf.d \
 	&& setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx 'cap_net_bind_service=+ep' /usr/sbin/nginx-debug \
-	&& chown -R nginx:0 /etc/nginx /var/cache/nginx /var/lib/nginx \
+	&& setcap -v 'cap_net_bind_service=+ep' /usr/sbin/nginx 'cap_net_bind_service=+ep' /usr/sbin/nginx-debug \
+	&& chown -R nginx:0 /etc/nginx /etc/nginx/secrets /var/cache/nginx /var/lib/nginx \
 	&& rm -f /etc/nginx/conf.d/* /etc/apt/apt.conf.d/90nginx /etc/apt/sources.list.d/nginx-plus.list
 
 COPY --chown=nginx:0 internal/configs/version1/nginx$PLUS.ingress.tmpl \
@@ -285,6 +262,15 @@ EXPOSE 80 443
 
 ENTRYPOINT ["/nginx-ingress"]
 USER nginx
+
+LABEL org.opencontainers.image.title="NGINX Ingress Controller for Kubernetes"
+LABEL org.opencontainers.image.documentation="https://docs.nginx.com/nginx-ingress-controller"
+LABEL org.opencontainers.image.source="https://github.com/nginxinc/kubernetes-ingress"
+LABEL org.opencontainers.image.vendor="NGINX Inc <kubernetes@nginx.com>"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
+LABEL org.opencontainers.image.version="${IC_VERSION}-${BUILD_OS}-${NGINX_PLUS_VERSION}${NGINX_VERSION}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
+LABEL org.opencontainers.image.created="${DATE}"
 
 
 ############################################# Build nginx-ingress in golang container #############################################
