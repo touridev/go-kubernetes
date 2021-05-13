@@ -90,16 +90,16 @@ To add any [App Protect policy](/nginx-app-protect/policy/#policy) to an Ingress
 
 ## App Protect Logs
 
-You can set the [App Protect Log configurations](/nginx-app-protect/nginx-app-protect/troubleshooting/#app-protect-logging-overview) by creating an `APLogConf` [Custom Resource](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/).
+You can set the [App Protect log configurations](/nginx-app-protect/troubleshooting/#app-protect-logging-overview) by creating an `APLogConf` [Custom Resource](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/).
 
-To add the [App Protect log configurations](/nginx-app-protect/policy/#policy) to an Ingress resource:
+To add the [App Protect log configurations](/nginx-app-protect/configuration/#security-logs) to an Ingress resource:
 
-1. Create an `APLogConf` Custom resource manifest.
+1. Create an `APLogConf` Custom Resource manifest.
 2. Add the desired log configuration to the `spec` field in the `APLogConf` resource.
 
    > **Note**: The fields from the JSON must be presented in the YAML *exactly* the same, in name and level. The Ingress Controller will transform the YAML into a valid JSON App Protect log config.
 
-For example, say you want to [log state changing requests](nginx-app-protect/troubleshooting/#log-state-changing-requests) for your Ingress resources using App Protect. The App Protect log configuration looks like this:
+For example, say you want to [log state changing requests](/nginx-app-protect/troubleshooting/#log-state-changing-requests) for your Ingress resources using App Protect. The App Protect log configuration looks like this:
 
 ```json
 {
@@ -114,7 +114,7 @@ For example, say you want to [log state changing requests](nginx-app-protect/tro
 }
 ```
 
-You would add define that config in the `spec` of your `APLogConf` resource as follows:
+You would define that config in the `spec` of your `APLogConf` resource as follows:
 
 ```yaml
 apiVersion: appprotect.f5.com/v1beta1
