@@ -1,0 +1,44 @@
+[build]
+  base = "docs/"
+  publish = "public"
+  command = "make hugo build"
+
+[build.environment]
+  HUGO_VERSION = "0.80.0"
+
+[context.development]
+  command = "make hugo-build-dev"
+
+[context.staging]
+  command = "make hugo-build-staging"
+
+[context.production]
+  command = "make hugo-build-prod"
+
+[context.deploy-preview]
+  command = "make hugo-build-deploy-preview"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "https://docs.nginx.com"
+
+[[redirects]]
+  from = "/"
+  to = "/nginx-ingress-controller/"
+  status = 301
+  force = true
+
+
+[[redirects]]
+  from = "https://nginx-kubernetes-ingress/robots.txt"
+  to = "https://docs.nginx.com/robots.txt"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "*"
+  to = "https://docs.nginx.com/404.html"
+  status = 404
+
+
