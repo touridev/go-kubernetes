@@ -196,3 +196,6 @@ def wait_and_assert_status_code(code, req_url, host, **kwargs) -> None:
         counter = counter + 1
         resp = requests.get(req_url, headers={"host": host}, **kwargs)
     assert resp.status_code == code, f"After 30 seconds the status_code is still not {code}"
+
+    
+        

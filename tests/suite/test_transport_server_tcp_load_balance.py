@@ -8,7 +8,9 @@ from urllib3.exceptions import NewConnectionError
 from suite.resources_utils import (
     wait_before_test,
     get_ts_nginx_template_conf,
-    scale_deployment
+    scale_deployment,
+    get_events,
+    wait_for_event_increment,
 )
 from suite.custom_resources_utils import (
     patch_ts,
@@ -50,7 +52,7 @@ class TestTransportServerTcpLoadBalance:
             transport_server_setup.namespace,
         )
         wait_before_test()
-
+    
     def test_number_of_replicas(
         self, kube_apis, crd_ingress_controller, transport_server_setup, ingress_controller_prerequisites
     ):
@@ -58,23 +60,45 @@ class TestTransportServerTcpLoadBalance:
         The load balancing of TCP should result in 4 servers to match the 4 replicas of a service.
         """
         original = scale_deployment(kube_apis.apps_v1_api, "tcp-service", transport_server_setup.namespace, 4)
-        wait_before_test()
+        
+        num_servers = 0
+        retry = 0
 
-        result_conf = get_ts_nginx_template_conf(
-            kube_apis.v1,
-            transport_server_setup.namespace,
-            transport_server_setup.name,
-            transport_server_setup.ingress_pod_name,
-            ingress_controller_prerequisites.namespace
-        )
+        while(num_servers is not 4 and retry <= 30):
+            result_conf = get_ts_nginx_template_conf(
+                kube_apis.v1,
+                transport_server_setup.namespace,
+                transport_server_setup.name,
+                transport_server_setup.ingress_pod_name,
+                ingress_controller_prerequisites.namespace
+            )
 
-        pattern = 'server .*;'
-        num_servers = len(re.findall(pattern, result_conf))
+            pattern = 'server .*;'
+            num_servers = len(re.findall(pattern, result_conf))
+            retry += 1
+            wait_before_test(1)
+            print(f"Retry #{retry}")
 
         assert num_servers is 4
 
         scale_deployment(kube_apis.apps_v1_api, "tcp-service", transport_server_setup.namespace, original)
-        wait_before_test()
+        retry = 0
+        while(num_servers is not original and retry <= 50):
+            result_conf = get_ts_nginx_template_conf(
+                kube_apis.v1,
+                transport_server_setup.namespace,
+                transport_server_setup.name,
+                transport_server_setup.ingress_pod_name,
+                ingress_controller_prerequisites.namespace
+            )
+            
+            pattern = 'server .*;'
+            num_servers = len(re.findall(pattern, result_conf))
+            retry += 1
+            wait_before_test(1)
+            print(f"Retry #{retry}")
+        
+        assert num_servers is original
 
     def test_tcp_request_load_balanced(
             self, kube_apis, crd_ingress_controller, transport_server_setup, ingress_controller_prerequisites
@@ -89,18 +113,23 @@ class TestTransportServerTcpLoadBalance:
         print(f"sending tcp requests to: {host}:{port}")
 
         endpoints = {}
-        for i in range(20):
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect((host, port))
-            client.sendall(b'connect')
-            response = client.recv(4096)
-            endpoint = response.decode()
-            print(f' req number {i}; response: {endpoint}')
-            if endpoint not in endpoints:
-                endpoints[endpoint] = 1
-            else:
-                endpoints[endpoint] = endpoints[endpoint] + 1
-            client.close()
+        retry = 0
+        while(len(endpoints) is not 3 and retry <= 30):
+            for i in range(20):
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client.connect((host, port))
+                client.sendall(b'connect')
+                response = client.recv(4096)
+                endpoint = response.decode()
+                print(f' req number {i}; response: {endpoint}')
+                if endpoint not in endpoints:
+                    endpoints[endpoint] = 1
+                else:
+                    endpoints[endpoint] = endpoints[endpoint] + 1
+                client.close()
+            retry += 1
+            wait_before_test(1)
+            print(f"Retry #{retry}")
 
         assert len(endpoints) is 3
 
@@ -284,19 +313,25 @@ class TestTransportServerTcpLoadBalance:
             transport_server_setup.namespace,
         )
         wait_before_test()
+        configs = 0
+        retry = 0
+        while(configs is not 3 and retry <= 30):
+            result_conf = get_ts_nginx_template_conf(
+                kube_apis.v1,
+                transport_server_setup.namespace,
+                transport_server_setup.name,
+                transport_server_setup.ingress_pod_name,
+                ingress_controller_prerequisites.namespace
+            )
 
-        result_conf = get_ts_nginx_template_conf(
-            kube_apis.v1,
-            transport_server_setup.namespace,
-            transport_server_setup.name,
-            transport_server_setup.ingress_pod_name,
-            ingress_controller_prerequisites.namespace
-        )
+            pattern = 'max_conns=2'
+            configs = len(re.findall(pattern, result_conf))
+            retry += 1
+            wait_before_test(1)
+            print(f"Retry #{retry}")
 
-        pattern = 'max_conns=2'
-        configs = re.findall(pattern, result_conf)
 
-        assert len(configs) is 3
+        assert configs is 3
 
         # step 2 - make the number of allowed connections
         port = transport_server_setup.public_endpoint.tcp_server_port
@@ -355,38 +390,49 @@ class TestTransportServerTcpLoadBalance:
             transport_server_setup.namespace,
         )
         wait_before_test()
+        num_servers = 0
+        retry = 0
+        while(num_servers is not 3 and retry <= 30):
+            result_conf = get_ts_nginx_template_conf(
+                kube_apis.v1,
+                transport_server_setup.namespace,
+                transport_server_setup.name,
+                transport_server_setup.ingress_pod_name,
+                ingress_controller_prerequisites.namespace
+            )
 
-        result_conf = get_ts_nginx_template_conf(
-            kube_apis.v1,
-            transport_server_setup.namespace,
-            transport_server_setup.name,
-            transport_server_setup.ingress_pod_name,
-            ingress_controller_prerequisites.namespace
-        )
+            pattern = 'server .*;'
+            num_servers = len(re.findall(pattern, result_conf))
+            retry += 1
+            wait_before_test(1)
+            print(f"Retry #{retry}")
 
-        pattern = 'server .*;'
-        servers = re.findall(pattern, result_conf)
-        assert len(servers) is 3
+        assert num_servers is 3
 
         # Step 2 - confirm all request go to the same endpoint.
 
         port = transport_server_setup.public_endpoint.tcp_server_port
         host = transport_server_setup.public_endpoint.public_ip
         endpoints = {}
-        for i in range(20):
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect((host, port))
-            client.sendall(b'connect')
-            response = client.recv(4096)
-            endpoint = response.decode()
-            print(f' req number {i}; response: {endpoint}')
-            if endpoint not in endpoints:
-                endpoints[endpoint] = 1
-            else:
-                endpoints[endpoint] = endpoints[endpoint] + 1
-            client.close()
+        retry = 0
+        while(len(endpoints) is not 1 and retry <= 30):
+            for i in range(20):
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client.connect((host, port))
+                client.sendall(b'connect')
+                response = client.recv(4096)
+                endpoint = response.decode()
+                print(f' req number {i}; response: {endpoint}')
+                if endpoint not in endpoints:
+                    endpoints[endpoint] = 1
+                else:
+                    endpoints[endpoint] = endpoints[endpoint] + 1
+                client.close()
+            retry += 1
+            wait_before_test(1)
+            print(f"Retry #{retry}")
 
-        assert len(endpoints) is 1
+        assert len(endpoints) is 1    
 
         # Step 3 - restore to default load balancing method and confirm requests are balanced.
 
@@ -394,18 +440,23 @@ class TestTransportServerTcpLoadBalance:
         wait_before_test()
 
         endpoints = {}
-        for i in range(20):
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect((host, port))
-            client.sendall(b'connect')
-            response = client.recv(4096)
-            endpoint = response.decode()
-            print(f' req number {i}; response: {endpoint}')
-            if endpoint not in endpoints:
-                endpoints[endpoint] = 1
-            else:
-                endpoints[endpoint] = endpoints[endpoint] + 1
-            client.close()
+        retry = 0
+        while(len(endpoints) is not 3 and retry <= 30):
+            for i in range(20):
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client.connect((host, port))
+                client.sendall(b'connect')
+                response = client.recv(4096)
+                endpoint = response.decode()
+                print(f' req number {i}; response: {endpoint}')
+                if endpoint not in endpoints:
+                    endpoints[endpoint] = 1
+                else:
+                    endpoints[endpoint] = endpoints[endpoint] + 1
+                client.close()
+            retry += 1
+            wait_before_test(1)
+            print(f"Retry #{retry}")
 
         assert len(endpoints) is 3
 
@@ -451,19 +502,23 @@ class TestTransportServerTcpLoadBalance:
         host = transport_server_setup.public_endpoint.public_ip
 
         endpoints = {}
-        for i in range(20):
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect((host, port))
-            client.sendall(b'connect')
-            response = client.recv(4096)
-            endpoint = response.decode()
-            print(f' req number {i}; response: {endpoint}')
-            if endpoint not in endpoints:
-                endpoints[endpoint] = 1
-            else:
-                endpoints[endpoint] = endpoints[endpoint] + 1
-            client.close()
-
+        retry = 0
+        while(len(endpoints) is not 3 and retry <= 30):
+            for i in range(20):
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client.connect((host, port))
+                client.sendall(b'connect')
+                response = client.recv(4096)
+                endpoint = response.decode()
+                print(f' req number {i}; response: {endpoint}')
+                if endpoint not in endpoints:
+                    endpoints[endpoint] = 1
+                else:
+                    endpoints[endpoint] = endpoints[endpoint] + 1
+                client.close()
+            retry += 1
+            wait_before_test(1)
+            print(f"Retry #{retry}")
         assert len(endpoints) is 3
 
         # Step 3 - restore
