@@ -147,7 +147,6 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results-${{ matrix.image }}.sarif'
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       - name: Upload Scan Results
         uses: actions/upload-artifact@v2
         with:
