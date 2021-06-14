@@ -9,7 +9,7 @@ TARGET ?= local
 
 override DOCKER_BUILD_OPTIONS += --build-arg IC_VERSION=$(VERSION) --build-arg GIT_COMMIT=$(GIT_COMMIT) --build-arg DATE=$(DATE)
 DOCKER_CMD = docker build $(DOCKER_BUILD_OPTIONS) --target $(TARGET) -f build/Dockerfile -t $(PREFIX):$(TAG) .
-PLUS_ARGS = --build-arg PLUS=-plus --secret id=nginx-repo.crt,src=nginx-repo.crt --secret id=nginx-repo.key,src=nginx-repo.key
+PLUS_ARGS = --build-arg PLUS=-plus --build-arg FILES=plus-common --secret id=nginx-repo.crt,src=nginx-repo.crt --secret id=nginx-repo.key,src=nginx-repo.key
 
 export DOCKER_BUILDKIT = 1
 
@@ -73,7 +73,7 @@ debian-image-plus: build ## Create Docker image for Ingress Controller (nginx pl
 
 .PHONY: debian-image-nap-plus
 debian-image-nap-plus: build ## Create Docker image for Ingress Controller (nginx plus with nap)
-	$(DOCKER_CMD) $(PLUS_ARGS) --build-arg BUILD_OS=debian-plus-nap
+	$(DOCKER_CMD) $(PLUS_ARGS) --build-arg BUILD_OS=debian-plus-nap --build-arg FILES=nap-common
 
 .PHONY: openshift-image
 openshift-image: build ## Create Docker image for Ingress Controller (ubi)
@@ -85,7 +85,7 @@ openshift-image-plus: build ## Create Docker image for Ingress Controller (ubi w
 
 .PHONY: openshift-image-nap-plus
 openshift-image-nap-plus: build ## Create Docker image for Ingress Controller (ubi with plus and nap)
-	docker build $(DOCKER_BUILD_OPTIONS) --target $(TARGET) $(PLUS_ARGS) --secret id=rhel_license,src=rhel_license -f build/DockerfileWithAppProtectForPlusForOpenShift -t $(PREFIX):$(TAG) .
+	$(DOCKER_CMD) $(PLUS_ARGS) --secret id=rhel_license,src=rhel_license --build-arg BUILD_OS=ubi-plus-nap --build-arg FILES=nap-common --build-arg UBI_VERSION=7
 
 .PHONY: debian-image-opentracing
 debian-image-opentracing: build ## Create Docker image for Ingress Controller (with opentracing)
@@ -96,7 +96,7 @@ debian-image-opentracing-plus: build ## Create Docker image for Ingress Controll
 	$(DOCKER_CMD) $(PLUS_ARGS) --build-arg BUILD_OS=opentracing-plus
 
 .PHONY: all-images ## Create all the Docker images for Ingress Controller
-all-images: debian-image alpine-image debian-image-plus openshift-image debian-image-opentracing debian-image-opentracing-plus openshift-image-plus openshift-image-nap-plus debian-image-nap-plus
+all-images: alpine-image alpine-image-plus debian-image debian-image-plus debian-image-nap-plus debian-image-opentracing debian-image-opentracing-plus openshift-image openshift-image-plus openshift-image-nap-plus
 
 .PHONY: push
 push: ## Docker push to $PREFIX and $TAG

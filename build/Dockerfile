@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1.2
 ARG BUILD_OS=debian
 ARG NGINX_PLUS_VERSION=r24
+ARG UBI_VERSION=8
+ARG FILES=
 
 ############################################# Base image for Debian #############################################
 FROM nginx:1.21.0 AS debian
@@ -27,8 +29,6 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/apk/cert.pem,mode=0644 \
 	&& printf "%s\n" "https://pkgs.nginx.com/plus/alpine/v$(grep -E -o '^[0-9]+\.[0-9]+' /etc/alpine-release)/main" >> /etc/apk/repositories \
 	&& apk add --no-cache libcap nginx-plus~${NGINX_PLUS_VERSION#r} nginx-plus-module-njs~${NGINX_PLUS_VERSION#r}
 
-COPY --chown=nginx:0 internal/configs/oidc/* /etc/nginx/oidc/
-
 
 ############################################# Base image for Debian with NGINX Plus #############################################
 FROM debian:buster-slim AS debian-plus
@@ -50,8 +50,6 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode
 	nginx-plus-${NGINX_PLUS_VERSION} nginx-plus-module-njs-${NGINX_PLUS_VERSION} \
 	&& apt-get purge --auto-remove -y apt-transport-https gnupg wget \
 	&& rm -rf /var/lib/apt/lists/*
-
-COPY --chown=nginx:0 internal/configs/oidc/* /etc/nginx/oidc/
 
 
 ############################################# Base image for Debian with NGINX Plus and App Protect #############################################
@@ -85,38 +83,33 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode
 	&& apt-get install --no-install-recommends --no-install-suggests -y app-protect-attack-signatures app-protect-threat-campaigns \
 	&& apt-get purge --auto-remove -y apt-transport-https gnupg wget \
 	&& rm -rf /var/lib/apt/lists/* \
-	&& rm /etc/apt/sources.list.d/nginx-app-protect.list \
-	&& mkdir -p /etc/nginx/waf/nac-policies /etc/nginx/waf/nac-logconfs /etc/nginx/waf/nac-usersigs /var/log/app_protect /opt/app_protect \
-	&& chown -R nginx:0 /etc/app_protect /usr/share/ts /var/log/app_protect/ /opt/app_protect/ /var/log/nginx/ \
-	&& touch /etc/nginx/waf/nac-usersigs/index.conf
-
-RUN printf "MODULE = ALL;\nLOG_LEVEL = TS_CRIT;\nFILE = 2;\n" > /etc/app_protect/bd/logger.cfg \
-	&& printf "[config_set_compiler]\nlog_level=fatal\n" >> /etc/app_protect/tools/asm_logging.conf \
-	&& for v in \
-	asm_config_server \
-	lock_factory \
-	bd_agent \
-	import_export_policy \
-	set_active \
-	; do sed -i "/\[$v/a log_level=fatal" "/etc/app_protect/tools/asm_logging.conf" \
-	; done
-
-COPY --chown=nginx:0 build/log-default.json /etc/nginx
+	&& rm /etc/apt/sources.list.d/nginx-app-protect.list
 
 # Uncomment the lines below if you want to install a custom CA certificate
 # COPY build/*.crt  /usr/local/share/ca-certificates/
 # RUN update-ca-certificates
 
 
-############################################# Base image for UBI #############################################
-FROM registry.access.redhat.com/ubi8-minimal AS ubi-base
+############################################# Base image for UBI 8 #############################################
+FROM redhat/ubi8-minimal AS ubi-base-8
 
+
+############################################# Base image for UBI 7 #############################################
+FROM registry.access.redhat.com/ubi7/ubi AS ubi-base-7
+
+RUN yum install -y microdnf
+
+
+############################################# Base image for UBI #############################################
+FROM ubi-base-${UBI_VERSION} AS ubi-base
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 LABEL name="NGINX Ingress Controller" \
 	description="The Ingress controller is an application that runs in a cluster and configures an HTTP load balancer according to Ingress resources." \
 	summary="The Ingress controller is an application that runs in a cluster and configures an HTTP load balancer according to Ingress resources." \
 	io.openshift.tags="nginx,ingress-controller,ingress,controller,kubernetes,openshift"
 
-RUN microdnf --nodocs --enablerepo=ubi-8-baseos install -y shadow-utils \
+RUN microdnf --nodocs install -y shadow-utils ca-certificates \
 	&& groupadd --system --gid 101 nginx \
 	&& useradd --system --gid nginx --no-create-home --home-dir /nonexistent --comment "nginx user" --shell /bin/false --uid 101 nginx
 
@@ -125,14 +118,14 @@ COPY --chown=nginx:0 LICENSE /licenses/
 
 ############################################# Base image for UBI OSS #############################################
 FROM ubi-base AS ubi
-
 ARG NGINX_VERSION
 
 RUN rpm --import https://nginx.org/keys/nginx_signing.key \
+	&& version=$(grep -E -o '[0-9]+\.[0-9]+' /etc/redhat-release | cut -d"." -f1) \
 	&& printf "%s\n" "[nginx]" "name=nginx repo" \
-	"baseurl=https://nginx.org/packages/mainline/centos/8/\$basearch/" \
+	"baseurl=https://nginx.org/packages/mainline/centos/${version}/\$basearch/" \
 	"gpgcheck=1" "enabled=1" "module_hotfixes=true" > /etc/yum.repos.d/nginx.repo \
-	&& microdnf --setopt=install_weak_deps=0 --nodocs install -y nginx-${NGINX_VERSION} \
+	&& microdnf --nodocs install -y nginx-${NGINX_VERSION} \
 	&& rm /etc/yum.repos.d/nginx.repo
 
 
@@ -140,15 +133,34 @@ RUN rpm --import https://nginx.org/keys/nginx_signing.key \
 FROM ubi-base AS ubi-plus
 ARG NGINX_PLUS_VERSION
 
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode=0644 \
 	--mount=type=secret,id=nginx-repo.key,dst=/etc/ssl/nginx/nginx-repo.key,mode=0644 \
 	rpm --import https://cs.nginx.com/static/keys/nginx_signing.key \
-	&& curl -sS https://cs.nginx.com/static/files/nginx-plus-8.repo | tr 0 1 > /etc/yum.repos.d/nginx-plus-8.repo \
-	&& microdnf --setopt=install_weak_deps=0 --nodocs install -y nginx-plus-${NGINX_PLUS_VERSION} nginx-plus-module-njs-${NGINX_PLUS_VERSION} \
-	&& rm /etc/yum.repos.d/nginx-plus-8.repo
+	&& curl -sS "https://cs.nginx.com/static/files/nginx-plus-$(grep -E -o '[0-9]+\.[0-9]+' /etc/redhat-release | cut -d"." -f1).repo" | tr 0 1 > /etc/yum.repos.d/nginx-plus.repo \
+	&& microdnf --nodocs install -y nginx-plus-${NGINX_PLUS_VERSION} nginx-plus-module-njs-${NGINX_PLUS_VERSION}
 
-COPY --chown=nginx:0 internal/configs/oidc/* /etc/nginx/oidc/
+
+############################################# Base image for UBI with NGINX Plus and App Protect #############################################
+FROM ubi-plus as ubi-plus-nap
+ARG NGINX_PLUS_VERSION
+
+RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode=0644 \
+	--mount=type=secret,id=nginx-repo.key,dst=/etc/ssl/nginx/nginx-repo.key,mode=0644 \
+	--mount=type=secret,id=rhel_license,dst=/tmp/rhel_license,mode=0644 \
+	set -x \
+	&& source /tmp/rhel_license \
+	&& curl -sS https://cs.nginx.com/static/files/app-protect-7.repo > /etc/yum.repos.d/app-protect-7.repo \
+	&& subscription-manager register --org=${RHEL_ORGANIZATION} --activationkey=${RHEL_ACTIVATION_KEY} || true \
+	&& subscription-manager attach --auto \
+	&& subscription-manager repos --enable rhel-7-server-optional-rpms --enable rhel-7-server-extras-rpms \
+	&& rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
+	&& yum clean all \
+	&& yum install -y nginx-plus-module-appprotect-${NGINX_PLUS_VERSION} $(repoquery app-protect-${NGINX_PLUS_VERSION#r}*) app-protect-attack-signatures app-protect-threat-campaigns \
+	&& rm /etc/yum.repos.d/app-protect-7.repo
+
+# Uncomment the lines below if you want to install a custom CA certificate
+# COPY build/*.crt  /etc/pki/ca-trust/source/anchors/
+# RUN update-ca-trust extract
 
 
 ############################################# Build image for Opentracing Builder #############################################
@@ -226,8 +238,34 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode
 COPY --from=tracer-downloader /usr/local/lib/libjaegertracing_plugin.so /usr/local/lib/libjaegertracing_plugin.so
 
 
+############################################# Create common files for NGINX Plus #############################################
+FROM $BUILD_OS as plus-common
+
+COPY --chown=nginx:0 internal/configs/oidc/* /etc/nginx/oidc/
+
+
+############################################# Create common files for NGINX Plus with App Protect #############################################
+FROM plus-common as nap-common
+
+RUN mkdir -p /etc/nginx/waf/nac-policies /etc/nginx/waf/nac-logconfs /etc/nginx/waf/nac-usersigs /var/log/app_protect /opt/app_protect \
+	&& chown -R nginx:0 /etc/app_protect /usr/share/ts /var/log/app_protect/ /opt/app_protect/ /var/log/nginx/ \
+	&& touch /etc/nginx/waf/nac-usersigs/index.conf \
+	&& printf "%s\n" "MODULE = ALL;" "LOG_LEVEL = TS_CRIT;" "FILE = 2;" > /etc/app_protect/bd/logger.cfg \
+	&& printf "%s\n" "[config_set_compiler]" "log_level=fatal" >> /etc/app_protect/tools/asm_logging.conf \
+	&& for v in \
+	asm_config_server \
+	lock_factory \
+	bd_agent \
+	import_export_policy \
+	set_active \
+	; do sed -i "/\[$v/a log_level=fatal" "/etc/app_protect/tools/asm_logging.conf" \
+	; done
+
+COPY --chown=nginx:0 build/log-default.json /etc/nginx
+
+
 ############################################# Create common files, permissions and setcap #############################################
-FROM $BUILD_OS as common
+FROM ${FILES:-$BUILD_OS} as common
 
 ARG PLUS
 ARG BUILD_OS
