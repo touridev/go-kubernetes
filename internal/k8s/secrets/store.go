@@ -111,14 +111,28 @@ type FakeSecretStore struct {
 }
 
 // NewFakeSecretsStore creates a new FakeSecretStore.
-func NewFakeSecretsStore(secrets map[string]*SecretReference) SecretStore {
+func NewFakeSecretsStore(secrets map[string]*SecretReference) *FakeSecretStore {
 	return &FakeSecretStore{
 		secrets: secrets,
 	}
 }
 
+// NewEmptyFakeSecretsStore creates a new empty FakeSecretStore.
+func NewEmptyFakeSecretsStore() *FakeSecretStore {
+	return &FakeSecretStore{
+		secrets: make(map[string]*SecretReference),
+	}
+}
+
 // AddOrUpdateSecret is a fake implementation of AddOrUpdateSecret.
 func (s *FakeSecretStore) AddOrUpdateSecret(secret *api_v1.Secret) {
+	secretRef, exists := s.secrets[getResourceKey(&secret.ObjectMeta)]
+	if !exists {
+		secretRef = &SecretReference{Secret: secret}
+	} else {
+		secretRef.Secret = secret
+	}
+	s.secrets[getResourceKey(&secret.ObjectMeta)] = secretRef
 }
 
 // DeleteSecret is a fake implementation of DeleteSecret.

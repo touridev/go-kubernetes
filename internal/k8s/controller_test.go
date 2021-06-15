@@ -2051,3 +2051,44 @@ func TestGetWAFPoliciesForAppProtectLogConf(t *testing.T) {
 		}
 	}
 }
+
+func TestPreSyncSecrets(t *testing.T) {
+	lbc := LoadBalancerController{
+		isNginxPlus: true,
+		secretStore: secrets.NewEmptyFakeSecretsStore(),
+		secretLister: &cache.FakeCustomStore{
+			ListFunc: func() []interface{} {
+				return []interface{}{
+					&api_v1.Secret{
+						ObjectMeta: meta_v1.ObjectMeta{
+							Name:      "supported-secret",
+							Namespace: "default",
+						},
+						Type: api_v1.SecretTypeTLS,
+					},
+					&api_v1.Secret{
+						ObjectMeta: meta_v1.ObjectMeta{
+							Name:      "unsupported-secret",
+							Namespace: "default",
+						},
+						Type: api_v1.SecretTypeOpaque,
+					},
+				}
+			},
+		},
+	}
+
+	lbc.preSyncSecrets()
+
+	supportedKey := "default/supported-secret"
+	ref := lbc.secretStore.GetSecret(supportedKey)
+	if ref.Error != nil {
+		t.Errorf("GetSecret(%q) returned a reference with an unexpected error %v", supportedKey, ref.Error)
+	}
+
+	unsupportedKey := "default/unsupported-secret"
+	ref = lbc.secretStore.GetSecret(unsupportedKey)
+	if ref.Error == nil {
+		t.Errorf("GetSecret(%q) returned a reference without an expected error", unsupportedKey)
+	}
+}
