@@ -193,6 +193,7 @@ type MainConfig struct {
 	WorkerShutdownTimeout              string
 	AppProtectLoadModule               bool
 	AppProtectFailureModeAction        string
+	AppProtectCompressedRequestsAction string
 	AppProtectCookieSeed               string
 	AppProtectCPUThresholds            string
 	AppProtectPhysicalMemoryThresholds string

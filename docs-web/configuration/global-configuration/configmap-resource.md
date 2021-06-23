@@ -414,6 +414,10 @@ See the doc about [VirtualServer and VirtualServerRoute resources](/nginx-ingres
      - Sets the tracer configuration in JSON format.
      - N/A
      -
+   * - ``app-protect-compressed-requests-action``
+     - Sets the ``app_protect_compressed_requests_action`` `global directive </nginx-app-protect/configuration/#global-directives>`_.
+     - ``drop``
+     -
    * - ``app-protect-cookie-seed``
      - Sets the ``app_protect_cookie_seed`` `global directive </nginx-app-protect/configuration/#global-directives>`_.
      - Random automatically generated string
