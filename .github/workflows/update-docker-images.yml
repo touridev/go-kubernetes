@@ -3,6 +3,7 @@ name: Update Docker Images
 on:
   schedule:
     - cron:  '0 1 * * *'
+  workflow_dispatch:
 
 defaults:
   run:
@@ -92,7 +93,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
-          args: build --rm-dist --id kubernetes-ingress --single-target
+          args: build --rm-dist --id kubernetes-ingress
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOPATH: ${{ env.GOPATH }}
