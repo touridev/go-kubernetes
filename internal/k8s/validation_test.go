@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	networking "k8s.io/api/networking/v1beta1"
+	networking "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
@@ -1925,4 +1925,73 @@ func errorListToStrings(list field.ErrorList) []string {
 	}
 
 	return result
+}
+
+func TestGetSpecServices(t *testing.T) {
+	tests := []struct {
+		spec     networking.IngressSpec
+		expected map[string]bool
+		msg      string
+	}{
+		{
+			spec: networking.IngressSpec{
+				DefaultBackend: &networking.IngressBackend{
+					Service: &networking.IngressServiceBackend{
+						Name: "svc1",
+					},
+				},
+				Rules: []networking.IngressRule{
+					{
+						IngressRuleValue: networking.IngressRuleValue{
+							HTTP: &networking.HTTPIngressRuleValue{
+								Paths: []networking.HTTPIngressPath{
+									{
+										Path: "/",
+										Backend: networking.IngressBackend{
+											Service: &networking.IngressServiceBackend{
+												Name: "svc2",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: map[string]bool{
+				"svc1": true,
+				"svc2": true,
+			},
+			msg: "services are referenced",
+		},
+		{
+			spec: networking.IngressSpec{
+				DefaultBackend: &networking.IngressBackend{},
+				Rules: []networking.IngressRule{
+					{
+						IngressRuleValue: networking.IngressRuleValue{
+							HTTP: &networking.HTTPIngressRuleValue{
+								Paths: []networking.HTTPIngressPath{
+									{
+										Path:    "/",
+										Backend: networking.IngressBackend{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: map[string]bool{},
+			msg:      "services are not referenced",
+		},
+	}
+
+	for _, test := range tests {
+		result := getSpecServices(test.spec)
+		if !reflect.DeepEqual(result, test.expected) {
+			t.Errorf("getSpecServices() returned %v but expected %v for the case of %s", result, test.expected, test.msg)
+		}
+	}
 }

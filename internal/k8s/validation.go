@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/nginxinc/kubernetes-ingress/internal/configs"
-	networking "k8s.io/api/networking/v1beta1"
+	networking "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
@@ -602,13 +602,15 @@ func validateMinionSpec(spec *networking.IngressSpec, fieldPath *field.Path) fie
 
 func getSpecServices(ingressSpec networking.IngressSpec) map[string]bool {
 	services := make(map[string]bool)
-	if ingressSpec.Backend != nil {
-		services[ingressSpec.Backend.ServiceName] = true
+	if ingressSpec.DefaultBackend != nil && ingressSpec.DefaultBackend.Service != nil {
+		services[ingressSpec.DefaultBackend.Service.Name] = true
 	}
 	for _, rule := range ingressSpec.Rules {
 		if rule.HTTP != nil {
 			for _, path := range rule.HTTP.Paths {
-				services[path.Backend.ServiceName] = true
+				if path.Backend.Service != nil {
+					services[path.Backend.Service.Name] = true
+				}
 			}
 		}
 	}
