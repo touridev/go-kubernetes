@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
 	networking "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -1681,11 +1682,37 @@ func TestValidateIngressSpec(t *testing.T) {
 				Rules: []networking.IngressRule{
 					{
 						Host: "foo.example.com",
+						IngressRuleValue: networking.IngressRuleValue{
+							HTTP: &networking.HTTPIngressRuleValue{
+								Paths: []networking.HTTPIngressPath{
+									{
+										Path: "/",
+										Backend: networking.IngressBackend{
+											Service: &networking.IngressServiceBackend{},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
 			expectedErrors: nil,
 			msg:            "valid input",
+		},
+		{
+			spec: &networking.IngressSpec{
+				DefaultBackend: &networking.IngressBackend{
+					Service: &networking.IngressServiceBackend{},
+				},
+				Rules: []networking.IngressRule{
+					{
+						Host: "foo.example.com",
+					},
+				},
+			},
+			expectedErrors: nil,
+			msg:            "valid input with default backend",
 		},
 		{
 			spec: &networking.IngressSpec{
@@ -1724,6 +1751,47 @@ func TestValidateIngressSpec(t *testing.T) {
 				`spec.rules[1].host: Duplicate value: "foo.example.com"`,
 			},
 			msg: "duplicated host",
+		},
+		{
+			spec: &networking.IngressSpec{
+				DefaultBackend: &networking.IngressBackend{
+					Resource: &v1.TypedLocalObjectReference{},
+				},
+				Rules: []networking.IngressRule{
+					{
+						Host: "foo.example.com",
+					},
+				},
+			},
+			expectedErrors: []string{
+				"spec.defaultBackend.resource: Forbidden: resource backends are not supported",
+			},
+			msg: "invalid default backend",
+		},
+		{
+			spec: &networking.IngressSpec{
+				Rules: []networking.IngressRule{
+					{
+						Host: "foo.example.com",
+						IngressRuleValue: networking.IngressRuleValue{
+							HTTP: &networking.HTTPIngressRuleValue{
+								Paths: []networking.HTTPIngressPath{
+									{
+										Path: "/",
+										Backend: networking.IngressBackend{
+											Resource: &v1.TypedLocalObjectReference{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErrors: []string{
+				"spec.rules[0].http.path[0].backend.resource: Forbidden: resource backends are not supported",
+			},
+			msg: "invalid backend",
 		},
 	}
 
