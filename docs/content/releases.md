@@ -56,6 +56,7 @@ HELM CHART:
 CHANGES:
 * [1855](https://github.com/nginxinc/kubernetes-ingress/pull/1855) Update minimum Kubernetes version to 1.19; remove the `-use-ingress-class-only` command-line argument, which doesn't work with Kubernetes >= 1.19.
 * [1721](https://github.com/nginxinc/kubernetes-ingress/pull/1721) Increase default reload timeout to 60s: the Ingress Controller will wait for 60s for NGINX to start or reload. Previously, the default was 4 seconds.
+* [2009](https://github.com/nginxinc/kubernetes-ingress/pull/2009) Increase default upstream zone size for NGINX Plus. See the INCREASED UPSTREAM ZONES section below.
 * Update NGINX Plus version to R25. **Note**: images with NGINX App Protect will continue to use R24 until App Protect 3.6 is released.
 * Update NGINX version to 1.21.3.
 
@@ -65,6 +66,16 @@ UPGRADE:
 * For Helm, use version 0.11.0 of the chart.
 
 See the complete list of supported images for NGINX and NGINX Plus on the [Technical Specifications](https://docs.nginx.com/nginx-ingress-controller/technical-specifications/#supported-docker-images) page.
+
+INCREASED UPSTREAM ZONES
+
+We increased the default size of an upstream zone from 256K to 512K to accommodate a change in NGINX Plus R25. The change makes NGINX Plus allocate more memory for storing upstream server (peer) data, which means upstream server zones will use more memory to account for that new data.
+
+The increase in the zone size is to prevent NGINX Plus configuration reload failures after an upgrade to release 1.13.0. Note that If a zone becomes full, NGINX Plus will fail to reload and fail to add more upstream servers via the API.
+
+The new 512K default value will be able to hold ~270 upstream servers per upstream, similarly to how the old 256K value was able to hold the same number of upstream servers in the previous Ingress Controller releases. You can understand the utilization of the upstream zones via [NGINX Plus API](http://nginx.org/en/docs/http/ngx_http_api_module.html#slabs) and the [NGINX Plus dashboard](https://docs.nginx.com/nginx-ingress-controller/logging-and-monitoring/status-page/#accessing-live-activity-monitoring-dashboard) (the shared zones tab).
+
+If you have a large number of upstream in the NGINX Plus configuration of the Ingress Controller, expect that after an upgrade NGINX Plus will consume more memory: +256K per upstream. If you don’t have upstreams with huge number of upstream serves and you’d like to reduce the memory usage of NGINX Plus, you can configure the `upstream-zone-size` [ConfigMap key](https://docs.nginx.com/nginx-ingress-controller/configuration/global-configuration/configmap-resource/#backend-services-upstreams) with a lower value. Additionally, the Ingress resource supports `nginx.org/upstream-zone-size` [annotation](https://docs.nginx.com/nginx-ingress-controller/configuration/ingress-resources/advanced-configuration-with-annotations/#backend-services-upstreams) to configure zone sizes for the upstreams of an Ingress resource rather than globally.
 
 UPDATING POLICIES
 
@@ -78,7 +89,7 @@ Release 1.10 removed the `k8s.nginx.org/v1alpha1 version` of the Policy resource
 
 Please also read the [release 1.10 changelog](https://docs.nginx.com/nginx-ingress-controller/releases/#nginx-ingress-controller-1100) for the instructions on how to update Secret resources, which is also necessary since some of the Policies reference Secrets.
 
-Note that 2.1.0 will remove the v1alpha1 Policy.
+Note that 2.1.0 will remove support for the v1alpha1 version of the Policy.
 
 SUPPORTED PLATFORMS:
 
