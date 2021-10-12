@@ -25,10 +25,12 @@ jobs:
           event=$(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }} | jq -r '.event')
           name=$(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ github.repository }}/check-suites/$suite_id/check-runs | jq -r '[.check_runs[] | select(.conclusion=="failure")][0].name')
           url=$(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ github.repository }}/check-suites/$suite_id/check-runs | jq -r '[.check_runs[] | select(.conclusion=="failure")][0].html_url')
+          message_sanitized=$(awk '{gsub("&","&amp;");gsub("<","\\&lt;");gsub(">","\\&gt;");print}' <<<'${{ github.event.workflow_run.head_commit.message }}')
 
           echo "::set-output name=name::$name"
           echo "::set-output name=url::$url"
           echo "::set-output name=event::$event"
+          echo "::set-output name=message::$message_sanitized"
 
       - name: Send Notification
         uses: 8398a7/action-slack@v3
@@ -37,14 +39,14 @@ jobs:
           custom_payload: |
             {
               username: 'Github',
-              icon_emoji: ':octocat:',
+              icon_emoji: ':github:',
               mention: 'channel',
               attachments: [{
                 title: '[${{ github.event.repository.full_name }}] ${{ github.event.workflow.name }} pipeline has failed (${{ steps.vars.outputs.event }})',
                 color: 'danger',
                 fields: [{
                   title: 'Commit',
-                  value: `<https://github.com/${{ github.repository }}/commit/${{ github.event.workflow_run.head_commit.id }}|${{ github.event.workflow_run.head_commit.message }}>`,
+                  value: `<https://github.com/${{ github.repository }}/commit/${{ github.event.workflow_run.head_commit.id }}|${{ steps.vars.outputs.message }}>`,
                   short: true
                 },
                 {
