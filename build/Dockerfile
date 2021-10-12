@@ -8,6 +8,8 @@ FROM nginx:1.21.3 AS debian
 
 RUN apt-get update \
 	&& apt-get install --no-install-recommends --no-install-suggests -y libcap2-bin \
+	# temporary fix for CVE-2021-37750
+	&& apt-get install -y libkrb5-3 libk5crypto3 \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& echo $NGINX_VERSION > nginx_version
 
