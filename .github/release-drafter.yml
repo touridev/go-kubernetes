@@ -13,6 +13,9 @@ categories:
   - title: '📝 Documentation'
     labels:
       - "documentation"
+  - title: '🧪 Tests'
+    labels:
+      - "tests"
   - title: '🔨 Maintenance'
     labels:
       - "chore"
@@ -32,6 +35,7 @@ version-resolver:
       - 'chore'
       - 'dependencies'
       - 'documentation'
+      - 'tests'
   default: patch
 exclude-labels:
   - 'skip-changelog'
@@ -41,6 +45,9 @@ autolabeler:
       - '*.md'
     branch:
       - '/docs{0,1}\/.+/'
+  - label: 'tests'
+    branch:
+      - '/tests\/.+/'
   - label: 'chore'
     branch:
       - '/chore\/.+/'
