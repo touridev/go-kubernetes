@@ -1,6 +1,6 @@
 ---
 title: TransportServer Resource
-description: 
+description:
 weight: 1900
 doctypes: [""]
 toc: true
@@ -9,7 +9,7 @@ toc: true
 
 The TransportServer resource allows you to configure TCP, UDP, and TLS Passthrough load balancing. The resource is implemented as a [Custom Resource](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/).
 
-This document is the reference documentation for the TransportServer resource. To see additional examples of using the resource for specific use cases, go to the [examples-of-custom-resources](https://github.com/nginxinc/kubernetes-ingress/tree/v2.0.2/examples-of-custom-resources) folder in our GitHub repo.
+This document is the reference documentation for the TransportServer resource. To see additional examples of using the resource for specific use cases, go to the [examples-of-custom-resources](https://github.com/nginxinc/kubernetes-ingress/tree/v2.0.3/examples-of-custom-resources) folder in our GitHub repo.
 
 > **Feature Status**: The TransportServer resource is available as a preview feature[^1]: We might introduce some backward-incompatible changes to the resource definition. The feature is disabled by default. To enable it, set the [enable-preview-policies](/nginx-ingress-controller/configuration/global-configuration/command-line-arguments/#cmdoption-enable-preview-policies) command-line argument of the Ingress Controller.
 
@@ -78,18 +78,18 @@ The TransportServer resource defines load balancing configuration for TCP, UDP, 
       pass: secure-app
   ```
 
-{{% table %}} 
-|Field | Description | Type | Required | 
-| ---| ---| ---| --- | 
-|``listener`` | The listener on NGINX that will accept incoming connections/datagrams. | [listener](#listener) | Yes | 
-|``host`` | The host (domain name) of the server. Must be a valid subdomain as defined in RFC 1123, such as ``my-app`` or ``hello.example.com``. Wildcard domains like ``*.example.com`` are not allowed. Required for TLS Passthrough load balancing. | ``string`` | No | 
-|``upstreams`` | A list of upstreams. | [[]upstream](#upstream) | Yes | 
-|``upstreamParameters`` | The upstream parameters. | [upstreamParameters](#upstreamparameters) | No | 
-|``action`` | The action to perform for a client connection/datagram. | [action](#action) | Yes | 
-|``ingressClassName`` | Specifies which Ingress Controller must handle the TransportServer resource. | ``string`` | No | 
-|``streamSnippets`` | Sets a custom snippet in the ``stream`` context. | ``string`` | No | 
-|``serverSnippets`` | Sets a custom snippet in the ``server`` context. | ``string`` | No | 
-{{% /table %}} 
+{{% table %}}
+|Field | Description | Type | Required |
+| ---| ---| ---| --- |
+|``listener`` | The listener on NGINX that will accept incoming connections/datagrams. | [listener](#listener) | Yes |
+|``host`` | The host (domain name) of the server. Must be a valid subdomain as defined in RFC 1123, such as ``my-app`` or ``hello.example.com``. Wildcard domains like ``*.example.com`` are not allowed. Required for TLS Passthrough load balancing. | ``string`` | No |
+|``upstreams`` | A list of upstreams. | [[]upstream](#upstream) | Yes |
+|``upstreamParameters`` | The upstream parameters. | [upstreamParameters](#upstreamparameters) | No |
+|``action`` | The action to perform for a client connection/datagram. | [action](#action) | Yes |
+|``ingressClassName`` | Specifies which Ingress Controller must handle the TransportServer resource. | ``string`` | No |
+|``streamSnippets`` | Sets a custom snippet in the ``stream`` context. | ``string`` | No |
+|``serverSnippets`` | Sets a custom snippet in the ``server`` context. | ``string`` | No |
+{{% /table %}}
 
 \* -- Required for TLS Passthrough load balancing.
 
@@ -104,12 +104,12 @@ listener:
   protocol: UDP
 ```
 
-{{% table %}} 
-|Field | Description | Type | Required | 
-| ---| ---| ---| --- | 
-|``name`` | The name of the listener. | ``string`` | Yes | 
-|``protocol`` | The protocol of the listener. | ``string`` | Yes | 
-{{% /table %}} 
+{{% table %}}
+|Field | Description | Type | Required |
+| ---| ---| ---| --- |
+|``name`` | The name of the listener. | ``string`` | Yes |
+|``protocol`` | The protocol of the listener. | ``string`` | Yes |
+{{% /table %}}
 
 ### Upstream
 
@@ -124,18 +124,18 @@ failTimeout: 30s
 loadBalancingMethod: least_conn
 ```
 
-{{% table %}} 
-|Field | Description | Type | Required | 
-| ---| ---| ---| --- | 
-|``name`` | The name of the upstream. Must be a valid DNS label as defined in RFC 1035. For example, ``hello`` and ``upstream-123`` are valid. The name must be unique among all upstreams of the resource. | ``string`` | Yes | 
-|``service`` | The name of a [service](https://kubernetes.io/docs/concepts/services-networking/service/). The service must belong to the same namespace as the resource. If the service doesn't exist, NGINX will assume the service has zero endpoints and close client connections/ignore datagrams. | ``string`` | Yes | 
-|``port`` | The port of the service. If the service doesn't define that port, NGINX will assume the service has zero endpoints and close client connections/ignore datagrams. The port must fall into the range ``1..65535``. | ``int`` | Yes | 
-|``maxFails`` | Sets the [number](https://nginx.org/en/docs/stream/ngx_stream_upstream_module.html#max_fails) of unsuccessful attempts to communicate with the server that should happen in the duration set by the failTimeout parameter to consider the server unavailable. The default ``1``. | ``int`` | No | 
-|``maxConns`` | Sets the [number](https://nginx.org/en/docs/stream/ngx_stream_upstream_module.html#max_conns) of maximum connections to the proxied server. Default value is zero, meaning there is no limit. The default is ``0``. | ``int`` | No | 
-|``failTimeout`` | Sets the [time](https://nginx.org/en/docs/stream/ngx_stream_upstream_module.html#fail_timeout) during which the specified number of unsuccessful attempts to communicate with the server should happen to consider the server unavailable and the period of time the server will be considered unavailable. The default is ``10s``. | ``string`` | No | 
-|``healthCheck`` | The health check configuration for the Upstream. See the [health_check](https://nginx.org/en/docs/stream/ngx_stream_upstream_hc_module.html#health_check) directive. Note: this feature is supported only in NGINX Plus. | [healthcheck](#upstreamhealthcheck) | No | 
-|``loadBalancingMethod`` | The method used to load balance the upstream servers. By default, connections are distributed between the servers using a weighted round-robin balancing method. See the [upstream](http://nginx.org/en/docs/stream/ngx_stream_upstream_module.html#upstream) section for available methods and their details. | ``string`` | No | 
-{{% /table %}} 
+{{% table %}}
+|Field | Description | Type | Required |
+| ---| ---| ---| --- |
+|``name`` | The name of the upstream. Must be a valid DNS label as defined in RFC 1035. For example, ``hello`` and ``upstream-123`` are valid. The name must be unique among all upstreams of the resource. | ``string`` | Yes |
+|``service`` | The name of a [service](https://kubernetes.io/docs/concepts/services-networking/service/). The service must belong to the same namespace as the resource. If the service doesn't exist, NGINX will assume the service has zero endpoints and close client connections/ignore datagrams. | ``string`` | Yes |
+|``port`` | The port of the service. If the service doesn't define that port, NGINX will assume the service has zero endpoints and close client connections/ignore datagrams. The port must fall into the range ``1..65535``. | ``int`` | Yes |
+|``maxFails`` | Sets the [number](https://nginx.org/en/docs/stream/ngx_stream_upstream_module.html#max_fails) of unsuccessful attempts to communicate with the server that should happen in the duration set by the failTimeout parameter to consider the server unavailable. The default ``1``. | ``int`` | No |
+|``maxConns`` | Sets the [number](https://nginx.org/en/docs/stream/ngx_stream_upstream_module.html#max_conns) of maximum connections to the proxied server. Default value is zero, meaning there is no limit. The default is ``0``. | ``int`` | No |
+|``failTimeout`` | Sets the [time](https://nginx.org/en/docs/stream/ngx_stream_upstream_module.html#fail_timeout) during which the specified number of unsuccessful attempts to communicate with the server should happen to consider the server unavailable and the period of time the server will be considered unavailable. The default is ``10s``. | ``string`` | No |
+|``healthCheck`` | The health check configuration for the Upstream. See the [health_check](https://nginx.org/en/docs/stream/ngx_stream_upstream_hc_module.html#health_check) directive. Note: this feature is supported only in NGINX Plus. | [healthcheck](#upstreamhealthcheck) | No |
+|``loadBalancingMethod`` | The method used to load balance the upstream servers. By default, connections are distributed between the servers using a weighted round-robin balancing method. See the [upstream](http://nginx.org/en/docs/stream/ngx_stream_upstream_module.html#upstream) section for available methods and their details. | ``string`` | No |
+{{% /table %}}
 
 
 ### Upstream.Healthcheck
@@ -158,21 +158,21 @@ healthCheck:
 
 Note: This feature is supported only in NGINX Plus.
 
-{{% table %}} 
-|Field | Description | Type | Required | 
-| ---| ---| ---| --- | 
-|``enable`` | Enables a health check for an upstream server. The default is ``false``. | ``boolean`` | No | 
-|``interval`` | The interval between two consecutive health checks. The default is ``5s``. | ``string`` | No | 
-|``timeout`` | This overrides the timeout set by [proxy_timeout](http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_timeout) which is set in `SessionParameters` for health checks. The default value is ``5s``. | ``string`` | No | 
-|``jitter`` | The time within which each health check will be randomly delayed. By default, there is no delay. | ``string`` | No | 
-|``fails`` | The number of consecutive failed health checks of a particular upstream server after which this server will be considered unhealthy. The default is ``1``. | ``integer`` | No | 
-|``passes`` | The number of consecutive passed health checks of a particular upstream server after which the server will be considered healthy. The default is ``1``. | ``integer`` | No | 
-|``port`` | The port used for health check requests. By default, the port of the upstream is used. Note: in contrast with the port of the upstream, this port is not a service port, but a port of a pod. | ``integer`` | No | 
-|``match`` | Controls the data to send and the response to expect for the healthcheck. | [match](#upstreamhealthcheckmatch) | No | 
-{{% /table %}} 
+{{% table %}}
+|Field | Description | Type | Required |
+| ---| ---| ---| --- |
+|``enable`` | Enables a health check for an upstream server. The default is ``false``. | ``boolean`` | No |
+|``interval`` | The interval between two consecutive health checks. The default is ``5s``. | ``string`` | No |
+|``timeout`` | This overrides the timeout set by [proxy_timeout](http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_timeout) which is set in `SessionParameters` for health checks. The default value is ``5s``. | ``string`` | No |
+|``jitter`` | The time within which each health check will be randomly delayed. By default, there is no delay. | ``string`` | No |
+|``fails`` | The number of consecutive failed health checks of a particular upstream server after which this server will be considered unhealthy. The default is ``1``. | ``integer`` | No |
+|``passes`` | The number of consecutive passed health checks of a particular upstream server after which the server will be considered healthy. The default is ``1``. | ``integer`` | No |
+|``port`` | The port used for health check requests. By default, the port of the upstream is used. Note: in contrast with the port of the upstream, this port is not a service port, but a port of a pod. | ``integer`` | No |
+|``match`` | Controls the data to send and the response to expect for the healthcheck. | [match](#upstreamhealthcheckmatch) | No |
+{{% /table %}}
 
 ### Upstream.Healthcheck.Match
- 
+
 The match controls the data to send and the response to expect for the healthcheck:
 ```yaml
 match:
@@ -184,12 +184,12 @@ Both `send` and `expect` fields can contain hexadecimal literals with the prefix
 
 See the [match](https://nginx.org/en/docs/stream/ngx_stream_upstream_hc_module.html#match) directive for details.
 
-{{% table %}} 
-|Field | Description | Type | Required | 
-| ---| ---| ---| --- | 
-|``send`` | A string to send to an upstream server. | ``string`` | No | 
-|``expect`` | A literal string or a regular expression that the data obtained from the server should match. The regular expression is specified with the preceding ``~*`` modifier (for case-insensitive matching), or the ``~`` modifier (for case-sensitive matching). The Ingress Controller validates a regular expression using the RE2 syntax. | ``string`` | No | 
-{{% /table %}} 
+{{% table %}}
+|Field | Description | Type | Required |
+| ---| ---| ---| --- |
+|``send`` | A string to send to an upstream server. | ``string`` | No |
+|``expect`` | A literal string or a regular expression that the data obtained from the server should match. The regular expression is specified with the preceding ``~*`` modifier (for case-insensitive matching), or the ``~`` modifier (for case-sensitive matching). The Ingress Controller validates a regular expression using the RE2 syntax. | ``string`` | No |
+{{% /table %}}
 
 ### UpstreamParameters
 
@@ -204,16 +204,16 @@ upstreamParameters:
   nextUpstreamTries: 1
 ```
 
-{{% table %}} 
-|Field | Description | Type | Required | 
-| ---| ---| ---| --- | 
-|``udpRequests`` | The number of datagrams, after receiving which, the next datagram from the same client starts a new session. See the [proxy_requests](https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_requests) directive. The default is ``0``. | ``int`` | No | 
-|``udpResponses`` | The number of datagrams expected from the proxied server in response to a client datagram. See the [proxy_responses](https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_responses) directive. By default, the number of datagrams is not limited. | ``int`` | No | 
-|``connectTimeout`` | The timeout for establishing a connection with a proxied server. See the [proxy_connect_timeout](http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_connect_timeout) directive. The default is ``60s``. | ``string`` | No | 
-|``nextUpstream`` | If a connection to the proxied server cannot be established, determines whether a client connection will be passed to the next server. See the [proxy_next_upstream](http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream) directive. The default is ``true``. | bool | No | 
-|``nextUpstreamTries`` | The number of tries for passing a connection to the next server. See the [proxy_next_upstream_tries](http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream_tries) directive. The default is ``0``. | ``int`` | No | 
-|``nextUpstreamTimeout`` | The time allowed to pass a connection to the next server. See the [proxy_next_upstream_timeout](http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream_timeout) directive. The default us ``0``. | ``string`` | No | 
-{{% /table %}} 
+{{% table %}}
+|Field | Description | Type | Required |
+| ---| ---| ---| --- |
+|``udpRequests`` | The number of datagrams, after receiving which, the next datagram from the same client starts a new session. See the [proxy_requests](https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_requests) directive. The default is ``0``. | ``int`` | No |
+|``udpResponses`` | The number of datagrams expected from the proxied server in response to a client datagram. See the [proxy_responses](https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_responses) directive. By default, the number of datagrams is not limited. | ``int`` | No |
+|``connectTimeout`` | The timeout for establishing a connection with a proxied server. See the [proxy_connect_timeout](http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_connect_timeout) directive. The default is ``60s``. | ``string`` | No |
+|``nextUpstream`` | If a connection to the proxied server cannot be established, determines whether a client connection will be passed to the next server. See the [proxy_next_upstream](http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream) directive. The default is ``true``. | bool | No |
+|``nextUpstreamTries`` | The number of tries for passing a connection to the next server. See the [proxy_next_upstream_tries](http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream_tries) directive. The default is ``0``. | ``int`` | No |
+|``nextUpstreamTimeout`` | The time allowed to pass a connection to the next server. See the [proxy_next_upstream_timeout](http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream_timeout) directive. The default us ``0``. | ``string`` | No |
+{{% /table %}}
 
 ### SessionParameters
 
@@ -223,11 +223,11 @@ sessionParameters:
   timeout: 50s
 ```
 
-{{% table %}} 
-|Field | Description | Type | Required | 
-| ---| ---| ---| --- | 
-|``timeout`` | The timeout between two succesive read or write operations on client or proxied server connections. See [proxy_timeout](http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_timeout) directive. The default is ``10m``. | ``string`` | No | 
-{{% /table %}} 
+{{% table %}}
+|Field | Description | Type | Required |
+| ---| ---| ---| --- |
+|``timeout`` | The timeout between two succesive read or write operations on client or proxied server connections. See [proxy_timeout](http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_timeout) directive. The default is ``10m``. | ``string`` | No |
+{{% /table %}}
 
 ### Action
 
@@ -239,11 +239,11 @@ action:
   pass: dns-app
 ```
 
-{{% table %}} 
-|Field | Description | Type | Required | 
-| ---| ---| ---| --- | 
-|``pass`` | Passes connections/datagrams to an upstream. The upstream with that name must be defined in the resource. | ``string`` | Yes | 
-{{% /table %}} 
+{{% table %}}
+|Field | Description | Type | Required |
+| ---| ---| ---| --- |
+|``pass`` | Passes connections/datagrams to an upstream. The upstream with that name must be defined in the resource. | ``string`` | Yes |
+{{% /table %}}
 
 ## Using TransportServer
 
