@@ -20,8 +20,8 @@ RUN apt-get update \
 FROM docker.io/library/nginx:1.21.4-alpine AS alpine
 
 RUN apk add --no-cache libcap \
-	# temporary fix for CVE-2021-22945
-	&& apk upgrade --no-cache curl libcurl
+	# temporary fix for CVE-2021-42374
+	&& apk upgrade --no-cache busybox
 
 
 ############################################# Base image for Alpine with NGINX Plus #############################################
@@ -32,6 +32,8 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/apk/cert.pem,mode=0644 \
 	--mount=type=secret,id=nginx-repo.key,dst=/etc/apk/cert.key,mode=0644 \
 	wget -nv -O /etc/apk/keys/nginx_signing.rsa.pub https://cs.nginx.com/static/keys/nginx_signing.rsa.pub \
 	&& printf "%s\n" "https://pkgs.nginx.com/plus/alpine/v$(grep -E -o '^[0-9]+\.[0-9]+' /etc/alpine-release)/main" >> /etc/apk/repositories \
+	# temporary fix for CVE-2021-42374
+	&& apk upgrade --no-cache busybox \
 	&& apk add --no-cache libcap nginx-plus~${NGINX_PLUS_VERSION#r} nginx-plus-module-njs~${NGINX_PLUS_VERSION#r}
 
 
@@ -83,8 +85,8 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode
 ############################################# Base image for UBI 8 #############################################
 FROM redhat/ubi8-minimal AS ubi-base-8
 
-# temporary fix for CVE-2021-22946, CVE-2021-22947, CVE-2021-33928, CVE-2021-33929, CVE-2021-33930, CVE-2021-33938
-RUN microdnf upgrade -y curl libsolv
+# temporary fix for CVE-2021-42574
+RUN microdnf upgrade -y libgcc libstdc++
 
 
 ############################################# Base image for UBI 7 #############################################
