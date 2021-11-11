@@ -294,29 +294,31 @@ server {
         auth_jwt_key_file {{ .Secret }};
         {{ end }}
 
+        {{ $proxyOrGRPC := "proxy" }}{{ if $l.GRPCPass }}{{ $proxyOrGRPC = "grpc" }}{{ end }}
+
         {{ with $l.EgressMTLS }}
             {{ if .Certificate }}
-        proxy_ssl_certificate {{ .Certificate }};
-        proxy_ssl_certificate_key {{ .CertificateKey }};
+        {{ $proxyOrGRPC }}_ssl_certificate {{ .Certificate }};
+        {{ $proxyOrGRPC }}_ssl_certificate_key {{ .CertificateKey }};
             {{ end }}
             {{ if .TrustedCert }}
-        proxy_ssl_trusted_certificate {{ .TrustedCert }};
+        {{ $proxyOrGRPC }}_ssl_trusted_certificate {{ .TrustedCert }};
             {{ end }}
 
-        proxy_ssl_verify {{ if .VerifyServer }}on{{else}}off{{end}};
-        proxy_ssl_verify_depth {{ .VerifyDepth }};
-        proxy_ssl_protocols {{ .Protocols }};
-        proxy_ssl_ciphers {{ .Ciphers }};
-        proxy_ssl_session_reuse {{ if .SessionReuse }}on{{else}}off{{end}};
-        proxy_ssl_server_name {{ if .ServerName }}on{{else}}off{{end}};
-        proxy_ssl_name {{ .SSLName }};
+        {{ $proxyOrGRPC }}_ssl_verify {{ if .VerifyServer }}on{{else}}off{{end}};
+        {{ $proxyOrGRPC }}_ssl_verify_depth {{ .VerifyDepth }};
+        {{ $proxyOrGRPC }}_ssl_protocols {{ .Protocols }};
+        {{ $proxyOrGRPC }}_ssl_ciphers {{ .Ciphers }};
+        {{ $proxyOrGRPC }}_ssl_session_reuse {{ if .SessionReuse }}on{{else}}off{{end}};
+        {{ $proxyOrGRPC }}_ssl_server_name {{ if .ServerName }}on{{else}}off{{end}};
+        {{ $proxyOrGRPC }}_ssl_name {{ .SSLName }};
         {{ end }}
 
         {{ if $l.OIDC }}
         auth_jwt "" token=$session_jwt;
         error_page 401 = @do_oidc_flow;
         auth_jwt_key_request /_jwks_uri;
-        proxy_set_header username $jwt_claim_sub;
+        {{ $proxyOrGRPC }}_set_header username $jwt_claim_sub;
         {{ end }}
 
         {{ with $l.WAF }}
@@ -336,22 +338,20 @@ server {
         {{ end }}
 
         {{ if $l.ProxyInterceptErrors }}
-        proxy_intercept_errors on;
+        {{ $proxyOrGRPC }}_intercept_errors on;
         {{ end }}
 
         {{ if $l.InternalProxyPass }}
         proxy_pass {{ $l.InternalProxyPass }};
         {{ end }}
 
-        {{ if $l.ProxyPass }}
-        set $default_connection_header {{ if $l.HasKeepalive }}""{{ else }}close{{ end }};
-
+        {{ if or $l.ProxyPass $l.GRPCPass }}
             {{ range $r := $l.Rewrites }}
         rewrite {{ $r }};
             {{ end }}
-        proxy_connect_timeout {{ $l.ProxyConnectTimeout }};
-        proxy_read_timeout {{ $l.ProxyReadTimeout }};
-        proxy_send_timeout {{ $l.ProxySendTimeout }};
+        {{ $proxyOrGRPC }}_connect_timeout {{ $l.ProxyConnectTimeout }};
+        {{ $proxyOrGRPC }}_read_timeout {{ $l.ProxyReadTimeout }};
+        {{ $proxyOrGRPC }}_send_timeout {{ $l.ProxySendTimeout }};
         client_max_body_size {{ $l.ClientMaxBodySize }};
 
             {{ if $l.ProxyMaxTempFileSize }}
@@ -363,47 +363,130 @@ server {
         proxy_buffers {{ $l.ProxyBuffers }};
             {{ end }}
             {{ if $l.ProxyBufferSize }}
-        proxy_buffer_size {{ $l.ProxyBufferSize }};
+        {{ $proxyOrGRPC }}_buffer_size {{ $l.ProxyBufferSize }};
             {{ end }}
-        proxy_http_version 1.1;
+        
+            {{ if $l.GRPCPass }}
+        error_page 400 = @grpc_internal;
+        error_page 401 = @grpc_unauthenticated;
+        error_page 403 = @grpc_permission_denied;
+        error_page 404 = @grpc_unimplemented;
+        error_page 429 = @grpc_unavailable;
+        error_page 502 = @grpc_unavailable;
+        error_page 503 = @grpc_unavailable;
+        error_page 504 = @grpc_unavailable;
+        error_page 405 = @grpc_internal;
+        error_page 408 = @grpc_deadline_exceeded;
+        error_page 413 = @grpc_resource_exhausted;
+        error_page 414 = @grpc_resource_exhausted;
+        error_page 415 = @grpc_internal;
+        error_page 426 = @grpc_internal;
+        error_page 495 = @grpc_unauthenticated;
+        error_page 496 = @grpc_unauthenticated;
+        error_page 497 = @grpc_internal;
+        error_page 500 = @grpc_internal;
+        error_page 501 = @grpc_internal;
+            {{ end }}
 
+            {{ if not $l.GRPCPass }}
+        proxy_http_version 1.1;
+        set $default_connection_header {{ if $l.HasKeepalive }}""{{ else }}close{{ end }};
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $vs_connection_header;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Host $host;
-        proxy_set_header X-Forwarded-Port $server_port;
-        proxy_set_header X-Forwarded-Proto {{ with $s.TLSRedirect }}{{ .BasedOn }}{{ else }}$scheme{{ end }};
+        proxy_pass_request_headers {{ if $l.ProxyPassRequestHeaders }}on{{ else }}off{{ end }};
+            {{ end }}
+        {{ $proxyOrGRPC }}_set_header X-Real-IP $remote_addr;
+        {{ $proxyOrGRPC }}_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        {{ $proxyOrGRPC }}_set_header X-Forwarded-Host $host;
+        {{ $proxyOrGRPC }}_set_header X-Forwarded-Port $server_port;
+        {{ $proxyOrGRPC }}_set_header X-Forwarded-Proto {{ with $s.TLSRedirect }}{{ .BasedOn }}{{ else }}$scheme{{ end }};
             {{ range $h := $l.ProxySetHeaders }}
-        proxy_set_header {{ $h.Name }} "{{ $h.Value }}";
+        {{ $proxyOrGRPC }}_set_header {{ $h.Name }} "{{ $h.Value }}";
             {{ end }}
             {{ range $h := $l.ProxyHideHeaders }}
-        proxy_hide_header {{ $h }};
+        {{ $proxyOrGRPC }}_hide_header {{ $h }};
             {{ end }}
             {{ range $h := $l.ProxyPassHeaders }}
-        proxy_pass_header {{ $h }};
+        {{ $proxyOrGRPC }}_pass_header {{ $h }};
             {{ end }}
             {{ with $l.ProxyIgnoreHeaders }}
-        proxy_ignore_headers {{ $l.ProxyIgnoreHeaders }};
+        {{ $proxyOrGRPC }}_ignore_headers {{ $l.ProxyIgnoreHeaders }};
             {{ end }}
             {{ range $h := $l.AddHeaders }}
         add_header {{ $h.Name }} "{{ $h.Value }}" {{ if $h.Always }}always{{ end }};
             {{ end }}
             {{ if $.SpiffeCerts }}
-        proxy_ssl_certificate /etc/nginx/secrets/spiffe_cert.pem;
-        proxy_ssl_certificate_key /etc/nginx/secrets/spiffe_key.pem;
-        proxy_ssl_trusted_certificate /etc/nginx/secrets/spiffe_rootca.pem;
-        proxy_ssl_server_name on;
-        proxy_ssl_verify on;
-        proxy_ssl_verify_depth 25;
-        proxy_ssl_name {{ $l.ProxySSLName }};
+        {{ $proxyOrGRPC }}_ssl_certificate /etc/nginx/secrets/spiffe_cert.pem;
+        {{ $proxyOrGRPC }}_ssl_certificate_key /etc/nginx/secrets/spiffe_key.pem;
+        {{ $proxyOrGRPC }}_ssl_trusted_certificate /etc/nginx/secrets/spiffe_rootca.pem;
+        {{ $proxyOrGRPC }}_ssl_server_name on;
+        {{ $proxyOrGRPC }}_ssl_verify on;
+        {{ $proxyOrGRPC }}_ssl_verify_depth 25;
+        {{ $proxyOrGRPC }}_ssl_name {{ $l.ProxySSLName }};
             {{ end }}
+            {{if $l.GRPCPass}}
+        grpc_pass {{ $l.GRPCPass }};
+            {{ else }}
         proxy_pass {{ $l.ProxyPass }}{{ $l.ProxyPassRewrite }};
-        proxy_next_upstream {{ $l.ProxyNextUpstream }};
-        proxy_next_upstream_timeout {{ $l.ProxyNextUpstreamTimeout }};
-        proxy_next_upstream_tries {{ $l.ProxyNextUpstreamTries }};
-        proxy_pass_request_headers {{ if $l.ProxyPassRequestHeaders }}on{{ else }}off{{ end }};
+            {{ end }}
+        {{ $proxyOrGRPC }}_next_upstream {{ $l.ProxyNextUpstream }};
+        {{ $proxyOrGRPC }}_next_upstream_timeout {{ $l.ProxyNextUpstreamTimeout }};
+        {{ $proxyOrGRPC }}_next_upstream_tries {{ $l.ProxyNextUpstreamTries }};
         {{ end }}
     }
+    {{ end }}
+
+    {{ with $ssl := $s.SSL }}
+        {{ if $ssl.HTTP2 }}
+	location @grpc_deadline_exceeded {
+        default_type application/grpc;
+        add_header grpc-status 4;
+        add_header grpc-message 'deadline exceeded';
+        return 204;
+    }
+
+    location @grpc_permission_denied {
+        default_type application/grpc;
+        add_header grpc-status 7;
+        add_header grpc-message 'permission denied';
+        return 204;
+    }
+
+    location @grpc_resource_exhausted {
+        default_type application/grpc;
+        add_header grpc-status 8;
+        add_header grpc-message 'resource exhausted';
+        return 204;
+    }
+
+    location @grpc_unimplemented {
+        default_type application/grpc;
+        add_header grpc-status 12;
+        add_header grpc-message unimplemented;
+        return 204;
+    }
+
+    location @grpc_internal {
+        default_type application/grpc;
+        add_header grpc-status 13;
+        add_header grpc-message 'internal error';
+        return 204;
+    }
+
+    location @grpc_unavailable {
+        default_type application/grpc;
+        add_header grpc-status 14;
+        add_header grpc-message unavailable;
+        return 204;
+    }
+
+    location @grpc_unauthenticated {
+        default_type application/grpc;
+        add_header grpc-status 16;
+        add_header grpc-message unauthenticated;
+        return 204;
+    }
+
+	    {{ end }}
     {{ end }}
 }
