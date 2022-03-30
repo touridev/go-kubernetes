@@ -20,8 +20,8 @@ RUN apt-get update \
 FROM docker.io/library/nginx:1.21.6-alpine AS alpine
 
 RUN apk add --no-cache libcap \
-	# Temp fix for CVE-2022-0778
-	&& apk upgrade --no-cache libretls
+	# Temp fix for CVE-2022-0778 and CVE-2018-25032
+	&& apk upgrade --no-cache libretls zlib
 
 
 ############################################# Base image for Alpine with NGINX Plus #############################################
@@ -109,6 +109,8 @@ LABEL name="NGINX Ingress Controller" \
 	io.openshift.tags="nginx,ingress-controller,ingress,controller,kubernetes,openshift"
 
 RUN dnf --nodocs install -y shadow-utils ca-certificates \
+	# temp fix for CVE-2022-0778
+	&& dnf --nodocs upgrade -y openssl-libs \
 	&& groupadd --system --gid 101 nginx \
 	&& useradd --system --gid nginx --no-create-home --home-dir /nonexistent --comment "nginx user" --shell /bin/false --uid 101 nginx
 
