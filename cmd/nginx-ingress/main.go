@@ -163,7 +163,10 @@ var (
 		"Enable custom resources")
 
 	enablePreviewPolicies = flag.Bool("enable-preview-policies", false,
-		"Enable preview policies")
+		"Enable preview policies. This flag is deprecated. To enable OIDC Policies please use -enable-oidc instead.")
+
+	enableOIDC = flag.Bool("enable-oidc", false,
+		"Enable OIDC Policies.")
 
 	enableSnippets = flag.Bool("enable-snippets", false,
 		"Enable custom NGINX configuration snippets in Ingress, VirtualServer, VirtualServerRoute and TransportServer resources.")
@@ -249,6 +252,11 @@ func main() {
 	if *enableTLSPassthrough && !*enableCustomResources {
 		glog.Fatal("enable-tls-passthrough flag requires -enable-custom-resources")
 	}
+
+	if *enablePreviewPolicies {
+		glog.Warning("enable-preview-policies is universally deprecated. To enable OIDC Policies please use -enable-oidc instead.")
+	}
+	*enableOIDC = *enablePreviewPolicies || *enableOIDC
 
 	if *appProtect && !*nginxPlus {
 		glog.Fatal("NGINX App Protect support is for NGINX Plus only")
@@ -580,7 +588,7 @@ func main() {
 		MainAppProtectLoadModule:       *appProtect,
 		MainAppProtectDosLoadModule:    *appProtectDos,
 		EnableLatencyMetrics:           *enableLatencyMetrics,
-		EnablePreviewPolicies:          *enablePreviewPolicies,
+		EnableOIDC:                     *enableOIDC,
 		SSLRejectHandshake:             sslRejectHandshake,
 		EnableCertManager:              *enableCertManager,
 	}
@@ -690,7 +698,7 @@ func main() {
 		ConfigMaps:                   *nginxConfigMaps,
 		GlobalConfiguration:          *globalConfiguration,
 		AreCustomResourcesEnabled:    *enableCustomResources,
-		EnablePreviewPolicies:        *enablePreviewPolicies,
+		EnableOIDC:                   *enableOIDC,
 		MetricsCollector:             controllerCollector,
 		GlobalConfigurationValidator: globalConfigurationValidator,
 		TransportServerValidator:     transportServerValidator,

@@ -59,7 +59,15 @@ Default `true`.
 
 ### -enable-preview-policies
 
-Enables preview policies.
+Enables preview policies. This flag is deprecated. To enable OIDC Policies please[-enable-oidc](#cmdoption-enable-oidc) instead.
+
+Default `false`.
+&nbsp;
+<a name="cmdoption-enable-oidc"></a>
+
+### -enable-oidc
+
+Enables OIDC policies.
 
 Default `false`.
 &nbsp;

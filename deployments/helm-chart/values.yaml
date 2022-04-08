@@ -162,8 +162,11 @@ controller:
   ## Enable the custom resources.
   enableCustomResources: true
 
-  ## Enable preview policies.
+  ## Enable preview policies. This parameter is deprecated. To enable OIDC Policies please use controller.enableOIDC instead.
   enablePreviewPolicies: false
+
+  ## Enable OIDC policies.
+  enableOIDC: false
 
   ## Enable TLS Passthrough on port 443. Requires controller.enableCustomResources.
   enableTLSPassthrough: false
