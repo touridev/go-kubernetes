@@ -41,7 +41,7 @@ jobs:
             })).data
 
             let latest_release
-            const latest_release_current_branch = releases.find(release => !release.draft && release.tag_name.includes(ref.split("-")[1]))
+            const latest_release_current_branch = releases.find(release => !release.draft && release.tag_name.startsWith("v" + ref.split("-")[1]))
 
             if (latest_release_current_branch === undefined){
               latest_release = (await github.rest.repos.getLatestRelease({
