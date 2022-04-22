@@ -4,14 +4,24 @@ ARG NGINX_PLUS_VERSION=r26
 ARG DOWNLOAD_TAG=edge
 ARG DEBIAN_VERSION=bullseye-slim
 
+
+############################################# Base images containing libs for Opentracing #############################################
+FROM opentracing/nginx-opentracing:nginx-1.21.6 as opentracing-lib
+FROM opentracing/nginx-opentracing:nginx-1.21.6-alpine as alpine-opentracing-lib
+
+
 ############################################# Base image for Debian #############################################
 FROM nginx:1.21.6 AS debian
 
-RUN apt-get update \
+RUN --mount=type=bind,from=opentracing-lib,target=/tmp/ot/ \
+	apt-get update \
 	&& apt-get install --no-install-recommends --no-install-suggests -y libcap2-bin \
 	# temp fix for CVE-2022-1271
 	&& apt-get install -y gzip liblzma5 \
 	&& rm -rf /var/lib/apt/lists/* \
+	&& cp -av /tmp/ot/usr/local/lib/libopentracing.so* /tmp/ot/usr/local/lib/libjaegertracing*so* /tmp/ot/usr/local/lib/libzipkin*so* /tmp/ot/usr/local/lib/libdd*so* /tmp/ot/usr/local/lib/libyaml*so* /usr/local/lib/ \
+	&& cp -av /tmp/ot/usr/lib/nginx/modules/ngx_http_opentracing_module.so /usr/lib/nginx/modules/ \
+	&& ldconfig \
 	&& echo $NGINX_VERSION > nginx_version
 
 
@@ -19,9 +29,13 @@ RUN apt-get update \
 # docker.io/library/nginx is a temporary workaround for Dependabot to see this as different from the one used in Debian
 FROM docker.io/library/nginx:1.21.6-alpine AS alpine
 
-RUN apk add --no-cache libcap \
+RUN --mount=type=bind,from=alpine-opentracing-lib,target=/tmp/ot/ \
+	apk add --no-cache libcap libstdc++ \
 	# temp fix for CVE-2022-1271
-	&& apk upgrade --no-cache xz-libs
+	&& apk upgrade --no-cache xz-libs \
+	&& cp -av /tmp/ot/usr/local/lib/libopentracing.so* /tmp/ot/usr/local/lib/libjaegertracing*so* /tmp/ot/usr/local/lib/libzipkin*so* /tmp/ot/usr/local/lib/libdd*so* /tmp/ot/usr/local/lib/libyaml*so* /usr/local/lib/ \
+	&& cp -av /tmp/ot/usr/lib/nginx/modules/ngx_http_opentracing_module.so /usr/lib/nginx/modules/ \
+	&& ldconfig /usr/local/lib/
 
 
 ############################################# Base image for Alpine with NGINX Plus #############################################
@@ -30,9 +44,12 @@ ARG NGINX_PLUS_VERSION
 
 RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/apk/cert.pem,mode=0644 \
 	--mount=type=secret,id=nginx-repo.key,dst=/etc/apk/cert.key,mode=0644 \
+	--mount=type=bind,from=alpine-opentracing-lib,target=/tmp/ot/ \
 	wget -nv -O /etc/apk/keys/nginx_signing.rsa.pub https://cs.nginx.com/static/keys/nginx_signing.rsa.pub \
 	&& printf "%s\n" "https://pkgs.nginx.com/plus/alpine/v$(grep -E -o '^[0-9]+\.[0-9]+' /etc/alpine-release)/main" >> /etc/apk/repositories \
-	&& apk add --no-cache libcap nginx-plus~${NGINX_PLUS_VERSION#r} nginx-plus-module-njs~${NGINX_PLUS_VERSION#r}
+	&& apk add --no-cache libcap nginx-plus~${NGINX_PLUS_VERSION#r} nginx-plus-module-njs~${NGINX_PLUS_VERSION#r} nginx-plus-module-opentracing~${NGINX_PLUS_VERSION#r} libcurl \
+	&& cp -av /tmp/ot/usr/local/lib/libjaegertracing*so* /tmp/ot/usr/local/lib/libzipkin*so* /tmp/ot/usr/local/lib/libdd*so* /tmp/ot/usr/local/lib/libyaml*so* /usr/local/lib/ \
+	&& ldconfig /usr/local/lib/
 
 
 ############################################# Base image for Debian with NGINX Plus #############################################
@@ -44,6 +61,7 @@ ARG BUILD_OS
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode=0644 \
 	--mount=type=secret,id=nginx-repo.key,dst=/etc/ssl/nginx/nginx-repo.key,mode=0644 \
+	--mount=type=bind,from=opentracing-lib,target=/tmp/ot/ \
 	apt-get update \
 	&& apt-get install --no-install-recommends --no-install-suggests -y ca-certificates gnupg curl apt-transport-https libcap2-bin \
 	# temp fix for CVE-2022-1271
@@ -54,8 +72,10 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode
 	&& printf "%s\n" "Acquire::https::pkgs.nginx.com::User-Agent \"k8s-ic-$IC_VERSION${BUILD_OS##debian-plus}-apt\";" >> /etc/apt/apt.conf.d/90pkgs-nginx \
 	&& printf "%s\n" "deb https://pkgs.nginx.com/plus/${NGINX_PLUS_VERSION^^}/debian ${DEBIAN_VERSION} nginx-plus" > /etc/apt/sources.list.d/nginx-plus.list \
 	&& apt-get update \
-	&& apt-get install --no-install-recommends --no-install-suggests -y nginx-plus nginx-plus-module-njs \
+	&& apt-get install --no-install-recommends --no-install-suggests -y nginx-plus nginx-plus-module-njs nginx-plus-module-opentracing libcurl4 \
 	&& apt-get purge --auto-remove -y apt-transport-https gnupg curl \
+	&& cp -av /tmp/ot/usr/local/lib/libjaegertracing*so* /tmp/ot/usr/local/lib/libzipkin*so* /tmp/ot/usr/local/lib/libdd*so* /tmp/ot/usr/local/lib/libyaml*so* /usr/local/lib/ \
+	&& ldconfig \
 	&& rm -rf /var/lib/apt/lists/*
 
 
@@ -166,40 +186,6 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode
 # Uncomment the lines below if you want to install a custom CA certificate
 # COPY build/*.crt  /etc/pki/ca-trust/source/anchors/
 # RUN update-ca-trust extract
-
-
-############################################# Base images containing libs for Opentracing #############################################
-FROM opentracing/nginx-opentracing:nginx-1.21.6 as opentracing-lib
-FROM opentracing/nginx-opentracing:nginx-1.21.6-alpine as alpine-opentracing-lib
-
-
-############################################# Build image for Alpine with Opentracing #############################################
-FROM alpine as alpine-opentracing
-
-RUN --mount=type=bind,from=alpine-opentracing-lib,target=/tmp/ cp -av /tmp/usr/local/lib/libopentracing.so* /tmp/usr/local/lib/libjaegertracing*so* /tmp/usr/local/lib/libzipkin*so* /tmp/usr/local/lib/libdd*so* /tmp/usr/local/lib/libyaml*so* /usr/local/lib/ \
-	&& cp -av /tmp/usr/lib/nginx/modules/ngx_http_opentracing_module.so /usr/lib/nginx/modules/ \
-	&& ldconfig /usr/local/lib/
-
-
-############################################# Build image for Debian with Opentracing #############################################
-FROM debian as opentracing
-
-RUN --mount=type=bind,from=opentracing-lib,target=/tmp/ cp -av /tmp/usr/local/lib/libopentracing.so* /tmp/usr/local/lib/libjaegertracing*so* /tmp/usr/local/lib/libzipkin*so* /tmp/usr/local/lib/libdd*so* /tmp/usr/local/lib/libyaml*so* /usr/local/lib/ \
-	&& cp -av /tmp/usr/lib/nginx/modules/ngx_http_opentracing_module.so /usr/lib/nginx/modules/ \
-	&& ldconfig
-
-
-############################################# Build image for Opentracing with NGINX Plus #############################################
-FROM debian-plus as opentracing-plus
-
-RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode=0644 \
-	--mount=type=secret,id=nginx-repo.key,dst=/etc/ssl/nginx/nginx-repo.key,mode=0644 \
-	apt-get update \
-	&& apt-get install --no-install-recommends --no-install-suggests -y libcurl4 nginx-plus-module-opentracing \
-	&& rm -rf /var/lib/apt/lists/*
-
-RUN --mount=type=bind,from=opentracing-lib,target=/tmp/ cp -av /tmp/usr/local/lib/libjaegertracing*so* /tmp/usr/local/lib/libzipkin*so* /tmp/usr/local/lib/libdd*so* /tmp/usr/local/lib/libyaml*so* /usr/local/lib/ \
-	&& ldconfig
 
 
 ############################################# Create common files, permissions and setcap #############################################

@@ -139,19 +139,15 @@ openshift-image openshift-image-plus openshift-image-nap-plus openshift-image-do
 	@$(MAKE) $(subst openshift,ubi,$(MAKECMDGOALS)) $(MAKEFLAGS)
 
 .PHONY: alpine-image-opentracing
-alpine-image-opentracing: build ## Create Docker image for Ingress Controller (Alpine with OpenTracing)
-	$(DOCKER_CMD) --build-arg BUILD_OS=alpine-opentracing
+alpine-image-opentracing:
+	@echo "OpenTracing is now included in all Alpine based images"
 
-.PHONY: debian-image-opentracing
-debian-image-opentracing: build ## Create Docker image for Ingress Controller (Debian with OpenTracing)
-	$(DOCKER_CMD) --build-arg BUILD_OS=opentracing
-
-.PHONY: debian-image-opentracing-plus
-debian-image-opentracing-plus: build ## Create Docker image for Ingress Controller (Debian with OpenTracing and NGINX Plus)
-	$(DOCKER_CMD) $(PLUS_ARGS) --build-arg BUILD_OS=opentracing-plus
+.PHONY: debian-image-opentracing debian-image-opentracing-plus
+debian-image-opentracing debian-image-opentracing-plus:
+	@echo "OpenTracing is now included in all Debian based images"
 
 .PHONY: all-images ## Create all the Docker images for Ingress Controller
-all-images: alpine-image alpine-image-plus debian-image debian-image-plus debian-image-nap-plus debian-image-dos-plus debian-image-nap-dos-plus debian-image-opentracing debian-image-opentracing-plus ubi-image ubi-image-plus ubi-image-nap-plus ubi-image-dos-plus ubi-image-nap-dos-plus
+all-images: alpine-image alpine-image-plus debian-image debian-image-plus debian-image-nap-plus debian-image-dos-plus debian-image-nap-dos-plus ubi-image ubi-image-plus ubi-image-nap-plus ubi-image-dos-plus ubi-image-nap-dos-plus
 
 .PHONY: push
 push: ## Docker push to PREFIX and TAG
