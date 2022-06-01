@@ -61,6 +61,10 @@ const (
 	stickyCookieServicesAnnotation        = "nginx.com/sticky-cookie-services"
 )
 
+const (
+	commaDelimiter = ","
+)
+
 type annotationValidationContext struct {
 	annotations           map[string]string
 	specServices          map[string]bool
@@ -135,8 +139,12 @@ var (
 			validateRequiredAnnotation,
 			validateTimeAnnotation,
 		},
-		proxyHideHeadersAnnotation: {},
-		proxyPassHeadersAnnotation: {},
+		proxyHideHeadersAnnotation: {
+			validateHTTPHeadersAnnotation,
+		},
+		proxyPassHeadersAnnotation: {
+			validateHTTPHeadersAnnotation,
+		},
 		clientMaxBodySizeAnnotation: {
 			validateRequiredAnnotation,
 			validateOffsetAnnotation,
@@ -268,6 +276,19 @@ var (
 	}
 	annotationNames = sortedAnnotationNames(annotationValidations)
 )
+
+func validateHTTPHeadersAnnotation(context *annotationValidationContext) field.ErrorList {
+	var allErrs field.ErrorList
+	headers := strings.Split(context.value, commaDelimiter)
+
+	for _, header := range headers {
+		header = strings.TrimSpace(header)
+		for _, msg := range validation.IsHTTPHeaderName(header) {
+			allErrs = append(allErrs, field.Invalid(context.fieldPath, header, msg))
+		}
+	}
+	return allErrs
+}
 
 func sortedAnnotationNames(annotationValidations annotationValidationConfig) []string {
 	sortedNames := make([]string, 0)
@@ -540,7 +561,7 @@ func validateServiceListAnnotation(context *annotationValidationContext) field.E
 	if len(unknownServices) > 0 {
 		errorMsg := fmt.Sprintf(
 			"must be a comma-separated list of services. The following services were not found: %s",
-			strings.Join(unknownServices, ","),
+			strings.Join(unknownServices, commaDelimiter),
 		)
 		return append(allErrs, field.Invalid(context.fieldPath, context.value, errorMsg))
 	}
