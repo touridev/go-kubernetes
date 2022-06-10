@@ -576,6 +576,48 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 			},
 			msg: "invalid nginx.org/server-tokens annotation, must be a boolean",
 		},
+		{
+			annotations: map[string]string{
+				"nginx.org/server-tokens": "$custom_setting",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                true,
+			appProtectEnabled:     false,
+			appProtectDosEnabled:  false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/server-tokens: Invalid value: "$custom_setting": ` + annotationValueFmtErrMsg,
+			},
+			msg: "invalid nginx.org/server-tokens annotation, " + annotationValueFmtErrMsg,
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/server-tokens": "custom_\"setting",
+			},
+			specServices:          map[string]bool{},
+			isPlus:                true,
+			appProtectEnabled:     false,
+			appProtectDosEnabled:  false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/server-tokens: Invalid value: "custom_\"setting": ` + annotationValueFmtErrMsg,
+			},
+			msg: "invalid nginx.org/server-tokens annotation, " + annotationValueFmtErrMsg,
+		},
+		{
+			annotations: map[string]string{
+				"nginx.org/server-tokens": `custom_setting\`,
+			},
+			specServices:          map[string]bool{},
+			isPlus:                true,
+			appProtectEnabled:     false,
+			appProtectDosEnabled:  false,
+			internalRoutesEnabled: false,
+			expectedErrors: []string{
+				`annotations.nginx.org/server-tokens: Invalid value: "custom_setting\\": ` + annotationValueFmtErrMsg,
+			},
+			msg: "invalid nginx.org/server-tokens annotation, " + annotationValueFmtErrMsg,
+		},
 
 		{
 			annotations: map[string]string{
