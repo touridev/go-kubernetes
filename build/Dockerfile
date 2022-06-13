@@ -197,7 +197,6 @@ FROM ${BUILD_OS} as common
 ARG BUILD_OS
 ARG IC_VERSION
 ARG GIT_COMMIT
-ARG DATE
 ARG TARGETPLATFORM
 ARG NAP_MODULES=none
 
@@ -235,7 +234,6 @@ USER 101
 
 LABEL org.opencontainers.image.version="${IC_VERSION}"
 LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
-LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.nginx.kic.image.build.target="${TARGETPLATFORM}"
 LABEL org.nginx.kic.image.build.os="${BUILD_OS}"
 LABEL org.nginx.kic.image.build.nginx.version="${NGINX_PLUS_VERSION}${NGINX_VERSION}"
@@ -244,15 +242,13 @@ LABEL org.nginx.kic.image.build.nginx.version="${NGINX_PLUS_VERSION}${NGINX_VERS
 ############################################# Build nginx-ingress in golang container #############################################
 FROM golang:1.18-alpine AS builder
 ARG IC_VERSION
-ARG GIT_COMMIT
-ARG DATE
 ARG TARGETARCH
 
 WORKDIR /go/src/github.com/nginxinc/kubernetes-ingress/nginx-ingress/cmd/nginx-ingress
 RUN --mount=target=/go/src/github.com/nginxinc/kubernetes-ingress/nginx-ingress/ --mount=type=cache,target=/root/.cache/go-build \
 	go mod download
 RUN --mount=target=/go/src/github.com/nginxinc/kubernetes-ingress/nginx-ingress/ --mount=type=cache,target=/root/.cache/go-build \
-	CGO_ENABLED=0 GO111MODULE=on GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags "-s -w -X main.version=${IC_VERSION} -X main.commit=${GIT_COMMIT} -X main.date=${DATE}" -o /nginx-ingress
+	CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags "-s -w -X main.version=${IC_VERSION}" -o /nginx-ingress
 
 
 ############################################# Create image with nginx-ingress built in container #############################################
