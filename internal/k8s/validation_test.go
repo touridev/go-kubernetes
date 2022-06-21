@@ -2475,7 +2475,7 @@ func TestValidateNginxIngressAnnotations(t *testing.T) {
 func TestValidateIngressSpec(t *testing.T) {
 	tests := []struct {
 		spec           *networking.IngressSpec
-		expectedErrors []string
+		expectedErrors []field.ErrorType
 		msg            string
 	}{
 		{
@@ -2503,6 +2503,56 @@ func TestValidateIngressSpec(t *testing.T) {
 		},
 		{
 			spec: &networking.IngressSpec{
+				Rules: []networking.IngressRule{
+					{
+						Host: "foo.example.com",
+						IngressRuleValue: networking.IngressRuleValue{
+							HTTP: &networking.HTTPIngressRuleValue{
+								Paths: []networking.HTTPIngressPath{
+									{
+										Path: `/tea\{custom_value}`,
+										Backend: networking.IngressBackend{
+											Service: &networking.IngressServiceBackend{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErrors: []field.ErrorType{
+				field.ErrorTypeInvalid,
+			},
+			msg: "test invalid characters in path",
+		},
+		{
+			spec: &networking.IngressSpec{
+				Rules: []networking.IngressRule{
+					{
+						Host: "foo.example.com",
+						IngressRuleValue: networking.IngressRuleValue{
+							HTTP: &networking.HTTPIngressRuleValue{
+								Paths: []networking.HTTPIngressPath{
+									{
+										Path: "",
+										Backend: networking.IngressBackend{
+											Service: &networking.IngressServiceBackend{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErrors: []field.ErrorType{
+				field.ErrorTypeRequired,
+			},
+			msg: "test empty in path",
+		},
+		{
+			spec: &networking.IngressSpec{
 				DefaultBackend: &networking.IngressBackend{
 					Service: &networking.IngressServiceBackend{},
 				},
@@ -2519,8 +2569,8 @@ func TestValidateIngressSpec(t *testing.T) {
 			spec: &networking.IngressSpec{
 				Rules: []networking.IngressRule{},
 			},
-			expectedErrors: []string{
-				"spec.rules: Required value",
+			expectedErrors: []field.ErrorType{
+				field.ErrorTypeRequired,
 			},
 			msg: "zero rules",
 		},
@@ -2532,8 +2582,8 @@ func TestValidateIngressSpec(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{
-				"spec.rules[0].host: Required value",
+			expectedErrors: []field.ErrorType{
+				field.ErrorTypeRequired,
 			},
 			msg: "empty host",
 		},
@@ -2548,8 +2598,8 @@ func TestValidateIngressSpec(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{
-				`spec.rules[1].host: Duplicate value: "foo.example.com"`,
+			expectedErrors: []field.ErrorType{
+				field.ErrorTypeDuplicate,
 			},
 			msg: "duplicated host",
 		},
@@ -2564,8 +2614,8 @@ func TestValidateIngressSpec(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{
-				"spec.defaultBackend.resource: Forbidden: resource backends are not supported",
+			expectedErrors: []field.ErrorType{
+				field.ErrorTypeForbidden,
 			},
 			msg: "invalid default backend",
 		},
@@ -2589,8 +2639,8 @@ func TestValidateIngressSpec(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{
-				"spec.rules[0].http.path[0].backend.resource: Forbidden: resource backends are not supported",
+			expectedErrors: []field.ErrorType{
+				field.ErrorTypeForbidden,
 			},
 			msg: "invalid backend",
 		},
@@ -2598,7 +2648,7 @@ func TestValidateIngressSpec(t *testing.T) {
 
 	for _, test := range tests {
 		allErrs := validateIngressSpec(test.spec, field.NewPath("spec"))
-		assertion := assertErrors("validateIngressSpec()", test.msg, allErrs, test.expectedErrors)
+		assertion := assertErrorTypes(test.msg, allErrs, test.expectedErrors)
 		if assertion != "" {
 			t.Error(assertion)
 		}
@@ -2774,6 +2824,14 @@ func TestValidateMinionSpec(t *testing.T) {
 	}
 }
 
+func assertErrorTypes(msg string, allErrs field.ErrorList, expectedErrors []field.ErrorType) string {
+	returnedErrors := errorListToTypes(allErrs)
+	if !reflect.DeepEqual(returnedErrors, expectedErrors) {
+		return fmt.Sprintf("%s returned %s but expected %s", msg, returnedErrors, expectedErrors)
+	}
+	return ""
+}
+
 func assertErrors(funcName string, msg string, allErrs field.ErrorList, expectedErrors []string) string {
 	errors := errorListToStrings(allErrs)
 	if !reflect.DeepEqual(errors, expectedErrors) {
@@ -2791,6 +2849,16 @@ func errorListToStrings(list field.ErrorList) []string {
 
 	for _, e := range list {
 		result = append(result, e.Error())
+	}
+
+	return result
+}
+
+func errorListToTypes(list field.ErrorList) []field.ErrorType {
+	var result []field.ErrorType
+
+	for _, e := range list {
+		result = append(result, e.Type)
 	}
 
 	return result
