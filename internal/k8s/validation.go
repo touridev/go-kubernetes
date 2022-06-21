@@ -67,16 +67,19 @@ const (
 	commaDelimiter     = ","
 	annotationValueFmt = `([^"$\\]|\\[^$])*`
 	pathFmt            = `/[^\s{};]*`
+	jwtTokenValueFmt   = "\\$" + annotationValueFmt
 )
 
 const (
 	annotationValueFmtErrMsg = `a valid annotation value must have all '"' escaped and must not contain any '$' or end with an unescaped '\'`
 	pathErrMsg               = "must start with / and must not include any whitespace character, `{`, `}` or `;`"
+	jwtTokenValueFmtErrMsg   = `a valid annotation value must start with '$', have all '"' escaped, and must not contain any '$' or end with an unescaped '\'`
 )
 
 var (
-	validAnnotationValueRegex = regexp.MustCompile("^" + annotationValueFmt + "$")
-	pathRegexp                = regexp.MustCompile("^" + pathFmt + "$")
+	pathRegexp                        = regexp.MustCompile("^" + pathFmt + "$")
+	validAnnotationValueRegex         = regexp.MustCompile("^" + annotationValueFmt + "$")
+	validJWTTokenAnnotationValueRegex = regexp.MustCompile("^" + jwtTokenValueFmt + "$")
 )
 
 type annotationValidationContext struct {
@@ -222,6 +225,7 @@ var (
 		},
 		jwtTokenAnnotation: {
 			validatePlusOnlyAnnotation,
+			validateJWTTokenAnnotation,
 		},
 		jwtLoginURLAnnotation: {
 			validatePlusOnlyAnnotation,
@@ -333,6 +337,17 @@ func validateJWTRealm(context *annotationValidationContext) field.ErrorList {
 
 	if !validAnnotationValueRegex.MatchString(context.value) {
 		msg := validation.RegexError(annotationValueFmtErrMsg, annotationValueFmt, "My Realm", "Cafe App")
+		allErrs = append(allErrs, field.Invalid(context.fieldPath, context.value, msg))
+	}
+
+	return allErrs
+}
+
+func validateJWTTokenAnnotation(context *annotationValidationContext) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if !validJWTTokenAnnotationValueRegex.MatchString(context.value) {
+		msg := validation.RegexError(jwtTokenValueFmtErrMsg, jwtTokenValueFmt, "$http_token", "$cookie_auth_token")
 		allErrs = append(allErrs, field.Invalid(context.fieldPath, context.value, msg))
 	}
 
