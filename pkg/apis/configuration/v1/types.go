@@ -373,6 +373,7 @@ type PolicySpec struct {
 	AccessControl *AccessControl `json:"accessControl"`
 	RateLimit     *RateLimit     `json:"rateLimit"`
 	JWTAuth       *JWTAuth       `json:"jwt"`
+	BasicAuth     *BasicAuth     `json:"basicAuth"`
 	IngressMTLS   *IngressMTLS   `json:"ingressMTLS"`
 	EgressMTLS    *EgressMTLS    `json:"egressMTLS"`
 	OIDC          *OIDC          `json:"oidc"`
@@ -413,6 +414,13 @@ type JWTAuth struct {
 	Realm  string `json:"realm"`
 	Secret string `json:"secret"`
 	Token  string `json:"token"`
+}
+
+// BasicAuth holds HTTP Basic authentication configuration
+// policy status: preview
+type BasicAuth struct {
+	Realm  string `json:"realm"`
+	Secret string `json:"secret"`
 }
 
 // IngressMTLS defines an Ingress MTLS policy.

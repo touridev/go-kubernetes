@@ -43,6 +43,8 @@ const (
 	proxyBufferSizeAnnotation             = "nginx.org/proxy-buffer-size"
 	proxyMaxTempFileSizeAnnotation        = "nginx.org/proxy-max-temp-file-size"
 	upstreamZoneSizeAnnotation            = "nginx.org/upstream-zone-size"
+	basicAuthSecretAnnotation             = "nginx.org/basic-auth-secret" // #nosec G101
+	basicAuthRealmAnnotation              = "nginx.org/basic-auth-realm"
 	jwtRealmAnnotation                    = "nginx.com/jwt-realm"
 	jwtKeyAnnotation                      = "nginx.com/jwt-key"
 	jwtTokenAnnotation                    = "nginx.com/jwt-token" // #nosec G101
@@ -216,6 +218,14 @@ var (
 		upstreamZoneSizeAnnotation: {
 			validateRequiredAnnotation,
 			validateSizeAnnotation,
+		},
+		basicAuthSecretAnnotation: {
+			validateRequiredAnnotation,
+			validateSecretNameAnnotation,
+		},
+		basicAuthRealmAnnotation: {
+			validateRelatedAnnotation(basicAuthSecretAnnotation, validateNoop),
+			validateRealmAnnotation,
 		},
 		jwtRealmAnnotation: {
 			validatePlusOnlyAnnotation,
@@ -768,6 +778,25 @@ func validateSnippetsAnnotation(context *annotationValidationContext) field.Erro
 	return allErrs
 }
 
+func validateSecretNameAnnotation(context *annotationValidationContext) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if msgs := validation.IsDNS1123Subdomain(context.value); msgs != nil {
+		for _, msg := range msgs {
+			allErrs = append(allErrs, field.Invalid(context.fieldPath, context.value, msg))
+		}
+		return allErrs
+	}
+	return allErrs
+}
+
+func validateRealmAnnotation(context *annotationValidationContext) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if err := validateIsValidRealm(context.value); err != nil {
+		return append(allErrs, field.Invalid(context.fieldPath, context.value, err.Error()))
+	}
+	return allErrs
+}
+
 func validateIsBool(v string) error {
 	_, err := configs.ParseBool(v)
 	return err
@@ -780,6 +809,19 @@ func validateIsTrue(v string) error {
 	}
 	if !b {
 		return errors.New("must be true")
+	}
+	return nil
+}
+
+func validateNoop(_ string) error {
+	return nil
+}
+
+var realmFmtRegexp = regexp.MustCompile(`^([^"$\\]|\\[^$])*$`)
+
+func validateIsValidRealm(v string) error {
+	if !realmFmtRegexp.MatchString(v) {
+		return errors.New(`a valid realm must have all '"' escaped and must not contain any '$' or end with an unescaped '\'`)
 	}
 	return nil
 }
