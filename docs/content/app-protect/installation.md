@@ -21,7 +21,7 @@ You can also [install the Ingress Controller with App Protect by using Helm](/ng
     * It is also possible to build your own image and push it to your private Docker registry by following the instructions from [here](/nginx-ingress-controller/installation/building-ingress-controller-image).
 2. Clone the Ingress Controller repo:
     ```
-    $ git clone https://github.com/nginxinc/kubernetes-ingress.git --branch v2.3.0
+    $ git clone https://github.com/nginxinc/kubernetes-ingress.git --branch v2.3.1
     $ cd kubernetes-ingress
     ```
 
@@ -60,4 +60,4 @@ Take the steps below to set up and deploy the NGINX Ingress Controller and App P
 3. Enable the App Protect module by adding the `enable-app-protect` [cli argument](/nginx-ingress-controller/configuration/global-configuration/command-line-arguments/#cmdoption-enable-app-protect) to your Deployment or DaemonSet file.
 4. [Deploy the Ingress Controller](/nginx-ingress-controller/installation/installation-with-manifests/#3-deploy-the-ingress-controller).
 
-For more information, see the [Configuration guide](/nginx-ingress-controller/app-protect/configuration) and the [NGINX Ingress Controller with App Protect examples on GitHub](https://github.com/nginxinc/kubernetes-ingress/tree/v2.3.0/examples/appprotect).
+For more information, see the [Configuration guide](/nginx-ingress-controller/app-protect/configuration) and the [NGINX Ingress Controller with App Protect examples on GitHub](https://github.com/nginxinc/kubernetes-ingress/tree/v2.3.1/examples/appprotect).
