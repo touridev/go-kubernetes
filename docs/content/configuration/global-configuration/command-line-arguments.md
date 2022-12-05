@@ -336,7 +336,30 @@ Format: `[1024 - 65535]` (default `9113`)
 
 A Secret with a TLS certificate and key for TLS termination of the Prometheus metrics endpoint.
 
-* If the argument is not set, the prometheus endpoint will not use a TLS connection.
+* If the argument is not set, the Prometheus endpoint will not use a TLS connection.
+* If the argument is set, but the Ingress Controller is not able to fetch the Secret from Kubernetes API, the Ingress Controller will fail to start.
+&nbsp;
+<a name="cmdoption-enable-service-insight"></a>
+
+### -enable-service-insight
+
+Exposes the Service Insight endpoint for Ingress Controller.
+&nbsp;
+<a name="cmdoption-service-insight-listen-port"></a>
+
+### -service-insight-listen-port `<int>`
+
+Sets the port where the Service Insight is exposed.
+
+Format: `[1024 - 65535]` (default `9114`)
+&nbsp;
+<a name="cmdoption-service-insight-tls-secret"></a>
+
+### -service-insight-tls-secret `<string>`
+
+A Secret with a TLS certificate and key for TLS termination of the Service Insight endpoint.
+
+* If the argument is not set, the Service Insight endpoint will not use a TLS connection.
 * If the argument is set, but the Ingress Controller is not able to fetch the Secret from Kubernetes API, the Ingress Controller will fail to start.
 
 Format: `<namespace>/<name>`

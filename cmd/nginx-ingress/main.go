@@ -16,6 +16,7 @@ import (
 	"github.com/nginxinc/kubernetes-ingress/internal/configs"
 	"github.com/nginxinc/kubernetes-ingress/internal/configs/version1"
 	"github.com/nginxinc/kubernetes-ingress/internal/configs/version2"
+	"github.com/nginxinc/kubernetes-ingress/internal/healthcheck"
 	"github.com/nginxinc/kubernetes-ingress/internal/k8s"
 	"github.com/nginxinc/kubernetes-ingress/internal/k8s/secrets"
 	"github.com/nginxinc/kubernetes-ingress/internal/metrics"
@@ -119,6 +120,10 @@ func main() {
 
 	transportServerValidator := cr_validation.NewTransportServerValidator(*enableTLSPassthrough, *enableSnippets, *nginxPlus)
 	virtualServerValidator := cr_validation.NewVirtualServerValidator(cr_validation.IsPlus(*nginxPlus), cr_validation.IsDosEnabled(*appProtectDos), cr_validation.IsCertManagerEnabled(*enableCertManager), cr_validation.IsExternalDNSEnabled(*enableExternalDNS))
+
+	if *enableServiceInsight {
+		createHealthProbeEndpoint(kubeClient, plusClient, cnf)
+	}
 
 	lbcInput := k8s.NewLoadBalancerControllerInput{
 		KubeClient:                   kubeClient,
@@ -446,6 +451,10 @@ func createGlobalConfigurationValidator() *cr_validation.GlobalConfigurationVali
 		forbiddenListenerPorts[*prometheusMetricsListenPort] = true
 	}
 
+	if *enableServiceInsight {
+		forbiddenListenerPorts[*serviceInsightListenPort] = true
+	}
+
 	return cr_validation.NewGlobalConfigurationValidator(forbiddenListenerPorts)
 }
 
@@ -672,6 +681,22 @@ func createPlusAndLatencyCollectors(
 	}
 
 	return plusCollector, syslogListener, lc
+}
+
+func createHealthProbeEndpoint(kubeClient *kubernetes.Clientset, plusClient *client.NginxClient, cnf *configs.Configurator) {
+	if !*enableServiceInsight {
+		return
+	}
+	var serviceInsightSecret *api_v1.Secret
+	var err error
+
+	if *serviceInsightTLSSecretName != "" {
+		serviceInsightSecret, err = getAndValidateSecret(kubeClient, *serviceInsightTLSSecretName)
+		if err != nil {
+			glog.Fatalf("Error trying to get the service insight TLS secret %v: %v", *serviceInsightTLSSecretName, err)
+		}
+	}
+	go healthcheck.RunHealthCheck(*serviceInsightListenPort, plusClient, cnf, serviceInsightSecret)
 }
 
 func processGlobalConfiguration() {

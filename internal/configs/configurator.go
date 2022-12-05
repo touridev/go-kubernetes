@@ -265,6 +265,43 @@ func (cnf *Configurator) AddOrUpdateIngress(ingEx *IngressEx) (Warnings, error) 
 	return warnings, nil
 }
 
+// GetVirtualServerForHost takes a hostname and returns a VS for the given hostname.
+func (cnf *Configurator) GetVirtualServerForHost(hostname string) *conf_v1.VirtualServer {
+	for _, vsEx := range cnf.virtualServers {
+		if vsEx.VirtualServer.Spec.Host == hostname {
+			return vsEx.VirtualServer
+		}
+	}
+	return nil
+}
+
+// GetUpstreamsforVirtualServer takes VS and returns a slice of upstreams.
+func (cnf *Configurator) GetUpstreamsforVirtualServer(vs *conf_v1.VirtualServer) []string {
+	glog.V(3).Infof("Get upstreamName for vs: %s", vs.Spec.Host)
+	upstreamNames := make([]string, 0, len(vs.Spec.Upstreams))
+
+	virtualServerUpstreamNamer := NewUpstreamNamerForVirtualServer(vs)
+
+	for _, u := range vs.Spec.Upstreams {
+		upstreamName := virtualServerUpstreamNamer.GetNameForUpstream(u.Name)
+		glog.V(3).Infof("upstream: %s, upstreamName: %s", u.Name, upstreamName)
+		upstreamNames = append(upstreamNames, upstreamName)
+	}
+	return upstreamNames
+}
+
+// GetUpstreamsforHost takes a hostname and returns a slice of upstreams
+// for the given hostname.
+func (cnf *Configurator) GetUpstreamsforHost(hostname string) []string {
+	glog.V(3).Infof("Get upstream for host: %s", hostname)
+	vs := cnf.GetVirtualServerForHost(hostname)
+
+	if vs != nil {
+		return cnf.GetUpstreamsforVirtualServer(vs)
+	}
+	return nil
+}
+
 func (cnf *Configurator) addOrUpdateIngress(ingEx *IngressEx) (Warnings, error) {
 	apResources := cnf.updateApResources(ingEx)
 
