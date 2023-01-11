@@ -116,6 +116,10 @@ spec:
                   properties:
                     authEndpoint:
                       type: string
+                    authExtraArgs:
+                      type: array
+                      items:
+                        type: string
                     clientID:
                       type: string
                     clientSecret:
