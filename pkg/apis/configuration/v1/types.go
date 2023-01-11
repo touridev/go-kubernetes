@@ -438,9 +438,11 @@ type RateLimit struct {
 
 // JWTAuth holds JWT authentication configuration.
 type JWTAuth struct {
-	Realm  string `json:"realm"`
-	Secret string `json:"secret"`
-	Token  string `json:"token"`
+	Realm    string `json:"realm"`
+	Secret   string `json:"secret"`
+	Token    string `json:"token"`
+	JwksURI  string `json:"jwksURI"`
+	KeyCache string `json:"keyCache"`
 }
 
 // BasicAuth holds HTTP Basic authentication configuration

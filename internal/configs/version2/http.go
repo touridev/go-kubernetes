@@ -350,9 +350,19 @@ func (rl LimitReqOptions) String() string {
 
 // JWTAuth holds JWT authentication configuration.
 type JWTAuth struct {
-	Secret string
-	Realm  string
-	Token  string
+	Secret   string
+	Realm    string
+	Token    string
+	KeyCache string
+	JwksURI  JwksURI
+}
+
+// JwksURI defines the components of a JwksURI
+type JwksURI struct {
+	JwksScheme string
+	JwksHost   string
+	JwksPort   string
+	JwksPath   string
 }
 
 // BasicAuth refers to basic HTTP authentication mechanism options

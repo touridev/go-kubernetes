@@ -100,6 +100,10 @@ spec:
                   description: JWTAuth holds JWT authentication configuration.
                   type: object
                   properties:
+                    jwksURI:
+                      type: string
+                    keyCache:
+                      type: string
                     realm:
                       type: string
                     secret:
