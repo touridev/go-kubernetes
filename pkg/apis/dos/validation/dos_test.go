@@ -33,27 +33,6 @@ func TestValidateDosProtectedResource(t *testing.T) {
 			protected: &v1beta1.DosProtectedResource{
 				Spec: v1beta1.DosProtectedResourceSpec{
 					Name: "name",
-				},
-			},
-			expectErr: "error validating DosProtectedResource:  missing value for field: dosAccessLogDest",
-			msg:       "only name specified",
-		},
-		{
-			protected: &v1beta1.DosProtectedResource{
-				Spec: v1beta1.DosProtectedResourceSpec{
-					Name: "name",
-					ApDosMonitor: &v1beta1.ApDosMonitor{
-						URI: "example.com",
-					},
-				},
-			},
-			expectErr: "error validating DosProtectedResource:  missing value for field: dosAccessLogDest",
-			msg:       "name and apDosMonitor specified",
-		},
-		{
-			protected: &v1beta1.DosProtectedResource{
-				Spec: v1beta1.DosProtectedResourceSpec{
-					Name: "name",
 					ApDosMonitor: &v1beta1.ApDosMonitor{
 						URI: "exabad-$%^$-example.com",
 					},

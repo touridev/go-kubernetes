@@ -32,7 +32,9 @@ func getAppProtectDosResource(dosEx *DosEx) *appProtectDosResource {
 		dosResource.AppProtectDosMonitorTimeout = protected.Spec.ApDosMonitor.Timeout
 	}
 
-	dosResource.AppProtectDosAccessLogDst = generateDosLogDest(protected.Spec.DosAccessLogDest)
+	if protected.Spec.DosAccessLogDest != "" {
+		dosResource.AppProtectDosAccessLogDst = generateDosLogDest(protected.Spec.DosAccessLogDest)
+	}
 
 	if dosEx.DosPolicy != nil {
 		dosResource.AppProtectDosPolicyFile = appProtectDosPolicyFileName(dosEx.DosPolicy.GetNamespace(), dosEx.DosPolicy.GetName())

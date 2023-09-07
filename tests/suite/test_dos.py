@@ -177,6 +177,8 @@ class TestDos:
             f"app_protect_dos_policy_file /etc/nginx/dos/policies/{test_namespace}_{dos_setup.pol_name}.json;",
             f"app_protect_dos_security_log_enable on;",
             f"app_protect_dos_security_log /etc/nginx/dos/logconfs/{test_namespace}_{dos_setup.log_name}.json syslog:server=syslog-svc.{ingress_controller_prerequisites.namespace}.svc.cluster.local:514;",
+            f"set $loggable '0';",
+            f"access_log syslog:server=127.0.0.1:5561 log_dos if=$loggable;",
         ]
 
         conf_nginx_directive = ["app_protect_dos_api on;", "location = /dashboard-dos.html"]

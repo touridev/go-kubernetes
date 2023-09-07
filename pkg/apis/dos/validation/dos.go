@@ -44,12 +44,11 @@ func ValidateDosProtectedResource(protected *v1beta1.DosProtectedResource) error
 	}
 
 	// dosAccessLogDest
-	if protected.Spec.DosAccessLogDest == "" {
-		return fmt.Errorf("error validating DosProtectedResource: %v missing value for field: %v", protected.Name, "dosAccessLogDest")
-	}
-	err = validateAppProtectDosLogDest(protected.Spec.DosAccessLogDest)
-	if err != nil {
-		return fmt.Errorf("error validating DosProtectedResource: %v invalid field: %v err: %w", protected.Name, "dosAccessLogDest", err)
+	if protected.Spec.DosAccessLogDest != "" {
+		err = validateAppProtectDosLogDest(protected.Spec.DosAccessLogDest)
+		if err != nil {
+			return fmt.Errorf("error validating DosProtectedResource: %v invalid field: %v err: %w", protected.Name, "dosAccessLogDest", err)
+		}
 	}
 
 	// apDosPolicy
