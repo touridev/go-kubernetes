@@ -382,19 +382,6 @@ controller:
     ## Secret must exist in the same namespace as the helm release.
     imagePullSecretName: ""
 
-  serviceMonitor:
-    ## Creates a serviceMonitor to expose statistics on the kubernetes pods.
-    create: false
-
-    ## Kubernetes object labels to attach to the serviceMonitor object.
-    labels: {}
-
-    ## A set of labels to allow the selection of endpoints for the ServiceMonitor.
-    selectorMatchLabels: {}
-
-    ## A list of endpoints allowed as part of this ServiceMonitor.
-    endpoints: []
-
   reportIngressStatus:
     ## Updates the address field in the status of Ingress resources with an external address of the Ingress Controller.
     ## You must also specify the source of the external address either through an external service via controller.reportIngressStatus.externalService,
@@ -452,6 +439,19 @@ controller:
   ## Configure root filesystem as read-only and add volumes for temporary data.
   readOnlyRootFilesystem: false
 
+  serviceMonitor:
+    ## Creates a serviceMonitor to expose statistics on the kubernetes pods.
+    create: false
+
+    ## Kubernetes object labels to attach to the serviceMonitor object.
+    labels: {}
+
+    ## A set of labels to allow the selection of endpoints for the ServiceMonitor.
+    selectorMatchLabels: {}
+
+    ## A list of endpoints allowed as part of this ServiceMonitor.
+    endpoints: []
+
 rbac:
   ## Configures RBAC.
   create: true
@@ -468,6 +468,13 @@ prometheus:
 
   ## Configures the HTTP scheme used.
   scheme: http
+
+  service:
+    ## Creates a ClusterIP Service to expose Prometheus metrics internally
+    ## Requires prometheus.create=true
+    create: false
+
+    labels: {}
 
 serviceInsight:
   ## Expose NGINX Plus Service Insight endpoint.

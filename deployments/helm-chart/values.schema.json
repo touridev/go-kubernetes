@@ -1504,6 +1504,26 @@
           "examples": [
             "http"
           ]
+        },
+        "service": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "create": {
+              "type": "boolean",
+              "default": false,
+              "title": "The create",
+              "examples": [
+                true
+              ]
+            },
+            "labels": {
+              "type": "object",
+              "default": {},
+              "title": "The labels Schema",
+              "$ref": "https://raw.githubusercontent.com/nginxinc/kubernetes-json-schema/master/v1.27.4/_definitions.json#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta/properties/labels"
+            }
+          }
         }
       },
       "examples": [
@@ -1755,7 +1775,11 @@
         "create": true,
         "port": 9113,
         "secret": "",
-        "scheme": "http"
+        "scheme": "http",
+        "service": {
+          "create": false,
+          "labels": {}
+        }
       },
       "serviceInsight": {
         "create": true,
