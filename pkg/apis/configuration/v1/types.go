@@ -300,6 +300,7 @@ type CertManager struct {
 	Duration      string `json:"duration"`
 	RenewBefore   string `json:"renew-before"`
 	Usages        string `json:"usages"`
+	IssueTempCert bool   `json:"issue-temp-cert"`
 }
 
 // VirtualServerStatus defines the status for the VirtualServer resource.
