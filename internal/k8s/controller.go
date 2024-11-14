@@ -103,6 +103,11 @@ type podEndpoint struct {
 	configs.MeshPodOwner
 }
 
+type specialSecrets struct {
+	defaultServerSecret string
+	wildcardTLSSecret   string
+}
+
 // LoadBalancerController watches Kubernetes API and
 // reconfigures NGINX via NginxController when needed
 type LoadBalancerController struct {
@@ -131,7 +136,7 @@ type LoadBalancerController struct {
 	appProtectEnabled             bool
 	appProtectDosEnabled          bool
 	recorder                      record.EventRecorder
-	defaultServerSecret           string
+	specialSecrets                specialSecrets
 	ingressClass                  string
 	statusUpdater                 *statusUpdater
 	leaderElector                 *leaderelection.LeaderElector
@@ -142,7 +147,6 @@ type LoadBalancerController struct {
 	namespaceList                 []string
 	secretNamespaceList           []string
 	controllerNamespace           string
-	wildcardTLSSecret             string
 	areCustomResourcesEnabled     bool
 	enableOIDC                    bool
 	metricsCollector              collectors.ControllerCollector
@@ -226,6 +230,10 @@ type NewLoadBalancerControllerInput struct {
 
 // NewLoadBalancerController creates a controller
 func NewLoadBalancerController(input NewLoadBalancerControllerInput) *LoadBalancerController {
+	specialSecrets := specialSecrets{
+		defaultServerSecret: input.DefaultServerSecret,
+		wildcardTLSSecret:   input.WildcardTLSSecret,
+	}
 	lbc := &LoadBalancerController{
 		client:                       input.KubeClient,
 		confClient:                   input.ConfClient,
@@ -233,7 +241,7 @@ func NewLoadBalancerController(input NewLoadBalancerControllerInput) *LoadBalanc
 		restConfig:                   input.RestConfig,
 		Logger:                       nl.LoggerFromContext(input.LoggerContext),
 		configurator:                 input.NginxConfigurator,
-		defaultServerSecret:          input.DefaultServerSecret,
+		specialSecrets:               specialSecrets,
 		appProtectEnabled:            input.AppProtectEnabled,
 		appProtectDosEnabled:         input.AppProtectDosEnabled,
 		isNginxPlus:                  input.IsNginxPlus,
@@ -245,7 +253,6 @@ func NewLoadBalancerController(input NewLoadBalancerControllerInput) *LoadBalanc
 		namespaceList:                input.Namespace,
 		secretNamespaceList:          input.SecretNamespace,
 		controllerNamespace:          input.ControllerNamespace,
-		wildcardTLSSecret:            input.WildcardTLSSecret,
 		areCustomResourcesEnabled:    input.AreCustomResourcesEnabled,
 		enableOIDC:                   input.EnableOIDC,
 		metricsCollector:             input.MetricsCollector,
@@ -1726,7 +1733,14 @@ func removeDuplicateResources(resources []Resource) []Resource {
 }
 
 func (lbc *LoadBalancerController) isSpecialSecret(secretName string) bool {
-	return secretName == lbc.defaultServerSecret || secretName == lbc.wildcardTLSSecret
+	switch secretName {
+	case lbc.specialSecrets.defaultServerSecret:
+		return true
+	case lbc.specialSecrets.wildcardTLSSecret:
+		return true
+	default:
+		return false
+	}
 }
 
 func (lbc *LoadBalancerController) handleRegularSecretDeletion(resources []Resource) {
@@ -1754,30 +1768,36 @@ func (lbc *LoadBalancerController) handleSecretUpdate(secret *api_v1.Secret, res
 	lbc.updateResourcesStatusAndEvents(resources, warnings, addOrUpdateErr)
 }
 
-func (lbc *LoadBalancerController) handleSpecialSecretUpdate(secret *api_v1.Secret) {
-	var specialSecretsToUpdate []string
+func (lbc *LoadBalancerController) validationTLSSpecialSecret(secret *api_v1.Secret, secretName string, secretList *[]string) {
 	secretNsName := secret.Namespace + "/" + secret.Name
+
 	err := secrets.ValidateTLSSecret(secret)
 	if err != nil {
 		nl.Errorf(lbc.Logger, "Couldn't validate the special Secret %v: %v", secretNsName, err)
 		lbc.recorder.Eventf(secret, api_v1.EventTypeWarning, "Rejected", "the special Secret %v was rejected, using the previous version: %v", secretNsName, err)
 		return
 	}
+	*secretList = append(*secretList, secretName)
+}
 
-	if secretNsName == lbc.defaultServerSecret {
-		specialSecretsToUpdate = append(specialSecretsToUpdate, configs.DefaultServerSecretName)
+func (lbc *LoadBalancerController) handleSpecialSecretUpdate(secret *api_v1.Secret) {
+	var specialTLSSecretsToUpdate []string
+	secretNsName := secret.Namespace + "/" + secret.Name
+	switch secretNsName {
+	case lbc.specialSecrets.defaultServerSecret:
+		lbc.validationTLSSpecialSecret(secret, configs.DefaultServerSecretName, &specialTLSSecretsToUpdate)
+	case lbc.specialSecrets.wildcardTLSSecret:
+		lbc.validationTLSSpecialSecret(secret, configs.WildcardSecretName, &specialTLSSecretsToUpdate)
+	default:
+		nl.Warnf(lbc.Logger, "special secret not found")
+		return
 	}
-	if secretNsName == lbc.wildcardTLSSecret {
-		specialSecretsToUpdate = append(specialSecretsToUpdate, configs.WildcardSecretName)
-	}
-
-	err = lbc.configurator.AddOrUpdateSpecialTLSSecrets(secret, specialSecretsToUpdate)
+	err := lbc.configurator.AddOrUpdateSpecialTLSSecrets(secret, specialTLSSecretsToUpdate)
 	if err != nil {
 		nl.Errorf(lbc.Logger, "Error when updating the special Secret %v: %v", secretNsName, err)
 		lbc.recorder.Eventf(secret, api_v1.EventTypeWarning, "UpdatedWithError", "the special Secret %v was updated, but not applied: %v", secretNsName, err)
 		return
 	}
-
 	lbc.recorder.Eventf(secret, api_v1.EventTypeNormal, "Updated", "the special Secret %v was updated", secretNsName)
 }
 
