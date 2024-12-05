@@ -120,7 +120,7 @@ func main() {
 	var licenseReporter *license_reporting.LicenseReporter
 
 	if *nginxPlus {
-		licenseReporter = license_reporting.NewLicenseReporter(kubeClient)
+		licenseReporter = license_reporting.NewLicenseReporter(kubeClient, eventRecorder, pod)
 	}
 
 	nginxManager, useFakeNginxManager := createNginxManager(ctx, managerCollector, licenseReporter)
@@ -214,6 +214,9 @@ func main() {
 	process := startChildProcesses(nginxManager, appProtectV5)
 
 	plusClient := createPlusClient(ctx, *nginxPlus, useFakeNginxManager, nginxManager)
+	if *nginxPlus {
+		licenseReporter.Config.PlusClient = plusClient
+	}
 
 	plusCollector, syslogListener, latencyCollector := createPlusAndLatencyCollectors(ctx, registry, constLabels, kubeClient, plusClient, staticCfgParams.NginxServiceMesh)
 	cnf := configs.NewConfigurator(configs.ConfiguratorParams{
