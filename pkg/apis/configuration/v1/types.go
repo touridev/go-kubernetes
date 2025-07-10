@@ -600,6 +600,7 @@ type AccessControl struct {
 
 // RateLimit defines a rate limit policy.
 type RateLimit struct {
+	//The rate of requests permitted. The rate is specified in requests per second (r/s) or requests per minute (r/m).
 	Rate       string `json:"rate"`
 	Key        string `json:"key"`
 	Delay      *int   `json:"delay"`
@@ -673,16 +674,25 @@ type IngressMTLS struct {
 	VerifyDepth      *int   `json:"verifyDepth"`
 }
 
-// EgressMTLS defines an Egress MTLS policy.
+// The EgressMTLS policy configures upstreams authentication and certificate verification.
 type EgressMTLS struct {
+	// The name of the Kubernetes secret that stores the TLS certificate and key. It must be in the same namespace as the Policy resource. The secret must be of the type kubernetes.io/tls, the certificate must be stored in the secret under the key tls.crt, and the key must be stored under the key tls.key, otherwise the secret will be rejected as invalid.	
 	TLSSecret         string `json:"tlsSecret"`
+	// Enables verification of the upstream HTTPS server certificate.	
 	VerifyServer      bool   `json:"verifyServer"`
+	// Sets the verification depth in the proxied HTTPS server certificates chain. The default is 1.	
 	VerifyDepth       *int   `json:"verifyDepth"`
+	// Specifies the protocols for requests to an upstream HTTPS server. The default is TLSv1 TLSv1.1 TLSv1.2.
 	Protocols         string `json:"protocols"`
+	// Enables reuse of SSL sessions to the upstreams. The default is true.	
 	SessionReuse      *bool  `json:"sessionReuse"`
+	// Specifies the enabled ciphers for requests to an upstream HTTPS server. The default is DEFAULT.	
 	Ciphers           string `json:"ciphers"`
+	// The name of the Kubernetes secret that stores the CA certificate. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/ca, and the certificate must be stored in the secret under the key ca.crt, otherwise the secret will be rejected as invalid.	
 	TrustedCertSecret string `json:"trustedCertSecret"`
+	// Enables passing of the server name through Server Name Indication extension.	
 	ServerName        bool   `json:"serverName"`
+	// Allows overriding the server name used to verify the certificate of the upstream HTTPS server.	
 	SSLName           string `json:"sslName"`
 }
 
@@ -720,7 +730,7 @@ type SecurityLog struct {
 	LogDest     string `json:"logDest"`
 }
 
-// APIKey defines an API Key policy.
+// The API Key policy configures NGINX to authorize requests which provide a valid API Key in a specified header or query param.
 type APIKey struct {
 	SuppliedIn   *SuppliedIn `json:"suppliedIn"`
 	ClientSecret string      `json:"clientSecret"`
