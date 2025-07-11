@@ -653,80 +653,112 @@ type VariableCondition struct {
 
 // JWTAuth holds JWT authentication configuration.
 type JWTAuth struct {
+	// The realm of the JWT.	
 	Realm    string `json:"realm"`
 	Secret   string `json:"secret"`
+	// The token specifies a variable that contains the JSON Web Token. By default the JWT is passed in the Authorization header as a Bearer Token. JWT may be also passed as a cookie or a part of a query string, for example: $cookie_auth_token. Accepted variables are $http_, $arg_, $cookie_.	
 	Token    string `json:"token"`
+	// The remote URI where the request will be sent to retrieve JSON Web Key set	
 	JwksURI  string `json:"jwksURI"`
+	// Enables in-memory caching of JWKS (JSON Web Key Sets) that are obtained from the jwksURI and sets a valid time for expiration.	
 	KeyCache string `json:"keyCache"`
 }
 
 // BasicAuth holds HTTP Basic authentication configuration
 type BasicAuth struct {
+	// The realm for the basic authentication.	
 	Realm  string `json:"realm"`
+	// The name of the Kubernetes secret that stores the Htpasswd configuration. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/htpasswd, and the config must be stored in the secret under the key htpasswd, otherwise the secret will be rejected as invalid.	
 	Secret string `json:"secret"`
 }
 
-// IngressMTLS defines an Ingress MTLS policy.
+// The IngressMTLS policy configures client certificate verification.
 type IngressMTLS struct {
+	// The name of the Kubernetes secret that stores the CA certificate. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/ca, and the certificate must be stored in the secret under the key ca.crt, otherwise the secret will be rejected as invalid.	
 	ClientCertSecret string `json:"clientCertSecret"`
+	// The file name of the Certificate Revocation List. NGINX Ingress Controller will look for this file in /etc/nginx/secrets	
 	CrlFileName      string `json:"crlFileName"`
+	// Verification for the client. Possible values are "on", "off", "optional", "optional_no_ca". The default is "on".	
 	VerifyClient     string `json:"verifyClient"`
+	// Sets the verification depth in the client certificates chain. The default is 1.	
 	VerifyDepth      *int   `json:"verifyDepth"`
 }
 
 // The EgressMTLS policy configures upstreams authentication and certificate verification.
 type EgressMTLS struct {
-	// The name of the Kubernetes secret that stores the TLS certificate and key. It must be in the same namespace as the Policy resource. The secret must be of the type kubernetes.io/tls, the certificate must be stored in the secret under the key tls.crt, and the key must be stored under the key tls.key, otherwise the secret will be rejected as invalid.	
-	TLSSecret         string `json:"tlsSecret"`
-	// Enables verification of the upstream HTTPS server certificate.	
-	VerifyServer      bool   `json:"verifyServer"`
-	// Sets the verification depth in the proxied HTTPS server certificates chain. The default is 1.	
-	VerifyDepth       *int   `json:"verifyDepth"`
+	// The name of the Kubernetes secret that stores the TLS certificate and key. It must be in the same namespace as the Policy resource. The secret must be of the type kubernetes.io/tls, the certificate must be stored in the secret under the key tls.crt, and the key must be stored under the key tls.key, otherwise the secret will be rejected as invalid.
+	TLSSecret string `json:"tlsSecret"`
+	// Enables verification of the upstream HTTPS server certificate.
+	VerifyServer bool `json:"verifyServer"`
+	// Sets the verification depth in the proxied HTTPS server certificates chain. The default is 1.
+	VerifyDepth *int `json:"verifyDepth"`
 	// Specifies the protocols for requests to an upstream HTTPS server. The default is TLSv1 TLSv1.1 TLSv1.2.
-	Protocols         string `json:"protocols"`
-	// Enables reuse of SSL sessions to the upstreams. The default is true.	
-	SessionReuse      *bool  `json:"sessionReuse"`
-	// Specifies the enabled ciphers for requests to an upstream HTTPS server. The default is DEFAULT.	
-	Ciphers           string `json:"ciphers"`
-	// The name of the Kubernetes secret that stores the CA certificate. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/ca, and the certificate must be stored in the secret under the key ca.crt, otherwise the secret will be rejected as invalid.	
+	Protocols string `json:"protocols"`
+	// Enables reuse of SSL sessions to the upstreams. The default is true.
+	SessionReuse *bool `json:"sessionReuse"`
+	// Specifies the enabled ciphers for requests to an upstream HTTPS server. The default is DEFAULT.
+	Ciphers string `json:"ciphers"`
+	// The name of the Kubernetes secret that stores the CA certificate. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/ca, and the certificate must be stored in the secret under the key ca.crt, otherwise the secret will be rejected as invalid.
 	TrustedCertSecret string `json:"trustedCertSecret"`
-	// Enables passing of the server name through Server Name Indication extension.	
-	ServerName        bool   `json:"serverName"`
-	// Allows overriding the server name used to verify the certificate of the upstream HTTPS server.	
-	SSLName           string `json:"sslName"`
+	// Enables passing of the server name through Server Name Indication extension.
+	ServerName bool `json:"serverName"`
+	// Allows overriding the server name used to verify the certificate of the upstream HTTPS server.
+	SSLName string `json:"sslName"`
 }
 
-// OIDC defines an Open ID Connect policy.
+// The OIDC policy configures NGINX Plus as a relying party for OpenID Connect authentication.
 type OIDC struct {
+	// URL for the authorization endpoint provided by your OpenID Connect provider.
 	AuthEndpoint          string   `json:"authEndpoint"`
+	// URL for the token endpoint provided by your OpenID Connect provider.	
 	TokenEndpoint         string   `json:"tokenEndpoint"`
+	// URL for the JSON Web Key Set (JWK) document provided by your OpenID Connect provider.	 
 	JWKSURI               string   `json:"jwksURI"`
+	// The client ID provided by your OpenID Connect provider.	
 	ClientID              string   `json:"clientID"`
+	// The name of the Kubernetes secret that stores the client secret provided by your OpenID Connect provider. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/oidc, and the secret under the key client-secret, otherwise the secret will be rejected as invalid. If PKCE is enabled, this should be not configured.	
 	ClientSecret          string   `json:"clientSecret"`
+	// List of OpenID Connect scopes. The scope openid always needs to be present and others can be added concatenating them with a + sign, for example openid+profile+email, openid+email+userDefinedScope. The default is openid.	
 	Scope                 string   `json:"scope"`
+	// Allows overriding the default redirect URI. The default is /_codexch.	
 	RedirectURI           string   `json:"redirectURI"`
+	// URL provided by your OpenID Connect provider to request the end user be logged out.	
 	EndSessionEndpoint    string   `json:"endSessionEndpoint"`
+	// URI to redirect to after the logout has been performed. Requires endSessionEndpoint. The default is /_logout.	
 	PostLogoutRedirectURI string   `json:"postLogoutRedirectURI"`
+	// Specifies the maximum timeout in milliseconds for synchronizing ID/access tokens and shared values between Ingress Controller pods. The default is 200.	
 	ZoneSyncLeeway        *int     `json:"zoneSyncLeeway"`
+	// A list of extra URL arguments to pass to the authorization endpoint provided by your OpenID Connect provider. Arguments must be URL encoded, multiple arguments may be included in the list, for example [ arg1=value1, arg2=value2 ]	
 	AuthExtraArgs         []string `json:"authExtraArgs"`
+	// Option of whether Bearer token is used to authorize NGINX to access protected backend.	
 	AccessTokenEnable     bool     `json:"accessTokenEnable"`
+	// Switches Proof Key for Code Exchange on. The OpenID client needs to be in public mode. clientSecret is not used in this mode.	
 	PKCEEnable            bool     `json:"pkceEnable"`
 }
 
-// WAF defines an WAF policy.
+// The WAF policy configures NGINX Plus to secure client requests using App Protect WAF policies.
 type WAF struct {
+	// Enables NGINX App Protect WAF.	
 	Enable       bool           `json:"enable"`
+	// The App Protect WAF policy of the WAF. Accepts an optional namespace. Mutually exclusive with apBundle.	
 	ApPolicy     string         `json:"apPolicy"`
+	// The App Protect WAF policy bundle. Mutually exclusive with apPolicy.	
 	ApBundle     string         `json:"apBundle"`
+	//
 	SecurityLog  *SecurityLog   `json:"securityLog"`
+	// 
 	SecurityLogs []*SecurityLog `json:"securityLogs"`
 }
 
 // SecurityLog defines the security log of a WAF policy.
 type SecurityLog struct {
+	// Enables security log.	
 	Enable      bool   `json:"enable"`
+	// The App Protect WAF log conf resource. Accepts an optional namespace. Only works with apPolicy.
 	ApLogConf   string `json:"apLogConf"`
+	// The App Protect WAF log bundle resource. Only works with apBundle.	
 	ApLogBundle string `json:"apLogBundle"`
+	// The log destination for the security log. Only accepted variables are syslog:server=<ip-address &#124; localhost; fqdn>:<port>, stderr, <absolute path to file>.	
 	LogDest     string `json:"logDest"`
 }
 
