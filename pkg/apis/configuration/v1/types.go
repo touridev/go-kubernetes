@@ -42,39 +42,53 @@ type VirtualServer struct {
 
 // VirtualServerSpec is the spec of the VirtualServer resource.
 type VirtualServerSpec struct {
-	IngressClass   string                 `json:"ingressClassName"`
-	Host           string                 `json:"host"`
-	Listener       *VirtualServerListener `json:"listener"`
-	TLS            *TLS                   `json:"tls"`
-	Gunzip         bool                   `json:"gunzip"`
-	Policies       []PolicyReference      `json:"policies"`
-	Upstreams      []Upstream             `json:"upstreams"`
-	Routes         []Route                `json:"routes"`
-	HTTPSnippets   string                 `json:"http-snippets"`
-	ServerSnippets string                 `json:"server-snippets"`
-	Dos            string                 `json:"dos"`
-	ExternalDNS    ExternalDNS            `json:"externalDNS"`
+	// Specifies which Ingress Controller must handle the VirtualServerRoute resource. Must be the same as the ingressClassName of the VirtualServer that references this resource.
+	IngressClass string `json:"ingressClassName"`
+	// The host (domain name) of the server. Must be a valid subdomain as defined in RFC 1123, such as my-app or hello.example.com. When using a wildcard domain like *.example.com the domain must be contained in double quotes. The host value needs to be unique among all Ingress and VirtualServer resources. See also Handling Host and Listener Collisions.
+	Host string `json:"host"`
+	// Sets a custom HTTP and/or HTTPS listener. Valid fields are listener.http and listener.https. Each field must reference the name of a valid listener defined in a GlobalConfiguration resource
+	Listener *VirtualServerListener `json:"listener"`
+	// The TLS termination configuration.
+	TLS *TLS `json:"tls"`
+	// Enables or disables decompression of gzipped responses for clients. Allowed values “on”/“off”, “true”/“false” or “yes”/“no”. If the gunzip value is not set, it defaults to off.
+	Gunzip bool `json:"gunzip"`
+	// A list of policies.
+	Policies []PolicyReference `json:"policies"`
+	// A list of upstreams.
+	Upstreams []Upstream `json:"upstreams"`
+	// A list of routes.
+	Routes []Route `json:"routes"`
+	// Sets a custom snippet in the http context.
+	HTTPSnippets string `json:"http-snippets"`
+	// Sets a custom snippet in server context. Overrides the server-snippets ConfigMap key.
+	ServerSnippets string `json:"server-snippets"`
+	// A reference to a DosProtectedResource, setting this enables DOS protection of the VirtualServer route.
+	Dos string `json:"dos"`
+	// The externalDNS configuration for a VirtualServer.
+	ExternalDNS ExternalDNS `json:"externalDNS"`
 	// InternalRoute allows for the configuration of internal routing.
 	InternalRoute bool `json:"internalRoute"`
 }
 
 // VirtualServerListener references a custom http and/or https listener defined in GlobalConfiguration.
 type VirtualServerListener struct {
-	HTTP  string `json:"http"`
+	// The name of am HTTP listener defined in a GlobalConfiguration resource.
+	HTTP string `json:"http"`
+	// The name of an HTTPS listener defined in a GlobalConfiguration resource.
 	HTTPS string `json:"https"`
 }
 
 // ExternalDNS defines externaldns sub-resource of a virtual server.
 type ExternalDNS struct {
-	Enable     bool   `json:"enable"`
+	// Enables ExternalDNS integration for a VirtualServer resource. The default is false.
+	Enable bool `json:"enable"`
+	// The record Type that should be created, e.g. “A”, “AAAA”, “CNAME”. This is automatically computed based on the external endpoints if not defined.
 	RecordType string `json:"recordType,omitempty"`
-	// TTL for the record
+	// TTL for the DNS record. This defaults to 0 if not defined. See the ExternalDNS TTL documentation for provider-specific defaults
 	RecordTTL int64 `json:"recordTTL,omitempty"`
-	// Labels stores labels defined for the Endpoint
-	// +optional
+	// Configure labels to be applied to the Endpoint resources that will be consumed by ExternalDNS.
 	Labels map[string]string `json:"labels,omitempty"`
-	// ProviderSpecific stores provider specific config
-	// +optional
+	// Configure provider specific properties which holds the name and value of a configuration which is specific to individual DNS providers.
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 }
 
@@ -92,41 +106,72 @@ type ProviderSpecificProperty struct {
 
 // PolicyReference references a policy by name and an optional namespace.
 type PolicyReference struct {
-	Name      string `json:"name"`
+	// The name of a policy. If the policy doesn’t exist or invalid, NGINX will respond with an error response with the 500 status code.	v
+	Name string `json:"name"`
+	// The namespace of a policy. If not specified, the namespace of the VirtualServer resource is used.
 	Namespace string `json:"namespace"`
 }
 
 // Upstream defines an upstream.
 type Upstream struct {
-	Name                     string            `json:"name"`
-	Service                  string            `json:"service"`
-	Subselector              map[string]string `json:"subselector"`
-	Port                     uint16            `json:"port"`
-	LBMethod                 string            `json:"lb-method"`
-	FailTimeout              string            `json:"fail-timeout"`
-	MaxFails                 *int              `json:"max-fails"`
-	MaxConns                 *int              `json:"max-conns"`
-	Keepalive                *int              `json:"keepalive"`
-	ProxyConnectTimeout      string            `json:"connect-timeout"`
-	ProxyReadTimeout         string            `json:"read-timeout"`
-	ProxySendTimeout         string            `json:"send-timeout"`
-	ProxyNextUpstream        string            `json:"next-upstream"`
-	ProxyNextUpstreamTimeout string            `json:"next-upstream-timeout"`
-	ProxyNextUpstreamTries   int               `json:"next-upstream-tries"`
-	ProxyBuffering           *bool             `json:"buffering"`
-	ProxyBuffers             *UpstreamBuffers  `json:"buffers"`
-	ProxyBufferSize          string            `json:"buffer-size"`
-	ClientMaxBodySize        string            `json:"client-max-body-size"`
-	TLS                      UpstreamTLS       `json:"tls"`
-	HealthCheck              *HealthCheck      `json:"healthCheck"`
-	SlowStart                string            `json:"slow-start"`
-	Queue                    *UpstreamQueue    `json:"queue"`
-	SessionCookie            *SessionCookie    `json:"sessionCookie"`
-	UseClusterIP             bool              `json:"use-cluster-ip"`
-	NTLM                     bool              `json:"ntlm"`
-	Type                     string            `json:"type"`
-	Backup                   string            `json:"backup"`
-	BackupPort               *uint16           `json:"backupPort"`
+	//The name of the upstream. Must be a valid DNS label as defined in RFC 1035. For example, hello and upstream-123 are valid. The name must be unique among all upstreams of the resource.
+	Name string `json:"name"`
+	// The name of a service. The service must belong to the same namespace as the resource. If the service doesn’t exist, NGINX will assume the service has zero endpoints and return a 502 response for requests for this upstream. For NGINX Plus only, services of type ExternalName are also supported (check the prerequisites ).
+	Service string `json:"service"`
+	// Selects the pods within the service using label keys and values. By default, all pods of the service are selected. Note: the specified labels are expected to be present in the pods when they are created. If the pod labels are updated, NGINX Ingress Controller will not see that change until the number of the pods is changed.
+	Subselector map[string]string `json:"subselector"`
+	// The port of the service. If the service doesn’t define that port, NGINX will assume the service has zero endpoints and return a 502 response for requests for this upstream. The port must fall into the range 1..65535.
+	Port uint16 `json:"port"`
+	// The load balancing method. To use the round-robin method, specify round_robin. The default is specified in the lb-method ConfigMap key.
+	LBMethod string `json:"lb-method"`
+	// The time during which the specified number of unsuccessful attempts to communicate with an upstream server should happen to consider the server unavailable. See the fail_timeout parameter of the server directive. The default is set in the fail-timeout ConfigMap key.
+	FailTimeout string `json:"fail-timeout"`
+	// The number of unsuccessful attempts to communicate with an upstream server that should happen in the duration set by the fail-timeout to consider the server unavailable. See the max_fails parameter of the server directive. The default is set in the max-fails ConfigMap key.
+	MaxFails *int `json:"max-fails"`
+	// The maximum number of simultaneous active connections to an upstream server. See the max_conns parameter of the server directive. By default there is no limit. Note: if keepalive connections are enabled, the total number of active and idle keepalive connections to an upstream server may exceed the max_conns value.
+	MaxConns *int `json:"max-conns"`
+	// Configures the cache for connections to upstream servers. The value 0 disables the cache. See the keepalive directive. The default is set in the keepalive ConfigMap key.
+	Keepalive *int `json:"keepalive"`
+	// The timeout for establishing a connection with an upstream server. See the proxy_connect_timeout directive. The default is specified in the proxy-connect-timeout ConfigMap key.
+	ProxyConnectTimeout string `json:"connect-timeout"`
+	// The timeout for reading a response from an upstream server. See the proxy_read_timeout directive. The default is specified in the proxy-read-timeout ConfigMap key.
+	ProxyReadTimeout string `json:"read-timeout"`
+	// The timeout for transmitting a request to an upstream server. See the proxy_send_timeout directive. The default is specified in the proxy-send-timeout ConfigMap key.
+	ProxySendTimeout string `json:"send-timeout"`
+	// Specifies in which cases a request should be passed to the next upstream server. See the proxy_next_upstream directive. The default is error timeout.
+	ProxyNextUpstream string `json:"next-upstream"`
+	// The time during which a request can be passed to the next upstream server. See the proxy_next_upstream_timeout directive. The 0 value turns off the time limit. The default is 0.
+	ProxyNextUpstreamTimeout string `json:"next-upstream-timeout"`
+	// The number of possible tries for passing a request to the next upstream server. See the proxy_next_upstream_tries directive. The 0 value turns off this limit. The default is 0.
+	ProxyNextUpstreamTries int `json:"next-upstream-tries"`
+	// Enables buffering of responses from the upstream server. See the proxy_buffering directive. The default is set in the proxy-buffering ConfigMap key.
+	ProxyBuffering *bool `json:"buffering"`
+	// Configures the buffers used for reading a response from the upstream server for a single connection.
+	ProxyBuffers *UpstreamBuffers `json:"buffers"`
+	// Sets the size of the buffer used for reading the first part of a response received from the upstream server. See the proxy_buffer_size directive. The default is set in the proxy-buffer-size ConfigMap key.
+	ProxyBufferSize string `json:"buffer-size"`
+	// Sets the maximum allowed size of the client request body. See the client_max_body_size directive. The default is set in the client-max-body-size ConfigMap key.
+	ClientMaxBodySize string `json:"client-max-body-size"`
+	// The TLS configuration for the Upstream.
+	TLS UpstreamTLS `json:"tls"`
+	// The health check configuration for the Upstream. See the health_check directive. Note: this feature is supported only in NGINX Plus.
+	HealthCheck *HealthCheck `json:"healthCheck"`
+	// The slow start allows an upstream server to gradually recover its weight from 0 to its nominal value after it has been recovered or became available or when the server becomes available after a period of time it was considered unavailable. By default, the slow start is disabled. See the slow_start parameter of the server directive. Note: The parameter cannot be used along with the random , hash or ip_hash load balancing methods and will be ignored.
+	SlowStart string `json:"slow-start"`
+	// Configures a queue for an upstream. A client request will be placed into the queue if an upstream server cannot be selected immediately while processing the request. By default, no queue is configured. Note: this feature is supported only in NGINX Plus.
+	Queue *UpstreamQueue `json:"queue"`
+	// The SessionCookie field configures session persistence which allows requests from the same client to be passed to the same upstream server. The information about the designated upstream server is passed in a session cookie generated by NGINX Plus.
+	SessionCookie *SessionCookie `json:"sessionCookie"`
+	//Enables using the Cluster IP and port of the service instead of the default behavior of using the IP and port of the pods. When this field is enabled, the fields that configure NGINX behavior related to multiple upstream servers (like lb-method and next-upstream) will have no effect, as NGINX Ingress Controller will configure NGINX with only one upstream server that will match the service Cluster IP.
+	UseClusterIP bool `json:"use-cluster-ip"`
+	// Allows proxying requests with NTLM Authentication. See the ntlm directive. In order for NTLM authentication to work, it is necessary to enable keepalive connections to upstream servers using the keepalive field. Note: this feature is supported only in NGINX Plus.
+	NTLM bool `json:"ntlm"`
+	// The type of the upstream. Supported values are http and grpc. The default is http. For gRPC, it is necessary to enable HTTP/2 in the ConfigMap and configure TLS termination in the VirtualServer.
+	Type string `json:"type"`
+	// The name of the backup service of type ExternalName. This will be used when the primary servers are unavailable. Note: The parameter cannot be used along with the random , hash or ip_hash load balancing methods.
+	Backup string `json:"backup"`
+	// The port of the backup service. The backup port is required if the backup service name is provided. The port must fall into the range 1..65535.
+	BackupPort *uint16 `json:"backupPort"`
 }
 
 // UpstreamBuffers defines Buffer Configuration for an Upstream.
@@ -142,24 +187,42 @@ type UpstreamTLS struct {
 
 // HealthCheck defines the parameters for active Upstream HealthChecks.
 type HealthCheck struct {
-	Enable         bool         `json:"enable"`
-	Path           string       `json:"path"`
-	Interval       string       `json:"interval"`
-	Jitter         string       `json:"jitter"`
-	Fails          int          `json:"fails"`
-	Passes         int          `json:"passes"`
-	Port           int          `json:"port"`
-	TLS            *UpstreamTLS `json:"tls"`
-	ConnectTimeout string       `json:"connect-timeout"`
-	ReadTimeout    string       `json:"read-timeout"`
-	SendTimeout    string       `json:"send-timeout"`
-	Headers        []Header     `json:"headers"`
-	StatusMatch    string       `json:"statusMatch"`
-	GRPCStatus     *int         `json:"grpcStatus"`
-	GRPCService    string       `json:"grpcService"`
-	Mandatory      bool         `json:"mandatory"`
-	Persistent     bool         `json:"persistent"`
-	KeepaliveTime  string       `json:"keepalive-time"`
+	// Enables a health check for an upstream server. The default is false.
+	Enable bool `json:"enable"`
+	// The path used for health check requests. The default is /. This is not configurable for gRPC type upstreams.
+	Path string `json:"path"`
+	// The interval between two consecutive health checks. The default is 5s.
+	Interval string `json:"interval"`
+	// The time within which each health check will be randomly delayed. By default, there is no delay.
+	Jitter string `json:"jitter"`
+	// The number of consecutive failed health checks of a particular upstream server after which this server will be considered unhealthy. The default is 1.
+	Fails int `json:"fails"`
+	// The number of consecutive passed health checks of a particular upstream server after which the server will be considered healthy. The default is 1.
+	Passes int `json:"passes"`
+	// The port used for health check requests. By default, the server port is used. Note: in contrast with the port of the upstream, this port is not a service port, but a port of a pod.
+	Port int `json:"port"`
+	// The TLS configuration used for health check requests. By default, the tls field of the upstream is used.
+	TLS *UpstreamTLS `json:"tls"`
+	// The timeout for establishing a connection with an upstream server. By default, the connect-timeout of the upstream is used.
+	ConnectTimeout string `json:"connect-timeout"`
+	// The timeout for reading a response from an upstream server. By default, the read-timeout of the upstream is used.
+	ReadTimeout string `json:"read-timeout"`
+	// The timeout for transmitting a request to an upstream server. By default, the send-timeout of the upstream is used.
+	SendTimeout string `json:"send-timeout"`
+	// The request headers used for health check requests. NGINX Plus always sets the Host, User-Agent and Connection headers for health check requests.
+	Headers []Header `json:"headers"`
+	// The expected response status codes of a health check. By default, the response should have status code 2xx or 3xx. Examples: "200", "! 500", "301-303 307". See the documentation of the match directive. This not supported for gRPC type upstreams.
+	StatusMatch string `json:"statusMatch"`
+	// The expected gRPC status code of the upstream server response to the Check method. Configure this field only if your gRPC services do not implement the gRPC health checking protocol. For example, configure 12 if the upstream server responds with 12 (UNIMPLEMENTED) status code. Only valid on gRPC type upstreams.
+	GRPCStatus *int `json:"grpcStatus"`
+	// The gRPC service to be monitored on the upstream server. Only valid on gRPC type upstreams.
+	GRPCService string `json:"grpcService"`
+	// Require every newly added server to pass all configured health checks before NGINX Plus sends traffic to it. If this is not specified, or is set to false, the server will be initially considered healthy. When combined with slow-start, it gives a new server more time to connect to databases and “warm up” before being asked to handle their full share of traffic.
+	Mandatory bool `json:"mandatory"`
+	// Set the initial “up” state for a server after reload if the server was considered healthy before reload. Enabling persistent requires that the mandatory parameter is also set to true.
+	Persistent bool `json:"persistent"`
+	// Enables keepalive connections for health checks and specifies the time during which requests can be processed through one keepalive connection. The default is 60s.
+	KeepaliveTime string `json:"keepalive-time"`
 }
 
 // Header defines an HTTP Header.
@@ -170,71 +233,108 @@ type Header struct {
 
 // SessionCookie defines the parameters for session persistence.
 type SessionCookie struct {
-	Enable   bool   `json:"enable"`
-	Name     string `json:"name"`
-	Path     string `json:"path"`
-	Expires  string `json:"expires"`
-	Domain   string `json:"domain"`
-	HTTPOnly bool   `json:"httpOnly"`
-	Secure   bool   `json:"secure"`
+	// Enables session persistence with a session cookie for an upstream server. The default is false.
+	Enable bool `json:"enable"`
+	// The name of the cookie.
+	Name string `json:"name"`
+	// The path for which the cookie is set.
+	Path string `json:"path"`
+	// The time for which a browser should keep the cookie. Can be set to the special value max , which will cause the cookie to expire on 31 Dec 2037 23:55:55 GMT.
+	Expires string `json:"expires"`
+	// The domain for which the cookie is set.
+	Domain string `json:"domain"`
+	// Adds the HttpOnly attribute to the cookie.
+	HTTPOnly bool `json:"httpOnly"`
+	// Adds the Secure attribute to the cookie.
+	Secure bool `json:"secure"`
+	// Adds the SameSite attribute to the cookie. The allowed values are: strict, lax, none
 	SameSite string `json:"samesite"`
 }
 
 // Route defines a route.
 type Route struct {
-	Path             string            `json:"path"`
-	Policies         []PolicyReference `json:"policies"`
-	Route            string            `json:"route"`
-	Action           *Action           `json:"action"`
-	Splits           []Split           `json:"splits"`
-	Matches          []Match           `json:"matches"`
-	ErrorPages       []ErrorPage       `json:"errorPages"`
-	LocationSnippets string            `json:"location-snippets"`
-	Dos              string            `json:"dos"`
+	// The path of the route. NGINX will match it against the URI of a request. Possible values are: a prefix ( / , /path ), an exact match ( =/exact/match ), a case insensitive regular expression ( ~*^/Bar.*\.jpg ) or a case sensitive regular expression ( ~^/foo.*\.jpg ). In the case of a prefix (must start with / ) or an exact match (must start with = ), the path must not include any whitespace characters, { , } or ;. In the case of the regex matches, all double quotes " must be escaped and the match can’t end in an unescaped backslash \. The path must be unique among the paths of all routes of the VirtualServer. Check the location directive for more information.
+	Path string `json:"path"`
+	// A list of policies. The policies override the policies of the same type defined in the spec of the VirtualServer. See Applying Policies for more details.
+	Policies []PolicyReference `json:"policies"`
+	// The name of a VirtualServerRoute resource that defines this route. If the VirtualServerRoute belongs to a different namespace than the VirtualServer, you need to include the namespace. For example, tea-namespace/tea.
+	Route string `json:"route"`
+	// The default action to perform for a request.
+	Action *Action `json:"action"`
+	// The default splits configuration for traffic splitting. Must include at least 2 splits.
+	Splits []Split `json:"splits"`
+	// The matching rules for advanced content-based routing. Requires the default Action or Splits. Unmatched requests will be handled by the default Action or Splits.
+	Matches []Match `json:"matches"`
+	// The custom responses for error codes. NGINX will use those responses instead of returning the error responses from the upstream servers or the default responses generated by NGINX. A custom response can be a redirect or a canned response. For example, a redirect to another URL if an upstream server responded with a 404 status code.
+	ErrorPages []ErrorPage `json:"errorPages"`
+	// Sets a custom snippet in the location context. Overrides the location-snippets ConfigMap key.
+	LocationSnippets string `json:"location-snippets"`
+	// A reference to a DosProtectedResource, setting this enables DOS protection of the VirtualServer route.
+	Dos string `json:"dos"`
 }
 
 // Action defines an action.
 type Action struct {
-	Pass     string          `json:"pass"`
+	// Passes requests to an upstream. The upstream with that name must be defined in the resource.
+	Pass string `json:"pass"`
+	// Redirects requests to a provided URL.
 	Redirect *ActionRedirect `json:"redirect"`
-	Return   *ActionReturn   `json:"return"`
-	Proxy    *ActionProxy    `json:"proxy"`
+	// Returns a preconfigured response.
+	Return *ActionReturn `json:"return"`
+	// Passes requests to an upstream with the ability to modify the request/response (for example, rewrite the URI or modify the headers).
+	Proxy *ActionProxy `json:"proxy"`
 }
 
 // ActionRedirect defines a redirect in an Action.
 type ActionRedirect struct {
-	URL  string `json:"url"`
-	Code int    `json:"code"`
+	// The URL to redirect the request to. Supported NGINX variables: $scheme , $http_x_forwarded_proto , $request_uri , $host. Variables must be enclosed in curly braces. For example: ${host}${request_uri}.
+	URL string `json:"url"`
+	// The status code of a redirect. The allowed values are: 301 , 302 , 307 , 308. The default is 301.
+	Code int `json:"code"`
 }
 
 // ActionReturn defines a return in an Action.
 type ActionReturn struct {
-	Code    int      `json:"code"`
-	Type    string   `json:"type"`
-	Body    string   `json:"body"`
+	// The status code of the response. The allowed values are: 2XX, 4XX or 5XX. The default is 200.
+	Code int `json:"code"`
+	//The MIME type of the response. The default is text/plain.
+	Type string `json:"type"`
+	// The body of the response. Supports NGINX variables*. Variables must be enclosed in curly brackets. For example: Request is ${request_uri}\n.
+	Body string `json:"body"`
+	// The custom headers of the response.
 	Headers []Header `json:"headers"`
 }
 
 // ActionProxy defines a proxy in an Action.
 type ActionProxy struct {
-	Upstream        string                `json:"upstream"`
-	RewritePath     string                `json:"rewritePath"`
-	RequestHeaders  *ProxyRequestHeaders  `json:"requestHeaders"`
+	// The name of the upstream which the requests will be proxied to. The upstream with that name must be defined in the resource.
+	Upstream string `json:"upstream"`
+	// The rewritten URI. If the route path is a regular expression – starts with ~ – the rewritePath can include capture groups with $1-9. For example $1 for the first group, and so on. For more information, check the rewrite example.
+	RewritePath string `json:"rewritePath"`
+	// The request headers modifications.
+	RequestHeaders *ProxyRequestHeaders `json:"requestHeaders"`
+	// The response headers modifications.
 	ResponseHeaders *ProxyResponseHeaders `json:"responseHeaders"`
 }
 
 // ProxyRequestHeaders defines the request headers manipulation in an ActionProxy.
 type ProxyRequestHeaders struct {
-	Pass *bool    `json:"pass"`
-	Set  []Header `json:"set"`
+	// Passes the original request headers to the proxied upstream server. See the proxy_pass_request_header directive for more information. Default is true.
+	Pass *bool `json:"pass"`
+	// Allows redefining or appending fields to present request headers passed to the proxied upstream servers. See the proxy_set_header directive for more information.
+	Set []Header `json:"set"`
 }
 
 // ProxyResponseHeaders defines the response headers manipulation in an ActionProxy.
 type ProxyResponseHeaders struct {
-	Hide   []string    `json:"hide"`
-	Pass   []string    `json:"pass"`
-	Ignore []string    `json:"ignore"`
-	Add    []AddHeader `json:"add"`
+	// The headers that will not be passed* in the response to the client from a proxied upstream server. See the proxy_hide_header directive for more information.
+	Hide []string `json:"hide"`
+	// Allows passing the hidden header fields* to the client from a proxied upstream server. See the proxy_pass_header directive for more information.
+	Pass []string `json:"pass"`
+	// Disables processing of certain headers** to the client from a proxied upstream server. See the proxy_ignore_headers directive for more information.
+	Ignore []string `json:"ignore"`
+	// Adds headers to the response to the client.
+	Add []AddHeader `json:"add"`
 }
 
 // AddHeader defines an HTTP Header with an optional Always field to use with the add_header NGINX directive.
@@ -245,30 +345,43 @@ type AddHeader struct {
 
 // Split defines a split.
 type Split struct {
-	Weight int     `json:"weight"`
+	// The weight of an action. Must fall into the range 0..100. The sum of the weights of all splits must be equal to 100.
+	Weight int `json:"weight"`
+	// The action to perform for a request.
 	Action *Action `json:"action"`
 }
 
 // Condition defines a condition in a MatchRule.
 type Condition struct {
-	Header   string `json:"header"`
-	Cookie   string `json:"cookie"`
+	// The name of a header. Must consist of alphanumeric characters or -.
+	Header string `json:"header"`
+	// The name of a cookie. Must consist of alphanumeric characters or _.
+	Cookie string `json:"cookie"`
+	// The name of an argument. Must consist of alphanumeric characters or _.
 	Argument string `json:"argument"`
+	// The name of an NGINX variable. Must start with $. See the list of the supported variables below the table.
 	Variable string `json:"variable"`
-	Value    string `json:"value"`
+	// The value to match the condition against. How to define a value is shown below the table.
+	Value string `json:"value"`
 }
 
 // Match defines a match.
 type Match struct {
+	// A list of conditions. Must include at least 1 condition.
 	Conditions []Condition `json:"conditions"`
-	Action     *Action     `json:"action"`
-	Splits     []Split     `json:"splits"`
+	// The action to perform for a request.
+	Action *Action `json:"action"`
+	// The splits configuration for traffic splitting. Must include at least 2 splits.
+	Splits []Split `json:"splits"`
 }
 
 // ErrorPage defines an ErrorPage in a Route.
 type ErrorPage struct {
-	Codes    []int              `json:"codes"`
-	Return   *ErrorPageReturn   `json:"return"`
+	// A list of error status codes.
+	Codes []int `json:"codes"`
+	// The redirect action for the given status codes.
+	Return *ErrorPageReturn `json:"return"`
+	// The canned response action for the given status codes.
 	Redirect *ErrorPageRedirect `json:"redirect"`
 }
 
@@ -284,15 +397,21 @@ type ErrorPageRedirect struct {
 
 // TLS defines TLS configuration for a VirtualServer.
 type TLS struct {
-	Secret      string       `json:"secret"`
-	Redirect    *TLSRedirect `json:"redirect"`
+	// The name of a secret with a TLS certificate and key. The secret must belong to the same namespace as the VirtualServer. The secret must be of the type kubernetes.io/tls and contain keys named tls.crt and tls.key that contain the certificate and private key as described here. If the secret doesn’t exist or is invalid, NGINX will break any attempt to establish a TLS connection to the host of the VirtualServer. If the secret is not specified but wildcard TLS secret is configured, NGINX will use the wildcard secret for TLS termination.
+	Secret string `json:"secret"`
+	// The redirect configuration of the TLS for a VirtualServer.
+	Redirect *TLSRedirect `json:"redirect"`
+	// The cert-manager configuration of the TLS for a VirtualServer.
 	CertManager *CertManager `json:"cert-manager"`
 }
 
 // TLSRedirect defines a redirect for a TLS.
 type TLSRedirect struct {
-	Enable  bool   `json:"enable"`
-	Code    *int   `json:"code"`
+	// Enables a TLS redirect for a VirtualServer. The default is False.
+	Enable bool `json:"enable"`
+	// The status code of a redirect. The allowed values are: 301 , 302 , 307 , 308. The default is 301.
+	Code *int `json:"code"`
+	// The attribute of a request that NGINX will evaluate to send a redirect. The allowed values are scheme (the scheme of the request) or x-forwarded-proto (the X-Forwarded-Proto header of the request). The default is scheme.
 	BasedOn string `json:"basedOn"`
 }
 
@@ -357,10 +476,14 @@ type VirtualServerRoute struct {
 
 // VirtualServerRouteSpec is the spec of the VirtualServerRoute resource.
 type VirtualServerRouteSpec struct {
-	IngressClass string     `json:"ingressClassName"`
-	Host         string     `json:"host"`
-	Upstreams    []Upstream `json:"upstreams"`
-	Subroutes    []Route    `json:"subroutes"`
+	// Specifies which Ingress Controller must handle the VirtualServerRoute resource. Must be the same as the ingressClassName of the VirtualServer that references this resource.
+	IngressClass string `json:"ingressClassName"`
+	// The host (domain name) of the server. Must be a valid subdomain as defined in RFC 1123, such as my-app or hello.example.com. When using a wildcard domain like *.example.com the domain must be contained in double quotes. Must be the same as the host of the VirtualServer that references this resource.
+	Host string `json:"host"`
+	// A list of upstreams.
+	Upstreams []Upstream `json:"upstreams"`
+	// A list of subroutes.
+	Subroutes []Route `json:"subroutes"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -375,7 +498,9 @@ type VirtualServerRouteList struct {
 
 // UpstreamQueue defines Queue Configuration for an Upstream.
 type UpstreamQueue struct {
-	Size    int    `json:"size"`
+	// The size of the queue.
+	Size int `json:"size"`
+	// The timeout of the queue. A request cannot be queued for a period longer than the timeout. The default is 60s.
 	Timeout string `json:"timeout"`
 }
 
@@ -457,7 +582,8 @@ type TransportServerSpec struct {
 	Upstreams          []TransportServerUpstream `json:"upstreams"`
 	UpstreamParameters *UpstreamParameters       `json:"upstreamParameters"`
 	SessionParameters  *SessionParameters        `json:"sessionParameters"`
-	Action             *TransportServerAction    `json:"action"`
+	// The action to perform for a request.
+	Action *TransportServerAction `json:"action"`
 }
 
 // TransportServerTLS defines TransportServerTLS configuration for a TransportServer.
@@ -473,49 +599,75 @@ type TransportServerListener struct {
 
 // TransportServerUpstream defines an upstream.
 type TransportServerUpstream struct {
-	Name                string                      `json:"name"`
-	Service             string                      `json:"service"`
-	Port                int                         `json:"port"`
-	FailTimeout         string                      `json:"failTimeout"`
-	MaxFails            *int                        `json:"maxFails"`
-	MaxConns            *int                        `json:"maxConns"`
-	HealthCheck         *TransportServerHealthCheck `json:"healthCheck"`
-	LoadBalancingMethod string                      `json:"loadBalancingMethod"`
-	Backup              string                      `json:"backup"`
-	BackupPort          *uint16                     `json:"backupPort"`
+	// The name of the upstream. Must be a valid DNS label as defined in RFC 1035. For example, hello and upstream-123 are valid. The name must be unique among all upstreams of the resource.
+	Name string `json:"name"`
+	// The name of a service. The service must belong to the same namespace as the resource. If the service doesn’t exist, NGINX will assume the service has zero endpoints and close client connections/ignore datagrams.
+	Service string `json:"service"`
+	// The port of the service. If the service doesn’t define that port, NGINX will assume the service has zero endpoints and close client connections/ignore datagrams. The port must fall into the range 1..65535.
+	Port int `json:"port"`
+	// Sets the number of unsuccessful attempts to communicate with the server that should happen in the duration set by the failTimeout parameter to consider the server unavailable. The default 1.
+	FailTimeout string `json:"failTimeout"`
+	// Sets the number of maximum connections to the proxied server. Default value is zero, meaning there is no limit. The default is 0.
+	MaxFails *int `json:"maxFails"`
+	// Sets the time during which the specified number of unsuccessful attempts to communicate with the server should happen to consider the server unavailable and the period of time the server will be considered unavailable. The default is 10s.
+	MaxConns *int `json:"maxConns"`
+	// The health check configuration for the Upstream. See the health_check directive. Note: this feature is supported only in NGINX Plus.
+	HealthCheck *TransportServerHealthCheck `json:"healthCheck"`
+	// The method used to load balance the upstream servers. By default, connections are distributed between the servers using a weighted round-robin balancing method. See the upstream section for available methods and their details.
+	LoadBalancingMethod string `json:"loadBalancingMethod"`
+	// The name of the backup service of type ExternalName. This will be used when the primary servers are unavailable. Note: The parameter cannot be used along with the random , hash or ip_hash load balancing methods.
+	Backup string `json:"backup"`
+	// The port of the backup service. The backup port is required if the backup service name is provided. The port must fall into the range 1..65535.
+	BackupPort *uint16 `json:"backupPort"`
 }
 
 // TransportServerHealthCheck defines the parameters for active Upstream HealthChecks.
 type TransportServerHealthCheck struct {
-	Enabled  bool                  `json:"enable"`
-	Timeout  string                `json:"timeout"`
-	Jitter   string                `json:"jitter"`
-	Port     int                   `json:"port"`
-	Interval string                `json:"interval"`
-	Passes   int                   `json:"passes"`
-	Fails    int                   `json:"fails"`
-	Match    *TransportServerMatch `json:"match"`
+	// Enables a health check for an upstream server. The default is false.
+	Enabled bool `json:"enable"`
+	// This overrides the timeout set by proxy_timeout which is set in SessionParameters for health checks. The default value is 5s.
+	Timeout string `json:"timeout"`
+	// The time within which each health check will be randomly delayed. By default, there is no delay.
+	Jitter string `json:"jitter"`
+	// The port used for health check requests. By default, the server port is used. Note: in contrast with the port of the upstream, this port is not a service port, but a port of a pod.
+	Port int `json:"port"`
+	// The interval between two consecutive health checks. The default is 5s.
+	Interval string `json:"interval"`
+	// The number of consecutive passed health checks of a particular upstream server after which the server will be considered healthy. The default is 1.
+	Passes int `json:"passes"`
+	// The number of consecutive failed health checks of a particular upstream server after which this server will be considered unhealthy. The default is 1.
+	Fails int `json:"fails"`
+	// Controls the data to send and the response to expect for the healthcheck.
+	Match *TransportServerMatch `json:"match"`
 }
 
 // TransportServerMatch defines the parameters of a custom health check.
 type TransportServerMatch struct {
-	Send   string `json:"send"`
+	// A string to send to an upstream server.
+	Send string `json:"send"`
+	// A literal string or a regular expression that the data obtained from the server should match. The regular expression is specified with the preceding ~* modifier (for case-insensitive matching), or the ~ modifier (for case-sensitive matching). NGINX Ingress Controller validates a regular expression using the RE2 syntax.
 	Expect string `json:"expect"`
 }
 
 // UpstreamParameters defines parameters for an upstream.
 type UpstreamParameters struct {
-	UDPRequests  *int `json:"udpRequests"`
+	// The number of datagrams, after receiving which, the next datagram from the same client starts a new session. See the proxy_requests directive. The default is 0.
+	UDPRequests *int `json:"udpRequests"`
+	// The number of datagrams expected from the proxied server in response to a client datagram. See the proxy_responses directive. By default, the number of datagrams is not limited.
 	UDPResponses *int `json:"udpResponses"`
-
-	ConnectTimeout      string `json:"connectTimeout"`
-	NextUpstream        bool   `json:"nextUpstream"`
+	// The timeout for establishing a connection with a proxied server. See the proxy_connect_timeout directive. The default is 60s.
+	ConnectTimeout string `json:"connectTimeout"`
+	// If a connection to the proxied server cannot be established, determines whether a client connection will be passed to the next server. See the proxy_next_upstream directive. The default is true.
+	NextUpstream bool `json:"nextUpstream"`
+	// The time allowed to pass a connection to the next server. See the proxy_next_upstream_timeout directive. The default us 0.
 	NextUpstreamTimeout string `json:"nextUpstreamTimeout"`
-	NextUpstreamTries   int    `json:"nextUpstreamTries"`
+	// The number of tries for passing a connection to the next server. See the proxy_next_upstream_tries directive. The default is 0.
+	NextUpstreamTries int `json:"nextUpstreamTries"`
 }
 
 // SessionParameters defines session parameters.
 type SessionParameters struct {
+	// The timeout between two successive read or write operations on client or proxied server connections. See proxy_timeout directive. The default is 10m.	
 	Timeout string `json:"timeout"`
 }
 
@@ -653,35 +805,35 @@ type VariableCondition struct {
 
 // JWTAuth holds JWT authentication configuration.
 type JWTAuth struct {
-	// The realm of the JWT.	
-	Realm    string `json:"realm"`
-	Secret   string `json:"secret"`
-	// The token specifies a variable that contains the JSON Web Token. By default the JWT is passed in the Authorization header as a Bearer Token. JWT may be also passed as a cookie or a part of a query string, for example: $cookie_auth_token. Accepted variables are $http_, $arg_, $cookie_.	
-	Token    string `json:"token"`
-	// The remote URI where the request will be sent to retrieve JSON Web Key set	
-	JwksURI  string `json:"jwksURI"`
-	// Enables in-memory caching of JWKS (JSON Web Key Sets) that are obtained from the jwksURI and sets a valid time for expiration.	
+	// The realm of the JWT.
+	Realm  string `json:"realm"`
+	Secret string `json:"secret"`
+	// The token specifies a variable that contains the JSON Web Token. By default the JWT is passed in the Authorization header as a Bearer Token. JWT may be also passed as a cookie or a part of a query string, for example: $cookie_auth_token. Accepted variables are $http_, $arg_, $cookie_.
+	Token string `json:"token"`
+	// The remote URI where the request will be sent to retrieve JSON Web Key set
+	JwksURI string `json:"jwksURI"`
+	// Enables in-memory caching of JWKS (JSON Web Key Sets) that are obtained from the jwksURI and sets a valid time for expiration.
 	KeyCache string `json:"keyCache"`
 }
 
 // BasicAuth holds HTTP Basic authentication configuration
 type BasicAuth struct {
-	// The realm for the basic authentication.	
-	Realm  string `json:"realm"`
-	// The name of the Kubernetes secret that stores the Htpasswd configuration. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/htpasswd, and the config must be stored in the secret under the key htpasswd, otherwise the secret will be rejected as invalid.	
+	// The realm for the basic authentication.
+	Realm string `json:"realm"`
+	// The name of the Kubernetes secret that stores the Htpasswd configuration. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/htpasswd, and the config must be stored in the secret under the key htpasswd, otherwise the secret will be rejected as invalid.
 	Secret string `json:"secret"`
 }
 
 // The IngressMTLS policy configures client certificate verification.
 type IngressMTLS struct {
-	// The name of the Kubernetes secret that stores the CA certificate. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/ca, and the certificate must be stored in the secret under the key ca.crt, otherwise the secret will be rejected as invalid.	
+	// The name of the Kubernetes secret that stores the CA certificate. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/ca, and the certificate must be stored in the secret under the key ca.crt, otherwise the secret will be rejected as invalid.
 	ClientCertSecret string `json:"clientCertSecret"`
-	// The file name of the Certificate Revocation List. NGINX Ingress Controller will look for this file in /etc/nginx/secrets	
-	CrlFileName      string `json:"crlFileName"`
-	// Verification for the client. Possible values are "on", "off", "optional", "optional_no_ca". The default is "on".	
-	VerifyClient     string `json:"verifyClient"`
-	// Sets the verification depth in the client certificates chain. The default is 1.	
-	VerifyDepth      *int   `json:"verifyDepth"`
+	// The file name of the Certificate Revocation List. NGINX Ingress Controller will look for this file in /etc/nginx/secrets
+	CrlFileName string `json:"crlFileName"`
+	// Verification for the client. Possible values are "on", "off", "optional", "optional_no_ca". The default is "on".
+	VerifyClient string `json:"verifyClient"`
+	// Sets the verification depth in the client certificates chain. The default is 1.
+	VerifyDepth *int `json:"verifyDepth"`
 }
 
 // The EgressMTLS policy configures upstreams authentication and certificate verification.
@@ -709,57 +861,57 @@ type EgressMTLS struct {
 // The OIDC policy configures NGINX Plus as a relying party for OpenID Connect authentication.
 type OIDC struct {
 	// URL for the authorization endpoint provided by your OpenID Connect provider.
-	AuthEndpoint          string   `json:"authEndpoint"`
-	// URL for the token endpoint provided by your OpenID Connect provider.	
-	TokenEndpoint         string   `json:"tokenEndpoint"`
-	// URL for the JSON Web Key Set (JWK) document provided by your OpenID Connect provider.	 
-	JWKSURI               string   `json:"jwksURI"`
-	// The client ID provided by your OpenID Connect provider.	
-	ClientID              string   `json:"clientID"`
-	// The name of the Kubernetes secret that stores the client secret provided by your OpenID Connect provider. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/oidc, and the secret under the key client-secret, otherwise the secret will be rejected as invalid. If PKCE is enabled, this should be not configured.	
-	ClientSecret          string   `json:"clientSecret"`
-	// List of OpenID Connect scopes. The scope openid always needs to be present and others can be added concatenating them with a + sign, for example openid+profile+email, openid+email+userDefinedScope. The default is openid.	
-	Scope                 string   `json:"scope"`
-	// Allows overriding the default redirect URI. The default is /_codexch.	
-	RedirectURI           string   `json:"redirectURI"`
-	// URL provided by your OpenID Connect provider to request the end user be logged out.	
-	EndSessionEndpoint    string   `json:"endSessionEndpoint"`
-	// URI to redirect to after the logout has been performed. Requires endSessionEndpoint. The default is /_logout.	
-	PostLogoutRedirectURI string   `json:"postLogoutRedirectURI"`
-	// Specifies the maximum timeout in milliseconds for synchronizing ID/access tokens and shared values between Ingress Controller pods. The default is 200.	
-	ZoneSyncLeeway        *int     `json:"zoneSyncLeeway"`
-	// A list of extra URL arguments to pass to the authorization endpoint provided by your OpenID Connect provider. Arguments must be URL encoded, multiple arguments may be included in the list, for example [ arg1=value1, arg2=value2 ]	
-	AuthExtraArgs         []string `json:"authExtraArgs"`
-	// Option of whether Bearer token is used to authorize NGINX to access protected backend.	
-	AccessTokenEnable     bool     `json:"accessTokenEnable"`
-	// Switches Proof Key for Code Exchange on. The OpenID client needs to be in public mode. clientSecret is not used in this mode.	
-	PKCEEnable            bool     `json:"pkceEnable"`
+	AuthEndpoint string `json:"authEndpoint"`
+	// URL for the token endpoint provided by your OpenID Connect provider.
+	TokenEndpoint string `json:"tokenEndpoint"`
+	// URL for the JSON Web Key Set (JWK) document provided by your OpenID Connect provider.
+	JWKSURI string `json:"jwksURI"`
+	// The client ID provided by your OpenID Connect provider.
+	ClientID string `json:"clientID"`
+	// The name of the Kubernetes secret that stores the client secret provided by your OpenID Connect provider. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/oidc, and the secret under the key client-secret, otherwise the secret will be rejected as invalid. If PKCE is enabled, this should be not configured.
+	ClientSecret string `json:"clientSecret"`
+	// List of OpenID Connect scopes. The scope openid always needs to be present and others can be added concatenating them with a + sign, for example openid+profile+email, openid+email+userDefinedScope. The default is openid.
+	Scope string `json:"scope"`
+	// Allows overriding the default redirect URI. The default is /_codexch.
+	RedirectURI string `json:"redirectURI"`
+	// URL provided by your OpenID Connect provider to request the end user be logged out.
+	EndSessionEndpoint string `json:"endSessionEndpoint"`
+	// URI to redirect to after the logout has been performed. Requires endSessionEndpoint. The default is /_logout.
+	PostLogoutRedirectURI string `json:"postLogoutRedirectURI"`
+	// Specifies the maximum timeout in milliseconds for synchronizing ID/access tokens and shared values between Ingress Controller pods. The default is 200.
+	ZoneSyncLeeway *int `json:"zoneSyncLeeway"`
+	// A list of extra URL arguments to pass to the authorization endpoint provided by your OpenID Connect provider. Arguments must be URL encoded, multiple arguments may be included in the list, for example [ arg1=value1, arg2=value2 ]
+	AuthExtraArgs []string `json:"authExtraArgs"`
+	// Option of whether Bearer token is used to authorize NGINX to access protected backend.
+	AccessTokenEnable bool `json:"accessTokenEnable"`
+	// Switches Proof Key for Code Exchange on. The OpenID client needs to be in public mode. clientSecret is not used in this mode.
+	PKCEEnable bool `json:"pkceEnable"`
 }
 
 // The WAF policy configures NGINX Plus to secure client requests using App Protect WAF policies.
 type WAF struct {
-	// Enables NGINX App Protect WAF.	
-	Enable       bool           `json:"enable"`
-	// The App Protect WAF policy of the WAF. Accepts an optional namespace. Mutually exclusive with apBundle.	
-	ApPolicy     string         `json:"apPolicy"`
-	// The App Protect WAF policy bundle. Mutually exclusive with apPolicy.	
-	ApBundle     string         `json:"apBundle"`
+	// Enables NGINX App Protect WAF.
+	Enable bool `json:"enable"`
+	// The App Protect WAF policy of the WAF. Accepts an optional namespace. Mutually exclusive with apBundle.
+	ApPolicy string `json:"apPolicy"`
+	// The App Protect WAF policy bundle. Mutually exclusive with apPolicy.
+	ApBundle string `json:"apBundle"`
 	//
-	SecurityLog  *SecurityLog   `json:"securityLog"`
-	// 
+	SecurityLog *SecurityLog `json:"securityLog"`
+	//
 	SecurityLogs []*SecurityLog `json:"securityLogs"`
 }
 
 // SecurityLog defines the security log of a WAF policy.
 type SecurityLog struct {
-	// Enables security log.	
-	Enable      bool   `json:"enable"`
+	// Enables security log.
+	Enable bool `json:"enable"`
 	// The App Protect WAF log conf resource. Accepts an optional namespace. Only works with apPolicy.
-	ApLogConf   string `json:"apLogConf"`
-	// The App Protect WAF log bundle resource. Only works with apBundle.	
+	ApLogConf string `json:"apLogConf"`
+	// The App Protect WAF log bundle resource. Only works with apBundle.
 	ApLogBundle string `json:"apLogBundle"`
-	// The log destination for the security log. Only accepted variables are syslog:server=<ip-address &#124; localhost; fqdn>:<port>, stderr, <absolute path to file>.	
-	LogDest     string `json:"logDest"`
+	// The log destination for the security log. Only accepted variables are syslog:server=<ip-address &#124; localhost; fqdn>:<port>, stderr, <absolute path to file>.
+	LogDest string `json:"logDest"`
 }
 
 // The API Key policy configures NGINX to authorize requests which provide a valid API Key in a specified header or query param.
