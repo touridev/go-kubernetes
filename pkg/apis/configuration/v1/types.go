@@ -36,7 +36,9 @@ type VirtualServer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   VirtualServerSpec   `json:"spec"`
+	// Spec contains the VirtualServer specification.
+	Spec VirtualServerSpec `json:"spec"`
+	// Status contains the current status of the VirtualServer.
 	Status VirtualServerStatus `json:"status"`
 }
 
@@ -176,12 +178,15 @@ type Upstream struct {
 
 // UpstreamBuffers defines Buffer Configuration for an Upstream.
 type UpstreamBuffers struct {
+	// Configures the number of buffers. The default is set in the proxy-buffers ConfigMap key.	
 	Number int    `json:"number"`
+	// Configures the size of a buffer. The default is set in the proxy-buffers ConfigMap key.	
 	Size   string `json:"size"`
 }
 
 // UpstreamTLS defines a TLS configuration for an Upstream.
 type UpstreamTLS struct {
+	// Enables HTTPS for requests to upstream servers. The default is False , meaning that HTTP will be used. Note: by default, NGINX will not verify the upstream server certificate. To enable the verification, configure an EgressMTLS Policy.	
 	Enable bool `json:"enable"`
 }
 
@@ -227,7 +232,9 @@ type HealthCheck struct {
 
 // Header defines an HTTP Header.
 type Header struct {
+	// The name of the header.	
 	Name  string `json:"name"`
+	// The value of the header.	
 	Value string `json:"value"`
 }
 
@@ -340,6 +347,7 @@ type ProxyResponseHeaders struct {
 // AddHeader defines an HTTP Header with an optional Always field to use with the add_header NGINX directive.
 type AddHeader struct {
 	Header `json:",inline"`
+	// If set to true, add the header regardless of the response status code**. Default is false. See the add_header directive for more information.	
 	Always bool `json:"always"`
 }
 
@@ -417,15 +425,24 @@ type TLSRedirect struct {
 
 // CertManager defines a cert manager config for a TLS.
 type CertManager struct {
+	// the name of a ClusterIssuer. A ClusterIssuer is a cert-manager resource which describes the certificate authority capable of signing certificates. It does not matter which namespace your VirtualServer resides, as ClusterIssuers are non-namespaced resources. Please note that one of issuer and cluster-issuer are required, but they are mutually exclusive - one and only one must be defined.
 	ClusterIssuer string `json:"cluster-issuer"`
-	Issuer        string `json:"issuer"`
-	IssuerKind    string `json:"issuer-kind"`
-	IssuerGroup   string `json:"issuer-group"`
-	CommonName    string `json:"common-name"`
-	Duration      string `json:"duration"`
-	RenewBefore   string `json:"renew-before"`
-	Usages        string `json:"usages"`
-	IssueTempCert bool   `json:"issue-temp-cert"`
+	// the name of an Issuer. An Issuer is a cert-manager resource which describes the certificate authority capable of signing certificates. The Issuer must be in the same namespace as the VirtualServer resource. Please note that one of issuer and cluster-issuer are required, but they are mutually exclusive - one and only one must be defined.
+	Issuer string `json:"issuer"`
+	// The kind of the external issuer resource, for example AWSPCAIssuer. This is only necessary for out-of-tree issuers. This cannot be defined if cluster-issuer is also defined.
+	IssuerKind string `json:"issuer-kind"`
+	// The API group of the external issuer controller, for example awspca.cert-manager.io. This is only necessary for out-of-tree issuers. This cannot be defined if cluster-issuer is also defined.
+	IssuerGroup string `json:"issuer-group"`
+	// This field allows you to configure spec.commonName for the Certificate to be generated. This configuration adds a CN to the x509 certificate.
+	CommonName string `json:"common-name"`
+	// This field allows you to configure spec.duration field for the Certificate to be generated. Must be specified using a Go time.Duration string format, which does not allow the d (days) suffix. You must specify these values using s, m, and h suffixes instead.
+	Duration string `json:"duration"`
+	// this annotation allows you to configure spec.renewBefore field for the Certificate to be generated. Must be specified using a Go time.Duration string format, which does not allow the d (days) suffix. You must specify these values using s, m, and h suffixes instead.
+	RenewBefore string `json:"renew-before"`
+	// This field allows you to configure spec.usages field for the Certificate to be generated. Pass a string with comma-separated values i.e. key agreement,digital signature, server auth. An exhaustive list of supported key usages can be found in the the cert-manager api documentation.
+	Usages string `json:"usages"`
+	// When true, ask cert-manager for a temporary self-signed certificate pending the issuance of the Certificate. This allows HTTPS-only servers to use ACME HTTP01 challenges when the TLS secret does not exist yet.
+	IssueTempCert bool `json:"issue-temp-cert"`
 }
 
 // VirtualServerStatus defines the status for the VirtualServer resource.
@@ -506,10 +523,15 @@ type UpstreamQueue struct {
 
 // VirtualServerRouteStatus defines the status for the VirtualServerRoute resource.
 type VirtualServerRouteStatus struct {
+	// Represents the current state of the resource. There are three possible values: Valid, Invalid and Warning. Valid indicates that the resource has been validated and accepted by the Ingress Controller. Invalid means the resource failed validation or NGINX
 	State             string             `json:"state"`
+	// The reason of the current state of the resource.
 	Reason            string             `json:"reason"`
+	// The message of the current state of the resource. It can contain more detailed information about the reason.
 	Message           string             `json:"message"`
+	// Defines how other resources reference this resource.
 	ReferencedBy      string             `json:"referencedBy"`
+	// Defines the IPs, hostnames and ports used to connect to this resource.
 	ExternalEndpoints []ExternalEndpoint `json:"externalEndpoints,omitempty"`
 }
 
@@ -523,22 +545,31 @@ type VirtualServerRouteStatus struct {
 type GlobalConfiguration struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec GlobalConfigurationSpec `json:"spec"`
+	// spec field of the GlobalConfiguration resource
+	Spec GlobalConfigurationSpec `json:"spec"` 
 }
 
 // GlobalConfigurationSpec is the spec of the GlobalConfiguration resource.
 type GlobalConfigurationSpec struct {
+	// Listeners field of the GlobalConfigurationSpec resource
 	Listeners []Listener `json:"listeners"`
 }
 
 // Listener defines a listener.
 type Listener struct {
+	// The name of the listener. The name must be unique across all listeners.
 	Name     string `json:"name"`
-	Port     int    `json:"port"`
-	IPv4     string `json:"ipv4"`
-	IPv6     string `json:"ipv6"`
+	// The protocol of the listener. For example, HTTP.
 	Protocol string `json:"protocol"`
+	// The port on which the listener will accept connections.
+	Port     int    `json:"port"`
+	// Custom SNI processing for listener. Allows listener to be used as a passthrough for SNI processing
+	PassSNI bool `json:"passSNI"`
+	// ipv4 and ipv6 addresses that NGINX will listen on. Defaults to listening on all available IPv4 and IPv6 addresses.
+	IPv4     string `json:"ipv4"`
+	// ipv6 addresses that NGINX will listen on.
+	IPv6     string `json:"ipv6"`
+	// Whether the listener will be listening for SSL connections
 	Ssl      bool   `json:"ssl"`
 }
 
@@ -548,6 +579,7 @@ type Listener struct {
 type GlobalConfigurationList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
+	// Items field of the GlobalConfigurationList resource
 
 	Items []GlobalConfiguration `json:"items"`
 }
@@ -566,21 +598,31 @@ type GlobalConfigurationList struct {
 type TransportServer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
+	// spec field of the TransportServer resource
 	Spec   TransportServerSpec   `json:"spec"`
+	// status field of the TransportServer resource
 	Status TransportServerStatus `json:"status"`
 }
 
 // TransportServerSpec is the spec of the TransportServer resource.
 type TransportServerSpec struct {
+	// Specifies which Ingress Controller must handle the VirtualServer resource.	
 	IngressClass       string                    `json:"ingressClassName"`
+	// The TLS termination configuration.	
 	TLS                *TransportServerTLS       `json:"tls"`
+	// Sets a custom HTTP and/or HTTPS listener. Valid fields are listener.http and listener.https. Each field must reference the name of a valid listener defined in a GlobalConfiguration resource	
 	Listener           TransportServerListener   `json:"listener"`
+	// Sets a custom snippet in server context. Overrides the server-snippets ConfigMap key.
 	ServerSnippets     string                    `json:"serverSnippets"`
+	// Sets a custom snippet in the stream context. Overrides the stream-snippets ConfigMap key.
 	StreamSnippets     string                    `json:"streamSnippets"`
+	// The host (domain name) of the server. Must be a valid subdomain as defined in RFC 1123, such as my-app or hello.example.com. When using a wildcard domain like *.example.com the domain must be contained in double quotes. The host value needs to be unique among all Ingress and VirtualServer resources. See also Handling Host and Listener Collisions.	
 	Host               string                    `json:"host"`
+	// A list of upstreams.	
 	Upstreams          []TransportServerUpstream `json:"upstreams"`
+	// The UpstreamParameters are set on stream context
 	UpstreamParameters *UpstreamParameters       `json:"upstreamParameters"`
+	// The parameters of the session to be used for the Server context
 	SessionParameters  *SessionParameters        `json:"sessionParameters"`
 	// The action to perform for a request.
 	Action *TransportServerAction `json:"action"`
@@ -593,7 +635,9 @@ type TransportServerTLS struct {
 
 // TransportServerListener defines a listener for a TransportServer.
 type TransportServerListener struct {
+	// The name of a listener defined in a GlobalConfiguration resource.	
 	Name     string `json:"name"`
+	// The protocol of the listener.	
 	Protocol string `json:"protocol"`
 }
 
@@ -667,19 +711,23 @@ type UpstreamParameters struct {
 
 // SessionParameters defines session parameters.
 type SessionParameters struct {
-	// The timeout between two successive read or write operations on client or proxied server connections. See proxy_timeout directive. The default is 10m.	
+	// The timeout between two successive read or write operations on client or proxied server connections. See proxy_timeout directive. The default is 10m.
 	Timeout string `json:"timeout"`
 }
 
 // TransportServerAction defines an action.
 type TransportServerAction struct {
+	// Passes connections/datagrams to an upstream. The upstream with that name must be defined in the resource.
 	Pass string `json:"pass"`
 }
 
 // TransportServerStatus defines the status for the TransportServer resource.
 type TransportServerStatus struct {
+	// Represents the current state of the resource. There are three possible values: Valid, Invalid and Warning. Valid indicates that the resource has been validated and accepted by the Ingress Controller. Invalid means the resource failed validation or
 	State   string `json:"state"`
+	// The reason of the current state of the resource.
 	Reason  string `json:"reason"`
+	// The message of the current state of the resource. It can contain more detailed information about the reason.
 	Message string `json:"message"`
 }
 
@@ -689,7 +737,7 @@ type TransportServerStatus struct {
 type TransportServerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-
+	// Items field of the TransportServerList resource
 	Items []TransportServer `json:"items"`
 }
 
@@ -706,15 +754,19 @@ type TransportServerList struct {
 type Policy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
+	// spec field of the Policy resource
 	Spec   PolicySpec   `json:"spec"`
+	// status field of the Policy resource
 	Status PolicyStatus `json:"status"`
 }
 
 // PolicyStatus is the status of the policy resource
 type PolicyStatus struct {
+	// Represents the current state of the resource. There are three possible values: Valid, Invalid and Warning. Valid indicates that the resource has been validated and accepted by the Ingress Controller. Invalid means the resource failed validation or
 	State   string `json:"state"`
+	// The reason of the current state of the resource.
 	Reason  string `json:"reason"`
+	// The message of the current state of the resource. It can contain more detailed information about the reason.
 	Message string `json:"message"`
 }
 
@@ -722,16 +774,26 @@ type PolicyStatus struct {
 // The spec includes multiple fields, where each field represents a different policy.
 // Only one policy (field) is allowed.
 type PolicySpec struct {
-	IngressClass  string         `json:"ingressClassName"`
+	// Specifies which instance of NGINX Ingress Controller must handle the Policy resource.
+	IngressClass string `json:"ingressClassName"`
+	// The access control policy based on the client IP address.
 	AccessControl *AccessControl `json:"accessControl"`
-	RateLimit     *RateLimit     `json:"rateLimit"`
-	JWTAuth       *JWTAuth       `json:"jwt"`
-	BasicAuth     *BasicAuth     `json:"basicAuth"`
-	IngressMTLS   *IngressMTLS   `json:"ingressMTLS"`
-	EgressMTLS    *EgressMTLS    `json:"egressMTLS"`
-	OIDC          *OIDC          `json:"oidc"`
-	WAF           *WAF           `json:"waf"`
-	APIKey        *APIKey        `json:"apiKey"`
+	// The rate limit policy controls the rate of processing requests per a defined key.
+	RateLimit *RateLimit `json:"rateLimit"`
+	// The JWT policy configures NGINX Plus to authenticate client requests using JSON Web Tokens.
+	JWTAuth *JWTAuth `json:"jwt"`
+	// The basic auth policy configures NGINX to authenticate client requests using HTTP Basic authentication credentials.
+	BasicAuth *BasicAuth `json:"basicAuth"`
+	// The IngressMTLS policy configures client certificate verification.
+	IngressMTLS *IngressMTLS `json:"ingressMTLS"`
+	// The EgressMTLS policy configures upstreams authentication and certificate verification.
+	EgressMTLS *EgressMTLS `json:"egressMTLS"`
+	// The OpenID Connect policy configures NGINX to authenticate client requests by validating a JWT token against an OAuth2/OIDC token provider, such as Auth0 or Keycloak.
+	OIDC *OIDC `json:"oidc"`
+	// The WAF policy configures WAF and log configuration policies for NGINX AppProtect
+	WAF *WAF `json:"waf"`
+	// The API Key policy configures NGINX to authorize requests which provide a valid API Key in a specified header or query param.
+	APIKey *APIKey `json:"apiKey"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -740,7 +802,8 @@ type PolicySpec struct {
 type PolicyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-
+	
+	// Items field of the PolicyList resource
 	Items []Policy `json:"items"`
 }
 
@@ -752,17 +815,29 @@ type AccessControl struct {
 
 // RateLimit defines a rate limit policy.
 type RateLimit struct {
-	//The rate of requests permitted. The rate is specified in requests per second (r/s) or requests per minute (r/m).
-	Rate       string `json:"rate"`
-	Key        string `json:"key"`
-	Delay      *int   `json:"delay"`
-	NoDelay    *bool  `json:"noDelay"`
-	Burst      *int   `json:"burst"`
-	ZoneSize   string `json:"zoneSize"`
-	DryRun     *bool  `json:"dryRun"`
-	LogLevel   string `json:"logLevel"`
-	RejectCode *int   `json:"rejectCode"`
-	Scale      bool   `json:"scale"`
+	// The rate of requests permitted. The rate is specified in requests per second (r/s) or requests per minute (r/m).
+	Rate string `json:"rate"`
+	// The key to which the rate limit is applied. Can contain text, variables, or a combination of them.
+	// Variables must be surrounded by ${}. For example: ${binary_remote_addr}. Accepted variables are
+	// $binary_remote_addr,$request_uri,$request_method,$url,$http_, $args,$arg_,$cookie_,$jwt_claim_.
+	Key string `json:"key"`
+	// The delay parameter specifies a limit at which excessive requests become delayed. If not set all excessive requests are delayed.
+	Delay *int `json:"delay"`
+	// Disables the delaying of excessive requests while requests are being limited. Overrides delay if both are set.
+	NoDelay *bool `json:"noDelay"`
+	// Excessive requests are delayed until their number exceeds the burst size, in which case the request is terminated with an error.
+	Burst *int `json:"burst"`
+	// Size of the shared memory zone. Only positive values are allowed. Allowed suffixes are k or m, if none are present k is assumed.
+	ZoneSize string `json:"zoneSize"`
+	// Enables the dry run mode. In this mode, the rate limit is not actually applied, but the number of excessive requests is accounted as usual in the shared memory zone.
+	DryRun *bool `json:"dryRun"`
+	// Sets the desired logging level for cases when the server refuses to process requests due to rate exceeding, or delays request processing. Allowed values are info, notice, warn or error. Default is error.
+	LogLevel string `json:"logLevel"`
+	// Sets the status code to return in response to rejected requests. Must fall into the range 400..599. Default is 503.
+	RejectCode *int `json:"rejectCode"`
+	// Enables a constant rate-limit by dividing the configured rate by the number of nginx-ingress pods currently serving traffic. This adjustment ensures that the rate-limit remains consistent, even as the number of nginx-pods fluctuates due to autoscaling. This will not work properly if requests from a client are not evenly distributed across all ingress pods (Such as with sticky sessions, long lived TCP Connections with many requests, and so forth). In such cases using zone-sync instead would give better results. Enabling zone-sync will suppress this setting.
+	Scale bool `json:"scale"`
+	// Add a condition to a rate-limit policy.
 	// +kubebuilder:validation:Optional
 	Condition *RateLimitCondition `json:"condition"`
 }
@@ -806,7 +881,8 @@ type VariableCondition struct {
 // JWTAuth holds JWT authentication configuration.
 type JWTAuth struct {
 	// The realm of the JWT.
-	Realm  string `json:"realm"`
+	Realm string `json:"realm"`
+	// The name of the Kubernetes secret that stores the Htpasswd configuration. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/htpasswd, and the config must be stored in the secret under the key htpasswd, otherwise the secret will be rejected as invalid.
 	Secret string `json:"secret"`
 	// The token specifies a variable that contains the JSON Web Token. By default the JWT is passed in the Authorization header as a Bearer Token. JWT may be also passed as a cookie or a part of a query string, for example: $cookie_auth_token. Accepted variables are $http_, $arg_, $cookie_.
 	Token string `json:"token"`
@@ -916,12 +992,16 @@ type SecurityLog struct {
 
 // The API Key policy configures NGINX to authorize requests which provide a valid API Key in a specified header or query param.
 type APIKey struct {
+	// The location of the API Key. For example, $http_auth, $arg_apikey, $cookie_auth. Accepted variables are $http_, $arg_, $cookie_.
 	SuppliedIn   *SuppliedIn `json:"suppliedIn"`
+	// The key to which the API key is applied. Can contain text, variables, or a combination of them. Accepted variables are $http_, $arg_, $cookie_.
 	ClientSecret string      `json:"clientSecret"`
 }
 
 // SuppliedIn defines the locations API Key should be supplied in.
 type SuppliedIn struct {
+	// The location of the API Key as a request header. For example, $http_auth. Accepted variables are $http_.
 	Header []string `json:"header"`
+	// The location of the API Key as a query param. For example, $arg_apikey. Accepted variables are $arg_.
 	Query  []string `json:"query"`
 }
