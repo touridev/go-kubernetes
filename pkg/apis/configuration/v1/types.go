@@ -178,15 +178,15 @@ type Upstream struct {
 
 // UpstreamBuffers defines Buffer Configuration for an Upstream.
 type UpstreamBuffers struct {
-	// Configures the number of buffers. The default is set in the proxy-buffers ConfigMap key.	
+	// Configures the number of buffers. The default is set in the proxy-buffers ConfigMap key.
 	Number int    `json:"number"`
-	// Configures the size of a buffer. The default is set in the proxy-buffers ConfigMap key.	
+	// Configures the size of a buffer. The default is set in the proxy-buffers ConfigMap key.
 	Size   string `json:"size"`
 }
 
 // UpstreamTLS defines a TLS configuration for an Upstream.
 type UpstreamTLS struct {
-	// Enables HTTPS for requests to upstream servers. The default is False , meaning that HTTP will be used. Note: by default, NGINX will not verify the upstream server certificate. To enable the verification, configure an EgressMTLS Policy.	
+	// Enables HTTPS for requests to upstream servers. The default is False , meaning that HTTP will be used. Note: by default, NGINX will not verify the upstream server certificate. To enable the verification, configure an EgressMTLS Policy.
 	Enable bool `json:"enable"`
 }
 
@@ -232,9 +232,9 @@ type HealthCheck struct {
 
 // Header defines an HTTP Header.
 type Header struct {
-	// The name of the header.	
+	// The name of the header.
 	Name  string `json:"name"`
-	// The value of the header.	
+	// The value of the header.
 	Value string `json:"value"`
 }
 
@@ -347,7 +347,7 @@ type ProxyResponseHeaders struct {
 // AddHeader defines an HTTP Header with an optional Always field to use with the add_header NGINX directive.
 type AddHeader struct {
 	Header `json:",inline"`
-	// If set to true, add the header regardless of the response status code**. Default is false. See the add_header directive for more information.	
+	// If set to true, add the header regardless of the response status code**. Default is false. See the add_header directive for more information.
 	Always bool `json:"always"`
 }
 
@@ -546,7 +546,7 @@ type GlobalConfiguration struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	// spec field of the GlobalConfiguration resource
-	Spec GlobalConfigurationSpec `json:"spec"` 
+	Spec GlobalConfigurationSpec `json:"spec"`
 }
 
 // GlobalConfigurationSpec is the spec of the GlobalConfiguration resource.
@@ -606,19 +606,19 @@ type TransportServer struct {
 
 // TransportServerSpec is the spec of the TransportServer resource.
 type TransportServerSpec struct {
-	// Specifies which Ingress Controller must handle the VirtualServer resource.	
+	// Specifies which Ingress Controller must handle the VirtualServer resource.
 	IngressClass       string                    `json:"ingressClassName"`
-	// The TLS termination configuration.	
+	// The TLS termination configuration.
 	TLS                *TransportServerTLS       `json:"tls"`
-	// Sets a custom HTTP and/or HTTPS listener. Valid fields are listener.http and listener.https. Each field must reference the name of a valid listener defined in a GlobalConfiguration resource	
+	// Sets a custom HTTP and/or HTTPS listener. Valid fields are listener.http and listener.https. Each field must reference the name of a valid listener defined in a GlobalConfiguration resource
 	Listener           TransportServerListener   `json:"listener"`
 	// Sets a custom snippet in server context. Overrides the server-snippets ConfigMap key.
 	ServerSnippets     string                    `json:"serverSnippets"`
 	// Sets a custom snippet in the stream context. Overrides the stream-snippets ConfigMap key.
 	StreamSnippets     string                    `json:"streamSnippets"`
-	// The host (domain name) of the server. Must be a valid subdomain as defined in RFC 1123, such as my-app or hello.example.com. When using a wildcard domain like *.example.com the domain must be contained in double quotes. The host value needs to be unique among all Ingress and VirtualServer resources. See also Handling Host and Listener Collisions.	
+	// The host (domain name) of the server. Must be a valid subdomain as defined in RFC 1123, such as my-app or hello.example.com. When using a wildcard domain like *.example.com the domain must be contained in double quotes. The host value needs to be unique among all Ingress and VirtualServer resources. See also Handling Host and Listener Collisions.
 	Host               string                    `json:"host"`
-	// A list of upstreams.	
+	// A list of upstreams.
 	Upstreams          []TransportServerUpstream `json:"upstreams"`
 	// The UpstreamParameters are set on stream context
 	UpstreamParameters *UpstreamParameters       `json:"upstreamParameters"`
@@ -635,9 +635,9 @@ type TransportServerTLS struct {
 
 // TransportServerListener defines a listener for a TransportServer.
 type TransportServerListener struct {
-	// The name of a listener defined in a GlobalConfiguration resource.	
+	// The name of a listener defined in a GlobalConfiguration resource.
 	Name     string `json:"name"`
-	// The protocol of the listener.	
+	// The protocol of the listener.
 	Protocol string `json:"protocol"`
 }
 
@@ -802,7 +802,7 @@ type PolicySpec struct {
 type PolicyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	
+
 	// Items field of the PolicyList resource
 	Items []Policy `json:"items"`
 }
