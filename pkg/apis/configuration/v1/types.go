@@ -108,7 +108,7 @@ type ProviderSpecificProperty struct {
 
 // PolicyReference references a policy by name and an optional namespace.
 type PolicyReference struct {
-	// The name of a policy. If the policy doesn’t exist or invalid, NGINX will respond with an error response with the 500 status code.	v
+	// The name of a policy. If the policy doesn’t exist or invalid, NGINX will respond with an error response with the 500 status code.	
 	Name string `json:"name"`
 	// The namespace of a policy. If not specified, the namespace of the VirtualServer resource is used.
 	Namespace string `json:"namespace"`
