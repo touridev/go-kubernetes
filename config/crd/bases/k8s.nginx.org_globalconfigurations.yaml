@@ -39,7 +39,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: spec field of the GlobalConfiguration resource
+            description: GlobalConfigurationSpec is the spec of the GlobalConfiguration
+              resource.
             properties:
               listeners:
                 description: Listeners field of the GlobalConfigurationSpec resource
@@ -47,8 +48,7 @@ spec:
                   description: Listener defines a listener.
                   properties:
                     ipv4:
-                      description: ipv4 and ipv6 addresses that NGINX will listen
-                        on. Defaults to listening on all available IPv4 and IPv6 addresses.
+                      description: Specifies the IPv4 address to listen on.
                       type: string
                     ipv6:
                       description: ipv6 addresses that NGINX will listen on.
@@ -57,10 +57,6 @@ spec:
                       description: The name of the listener. The name must be unique
                         across all listeners.
                       type: string
-                    passSNI:
-                      description: Custom SNI processing for listener. Allows listener
-                        to be used as a passthrough for SNI processing
-                      type: boolean
                     port:
                       description: The port on which the listener will accept connections.
                       type: integer

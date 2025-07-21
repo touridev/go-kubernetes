@@ -49,7 +49,10 @@ spec:
           metadata:
             type: object
           spec:
-            description: spec field of the Policy resource
+            description: |-
+              PolicySpec is the spec of the Policy resource.
+              The spec includes multiple fields, where each field represents a different policy.
+              Only one policy (field) is allowed.
             properties:
               accessControl:
                 description: The access control policy based on the client IP address.
@@ -350,7 +353,7 @@ spec:
                     description: |-
                       The key to which the rate limit is applied. Can contain text, variables, or a combination of them.
                       Variables must be surrounded by ${}. For example: ${binary_remote_addr}. Accepted variables are
-                      $binary_remote_addr,$request_uri,$request_method,$url,$http_, $args,$arg_,$cookie_,$jwt_claim_.
+                      $binary_remote_addr , $request_uri , $request_method , $url , $http_ , $args , $arg_, $cookie_ ,$jwt_claim_ .
                     type: string
                   logLevel:
                     description: Sets the desired logging level for cases when the

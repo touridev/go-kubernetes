@@ -98,14 +98,12 @@ spec:
                               properties:
                                 pass:
                                   description: Passes the original request headers
-                                    to the proxied upstream server. See the proxy_pass_request_header
-                                    directive for more information. Default is true.
+                                    to the proxied upstream server.  Default is true.
                                   type: boolean
                                 set:
                                   description: Allows redefining or appending fields
                                     to present request headers passed to the proxied
-                                    upstream servers. See the proxy_set_header directive
-                                    for more information.
+                                    upstream servers.
                                   items:
                                     description: Header defines an HTTP Header.
                                     properties:
@@ -132,8 +130,7 @@ spec:
                                       always:
                                         description: If set to true, add the header
                                           regardless of the response status code**.
-                                          Default is false. See the add_header directive
-                                          for more information.
+                                          Default is false.
                                         type: boolean
                                       name:
                                         description: The name of the header.
@@ -146,23 +143,19 @@ spec:
                                 hide:
                                   description: The headers that will not be passed*
                                     in the response to the client from a proxied upstream
-                                    server. See the proxy_hide_header directive for
-                                    more information.
+                                    server.
                                   items:
                                     type: string
                                   type: array
                                 ignore:
                                   description: Disables processing of certain headers**
                                     to the client from a proxied upstream server.
-                                    See the proxy_ignore_headers directive for more
-                                    information.
                                   items:
                                     type: string
                                   type: array
                                 pass:
                                   description: Allows passing the hidden header fields*
                                     to the client from a proxied upstream server.
-                                    See the proxy_pass_header directive for more information.
                                   items:
                                     type: string
                                   type: array
@@ -323,15 +316,13 @@ spec:
                                     properties:
                                       pass:
                                         description: Passes the original request headers
-                                          to the proxied upstream server. See the
-                                          proxy_pass_request_header directive for
-                                          more information. Default is true.
+                                          to the proxied upstream server.  Default
+                                          is true.
                                         type: boolean
                                       set:
                                         description: Allows redefining or appending
                                           fields to present request headers passed
-                                          to the proxied upstream servers. See the
-                                          proxy_set_header directive for more information.
+                                          to the proxied upstream servers.
                                         items:
                                           description: Header defines an HTTP Header.
                                           properties:
@@ -358,9 +349,7 @@ spec:
                                             always:
                                               description: If set to true, add the
                                                 header regardless of the response
-                                                status code**. Default is false. See
-                                                the add_header directive for more
-                                                information.
+                                                status code**. Default is false.
                                               type: boolean
                                             name:
                                               description: The name of the header.
@@ -373,24 +362,21 @@ spec:
                                       hide:
                                         description: The headers that will not be
                                           passed* in the response to the client from
-                                          a proxied upstream server. See the proxy_hide_header
-                                          directive for more information.
+                                          a proxied upstream server.
                                         items:
                                           type: string
                                         type: array
                                       ignore:
                                         description: Disables processing of certain
                                           headers** to the client from a proxied upstream
-                                          server. See the proxy_ignore_headers directive
-                                          for more information.
+                                          server.
                                         items:
                                           type: string
                                         type: array
                                       pass:
                                         description: Allows passing the hidden header
                                           fields* to the client from a proxied upstream
-                                          server. See the proxy_pass_header directive
-                                          for more information.
+                                          server.
                                         items:
                                           type: string
                                         type: array
@@ -476,12 +462,10 @@ spec:
                                   type: string
                                 value:
                                   description: The value to match the condition against.
-                                    How to define a value is shown below the table.
                                   type: string
                                 variable:
                                   description: The name of an NGINX variable. Must
-                                    start with $. See the list of the supported variables
-                                    below the table.
+                                    start with $.
                                   type: string
                               type: object
                             type: array
@@ -510,17 +494,13 @@ spec:
                                           properties:
                                             pass:
                                               description: Passes the original request
-                                                headers to the proxied upstream server.
-                                                See the proxy_pass_request_header
-                                                directive for more information. Default
+                                                headers to the proxied upstream server.  Default
                                                 is true.
                                               type: boolean
                                             set:
                                               description: Allows redefining or appending
                                                 fields to present request headers
                                                 passed to the proxied upstream servers.
-                                                See the proxy_set_header directive
-                                                for more information.
                                               items:
                                                 description: Header defines an HTTP
                                                   Header.
@@ -551,8 +531,7 @@ spec:
                                                     description: If set to true, add
                                                       the header regardless of the
                                                       response status code**. Default
-                                                      is false. See the add_header
-                                                      directive for more information.
+                                                      is false.
                                                     type: boolean
                                                   name:
                                                     description: The name of the header.
@@ -567,26 +546,20 @@ spec:
                                               description: The headers that will not
                                                 be passed* in the response to the
                                                 client from a proxied upstream server.
-                                                See the proxy_hide_header directive
-                                                for more information.
                                               items:
                                                 type: string
                                               type: array
                                             ignore:
                                               description: Disables processing of
                                                 certain headers** to the client from
-                                                a proxied upstream server. See the
-                                                proxy_ignore_headers directive for
-                                                more information.
+                                                a proxied upstream server.
                                               items:
                                                 type: string
                                               type: array
                                             pass:
                                               description: Allows passing the hidden
                                                 header fields* to the client from
-                                                a proxied upstream server. See the
-                                                proxy_pass_header directive for more
-                                                information.
+                                                a proxied upstream server.
                                               items:
                                                 type: string
                                               type: array
@@ -682,7 +655,6 @@ spec:
                     policies:
                       description: A list of policies. The policies override the policies
                         of the same type defined in the spec of the VirtualServer.
-                        See Applying Policies for more details.
                       items:
                         description: PolicyReference references a policy by name and
                           an optional namespace.
@@ -727,15 +699,13 @@ spec:
                                     properties:
                                       pass:
                                         description: Passes the original request headers
-                                          to the proxied upstream server. See the
-                                          proxy_pass_request_header directive for
-                                          more information. Default is true.
+                                          to the proxied upstream server.  Default
+                                          is true.
                                         type: boolean
                                       set:
                                         description: Allows redefining or appending
                                           fields to present request headers passed
-                                          to the proxied upstream servers. See the
-                                          proxy_set_header directive for more information.
+                                          to the proxied upstream servers.
                                         items:
                                           description: Header defines an HTTP Header.
                                           properties:
@@ -762,9 +732,7 @@ spec:
                                             always:
                                               description: If set to true, add the
                                                 header regardless of the response
-                                                status code**. Default is false. See
-                                                the add_header directive for more
-                                                information.
+                                                status code**. Default is false.
                                               type: boolean
                                             name:
                                               description: The name of the header.
@@ -777,24 +745,21 @@ spec:
                                       hide:
                                         description: The headers that will not be
                                           passed* in the response to the client from
-                                          a proxied upstream server. See the proxy_hide_header
-                                          directive for more information.
+                                          a proxied upstream server.
                                         items:
                                           type: string
                                         type: array
                                       ignore:
                                         description: Disables processing of certain
                                           headers** to the client from a proxied upstream
-                                          server. See the proxy_ignore_headers directive
-                                          for more information.
+                                          server.
                                         items:
                                           type: string
                                         type: array
                                       pass:
                                         description: Allows passing the hidden header
                                           fields* to the client from a proxied upstream
-                                          server. See the proxy_pass_header directive
-                                          for more information.
+                                          server.
                                         items:
                                           type: string
                                         type: array
@@ -888,13 +853,12 @@ spec:
                     buffer-size:
                       description: Sets the size of the buffer used for reading the
                         first part of a response received from the upstream server.
-                        See the proxy_buffer_size directive. The default is set in
-                        the proxy-buffer-size ConfigMap key.
+                        The default is set in the proxy-buffer-size ConfigMap key.
                       type: string
                     buffering:
                       description: Enables buffering of responses from the upstream
-                        server. See the proxy_buffering directive. The default is
-                        set in the proxy-buffering ConfigMap key.
+                        server.  The default is set in the proxy-buffering ConfigMap
+                        key.
                       type: boolean
                     buffers:
                       description: Configures the buffers used for reading a response
@@ -911,26 +875,23 @@ spec:
                       type: object
                     client-max-body-size:
                       description: Sets the maximum allowed size of the client request
-                        body. See the client_max_body_size directive. The default
-                        is set in the client-max-body-size ConfigMap key.
+                        body. The default is set in the client-max-body-size ConfigMap
+                        key.
                       type: string
                     connect-timeout:
                       description: The timeout for establishing a connection with
-                        an upstream server. See the proxy_connect_timeout directive.
-                        The default is specified in the proxy-connect-timeout ConfigMap
-                        key.
+                        an upstream server. The default is specified in the proxy-connect-timeout
+                        ConfigMap key.
                       type: string
                     fail-timeout:
                       description: The time during which the specified number of unsuccessful
                         attempts to communicate with an upstream server should happen
-                        to consider the server unavailable. See the fail_timeout parameter
-                        of the server directive. The default is set in the fail-timeout
-                        ConfigMap key.
+                        to consider the server unavailable. The default is set in
+                        the fail-timeout ConfigMap key.
                       type: string
                     healthCheck:
                       description: 'The health check configuration for the Upstream.
-                        See the health_check directive. Note: this feature is supported
-                        only in NGINX Plus.'
+                        Note: this feature is supported only in NGINX Plus.'
                       properties:
                         connect-timeout:
                           description: The timeout for establishing a connection with
@@ -1029,9 +990,8 @@ spec:
                         statusMatch:
                           description: 'The expected response status codes of a health
                             check. By default, the response should have status code
-                            2xx or 3xx. Examples: "200", "! 500", "301-303 307". See
-                            the documentation of the match directive. This not supported
-                            for gRPC type upstreams.'
+                            2xx or 3xx. Examples: "200", "! 500", "301-303 307". This
+                            not supported for gRPC type upstreams.'
                           type: string
                         tls:
                           description: The TLS configuration used for health check
@@ -1049,8 +1009,8 @@ spec:
                       type: object
                     keepalive:
                       description: Configures the cache for connections to upstream
-                        servers. The value 0 disables the cache. See the keepalive
-                        directive. The default is set in the keepalive ConfigMap key.
+                        servers. The value 0 disables the cache. The default is set
+                        in the keepalive ConfigMap key.
                       type: integer
                     lb-method:
                       description: The load balancing method. To use the round-robin
@@ -1059,18 +1019,16 @@ spec:
                       type: string
                     max-conns:
                       description: 'The maximum number of simultaneous active connections
-                        to an upstream server. See the max_conns parameter of the
-                        server directive. By default there is no limit. Note: if keepalive
-                        connections are enabled, the total number of active and idle
-                        keepalive connections to an upstream server may exceed the
-                        max_conns value.'
+                        to an upstream server. By default there is no limit. Note:
+                        if keepalive connections are enabled, the total number of
+                        active and idle keepalive connections to an upstream server
+                        may exceed the max_conns value.'
                       type: integer
                     max-fails:
                       description: The number of unsuccessful attempts to communicate
                         with an upstream server that should happen in the duration
                         set by the fail-timeout to consider the server unavailable.
-                        See the max_fails parameter of the server directive. The default
-                        is set in the max-fails ConfigMap key.
+                        The default is set in the max-fails ConfigMap key.
                       type: integer
                     name:
                       description: The name of the upstream. Must be a valid DNS label
@@ -1080,27 +1038,24 @@ spec:
                       type: string
                     next-upstream:
                       description: Specifies in which cases a request should be passed
-                        to the next upstream server. See the proxy_next_upstream directive.
-                        The default is error timeout.
+                        to the next upstream server. The default is error timeout.
                       type: string
                     next-upstream-timeout:
                       description: The time during which a request can be passed to
-                        the next upstream server. See the proxy_next_upstream_timeout
-                        directive. The 0 value turns off the time limit. The default
-                        is 0.
+                        the next upstream server. The 0 value turns off the time limit.
+                        The default is 0.
                       type: string
                     next-upstream-tries:
                       description: The number of possible tries for passing a request
-                        to the next upstream server. See the proxy_next_upstream_tries
-                        directive. The 0 value turns off this limit. The default is
-                        0.
+                        to the next upstream server. The 0 value turns off this limit.
+                        The default is 0.
                       type: integer
                     ntlm:
                       description: 'Allows proxying requests with NTLM Authentication.
-                        See the ntlm directive. In order for NTLM authentication to
-                        work, it is necessary to enable keepalive connections to upstream
-                        servers using the keepalive field. Note: this feature is supported
-                        only in NGINX Plus.'
+                        In order for NTLM authentication to work, it is necessary
+                        to enable keepalive connections to upstream servers using
+                        the keepalive field. Note: this feature is supported only
+                        in NGINX Plus.'
                       type: boolean
                     port:
                       description: The port of the service. If the service doesn’t
@@ -1126,13 +1081,13 @@ spec:
                       type: object
                     read-timeout:
                       description: The timeout for reading a response from an upstream
-                        server. See the proxy_read_timeout directive. The default
-                        is specified in the proxy-read-timeout ConfigMap key.
+                        server. The default is specified in the proxy-read-timeout
+                        ConfigMap key.
                       type: string
                     send-timeout:
                       description: The timeout for transmitting a request to an upstream
-                        server. See the proxy_send_timeout directive. The default
-                        is specified in the proxy-send-timeout ConfigMap key.
+                        server. The default is specified in the proxy-send-timeout
+                        ConfigMap key.
                       type: string
                     service:
                       description: The name of a service. The service must belong
@@ -1183,10 +1138,9 @@ spec:
                         recover its weight from 0 to its nominal value after it has
                         been recovered or became available or when the server becomes
                         available after a period of time it was considered unavailable.
-                        By default, the slow start is disabled. See the slow_start
-                        parameter of the server directive. Note: The parameter cannot
-                        be used along with the random , hash or ip_hash load balancing
-                        methods and will be ignored.'
+                        By default, the slow start is disabled. Note: The parameter
+                        cannot be used along with the random , hash or ip_hash load
+                        balancing methods and will be ignored.'
                       type: string
                     subselector:
                       additionalProperties:

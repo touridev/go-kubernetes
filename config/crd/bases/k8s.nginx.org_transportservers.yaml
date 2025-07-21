@@ -51,7 +51,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: spec field of the TransportServer resource
+            description: TransportServerSpec is the spec of the TransportServer resource.
             properties:
               action:
                 description: The action to perform for a request.
@@ -66,8 +66,7 @@ spec:
                   subdomain as defined in RFC 1123, such as my-app or hello.example.com.
                   When using a wildcard domain like *.example.com the domain must
                   be contained in double quotes. The host value needs to be unique
-                  among all Ingress and VirtualServer resources. See also Handling
-                  Host and Listener Collisions.
+                  among all Ingress and VirtualServer resources.
                 type: string
               ingressClassName:
                 description: Specifies which Ingress Controller must handle the VirtualServer
@@ -96,8 +95,8 @@ spec:
                 properties:
                   timeout:
                     description: The timeout between two successive read or write
-                      operations on client or proxied server connections. See proxy_timeout
-                      directive. The default is 10m.
+                      operations on client or proxied server connections. The default
+                      is 10m.
                     type: string
                 type: object
               streamSnippets:
@@ -115,34 +114,30 @@ spec:
                 properties:
                   connectTimeout:
                     description: The timeout for establishing a connection with a
-                      proxied server. See the proxy_connect_timeout directive. The
-                      default is 60s.
+                      proxied server.  The default is 60s.
                     type: string
                   nextUpstream:
                     description: If a connection to the proxied server cannot be established,
                       determines whether a client connection will be passed to the
-                      next server. See the proxy_next_upstream directive. The default
-                      is true.
+                      next server. The default is true.
                     type: boolean
                   nextUpstreamTimeout:
                     description: The time allowed to pass a connection to the next
-                      server. See the proxy_next_upstream_timeout directive. The default
-                      us 0.
+                      server. The default us 0.
                     type: string
                   nextUpstreamTries:
                     description: The number of tries for passing a connection to the
-                      next server. See the proxy_next_upstream_tries directive. The
-                      default is 0.
+                      next server. The default is 0.
                     type: integer
                   udpRequests:
                     description: The number of datagrams, after receiving which, the
-                      next datagram from the same client starts a new session. See
-                      the proxy_requests directive. The default is 0.
+                      next datagram from the same client starts a new session. The
+                      default is 0.
                     type: integer
                   udpResponses:
                     description: The number of datagrams expected from the proxied
-                      server in response to a client datagram. See the proxy_responses
-                      directive. By default, the number of datagrams is not limited.
+                      server in response to a client datagram.  By default, the number
+                      of datagrams is not limited.
                     type: integer
                 type: object
               upstreams:
@@ -169,8 +164,7 @@ spec:
                       type: string
                     healthCheck:
                       description: 'The health check configuration for the Upstream.
-                        See the health_check directive. Note: this feature is supported
-                        only in NGINX Plus.'
+                        Note: this feature is supported only in NGINX Plus.'
                       properties:
                         enable:
                           description: Enables a health check for an upstream server.
@@ -226,8 +220,7 @@ spec:
                     loadBalancingMethod:
                       description: The method used to load balance the upstream servers.
                         By default, connections are distributed between the servers
-                        using a weighted round-robin balancing method. See the upstream
-                        section for available methods and their details.
+                        using a weighted round-robin balancing method.
                       type: string
                     maxConns:
                       description: Sets the time during which the specified number

@@ -35,9 +35,7 @@ const (
 type VirtualServer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	// Spec contains the VirtualServer specification.
-	Spec VirtualServerSpec `json:"spec"`
+	Spec              VirtualServerSpec `json:"spec"`
 	// Status contains the current status of the VirtualServer.
 	Status VirtualServerStatus `json:"status"`
 }
@@ -46,7 +44,7 @@ type VirtualServer struct {
 type VirtualServerSpec struct {
 	// Specifies which Ingress Controller must handle the VirtualServerRoute resource. Must be the same as the ingressClassName of the VirtualServer that references this resource.
 	IngressClass string `json:"ingressClassName"`
-	// The host (domain name) of the server. Must be a valid subdomain as defined in RFC 1123, such as my-app or hello.example.com. When using a wildcard domain like *.example.com the domain must be contained in double quotes. The host value needs to be unique among all Ingress and VirtualServer resources. See also Handling Host and Listener Collisions.
+	// The host (domain name) of the server. Must be a valid subdomain as defined in RFC 1123, such as my-app or hello.example.com. When using a wildcard domain like *.example.com the domain must be contained in double quotes. The host value needs to be unique among all Ingress and VirtualServer resources.
 	Host string `json:"host"`
 	// Sets a custom HTTP and/or HTTPS listener. Valid fields are listener.http and listener.https. Each field must reference the name of a valid listener defined in a GlobalConfiguration resource
 	Listener *VirtualServerListener `json:"listener"`
@@ -74,7 +72,7 @@ type VirtualServerSpec struct {
 
 // VirtualServerListener references a custom http and/or https listener defined in GlobalConfiguration.
 type VirtualServerListener struct {
-	// The name of am HTTP listener defined in a GlobalConfiguration resource.
+	// The name of an HTTP listener defined in a GlobalConfiguration resource.
 	HTTP string `json:"http"`
 	// The name of an HTTPS listener defined in a GlobalConfiguration resource.
 	HTTPS string `json:"https"`
@@ -86,11 +84,13 @@ type ExternalDNS struct {
 	Enable bool `json:"enable"`
 	// The record Type that should be created, e.g. “A”, “AAAA”, “CNAME”. This is automatically computed based on the external endpoints if not defined.
 	RecordType string `json:"recordType,omitempty"`
-	// TTL for the DNS record. This defaults to 0 if not defined. See the ExternalDNS TTL documentation for provider-specific defaults
+	// TTL for the DNS record. This defaults to 0 if not defined.
 	RecordTTL int64 `json:"recordTTL,omitempty"`
 	// Configure labels to be applied to the Endpoint resources that will be consumed by ExternalDNS.
+	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
 	// Configure provider specific properties which holds the name and value of a configuration which is specific to individual DNS providers.
+	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 }
 
@@ -126,39 +126,39 @@ type Upstream struct {
 	Port uint16 `json:"port"`
 	// The load balancing method. To use the round-robin method, specify round_robin. The default is specified in the lb-method ConfigMap key.
 	LBMethod string `json:"lb-method"`
-	// The time during which the specified number of unsuccessful attempts to communicate with an upstream server should happen to consider the server unavailable. See the fail_timeout parameter of the server directive. The default is set in the fail-timeout ConfigMap key.
+	// The time during which the specified number of unsuccessful attempts to communicate with an upstream server should happen to consider the server unavailable. The default is set in the fail-timeout ConfigMap key.
 	FailTimeout string `json:"fail-timeout"`
-	// The number of unsuccessful attempts to communicate with an upstream server that should happen in the duration set by the fail-timeout to consider the server unavailable. See the max_fails parameter of the server directive. The default is set in the max-fails ConfigMap key.
+	// The number of unsuccessful attempts to communicate with an upstream server that should happen in the duration set by the fail-timeout to consider the server unavailable. The default is set in the max-fails ConfigMap key.
 	MaxFails *int `json:"max-fails"`
-	// The maximum number of simultaneous active connections to an upstream server. See the max_conns parameter of the server directive. By default there is no limit. Note: if keepalive connections are enabled, the total number of active and idle keepalive connections to an upstream server may exceed the max_conns value.
+	// The maximum number of simultaneous active connections to an upstream server. By default there is no limit. Note: if keepalive connections are enabled, the total number of active and idle keepalive connections to an upstream server may exceed the max_conns value.
 	MaxConns *int `json:"max-conns"`
-	// Configures the cache for connections to upstream servers. The value 0 disables the cache. See the keepalive directive. The default is set in the keepalive ConfigMap key.
+	// Configures the cache for connections to upstream servers. The value 0 disables the cache. The default is set in the keepalive ConfigMap key.
 	Keepalive *int `json:"keepalive"`
-	// The timeout for establishing a connection with an upstream server. See the proxy_connect_timeout directive. The default is specified in the proxy-connect-timeout ConfigMap key.
+	// The timeout for establishing a connection with an upstream server. The default is specified in the proxy-connect-timeout ConfigMap key.
 	ProxyConnectTimeout string `json:"connect-timeout"`
-	// The timeout for reading a response from an upstream server. See the proxy_read_timeout directive. The default is specified in the proxy-read-timeout ConfigMap key.
+	// The timeout for reading a response from an upstream server. The default is specified in the proxy-read-timeout ConfigMap key.
 	ProxyReadTimeout string `json:"read-timeout"`
-	// The timeout for transmitting a request to an upstream server. See the proxy_send_timeout directive. The default is specified in the proxy-send-timeout ConfigMap key.
+	// The timeout for transmitting a request to an upstream server. The default is specified in the proxy-send-timeout ConfigMap key.
 	ProxySendTimeout string `json:"send-timeout"`
-	// Specifies in which cases a request should be passed to the next upstream server. See the proxy_next_upstream directive. The default is error timeout.
+	// Specifies in which cases a request should be passed to the next upstream server. The default is error timeout.
 	ProxyNextUpstream string `json:"next-upstream"`
-	// The time during which a request can be passed to the next upstream server. See the proxy_next_upstream_timeout directive. The 0 value turns off the time limit. The default is 0.
+	// The time during which a request can be passed to the next upstream server. The 0 value turns off the time limit. The default is 0.
 	ProxyNextUpstreamTimeout string `json:"next-upstream-timeout"`
-	// The number of possible tries for passing a request to the next upstream server. See the proxy_next_upstream_tries directive. The 0 value turns off this limit. The default is 0.
+	// The number of possible tries for passing a request to the next upstream server. The 0 value turns off this limit. The default is 0.
 	ProxyNextUpstreamTries int `json:"next-upstream-tries"`
-	// Enables buffering of responses from the upstream server. See the proxy_buffering directive. The default is set in the proxy-buffering ConfigMap key.
+	// Enables buffering of responses from the upstream server.  The default is set in the proxy-buffering ConfigMap key.
 	ProxyBuffering *bool `json:"buffering"`
 	// Configures the buffers used for reading a response from the upstream server for a single connection.
 	ProxyBuffers *UpstreamBuffers `json:"buffers"`
-	// Sets the size of the buffer used for reading the first part of a response received from the upstream server. See the proxy_buffer_size directive. The default is set in the proxy-buffer-size ConfigMap key.
+	// Sets the size of the buffer used for reading the first part of a response received from the upstream server. The default is set in the proxy-buffer-size ConfigMap key.
 	ProxyBufferSize string `json:"buffer-size"`
-	// Sets the maximum allowed size of the client request body. See the client_max_body_size directive. The default is set in the client-max-body-size ConfigMap key.
+	// Sets the maximum allowed size of the client request body. The default is set in the client-max-body-size ConfigMap key.
 	ClientMaxBodySize string `json:"client-max-body-size"`
 	// The TLS configuration for the Upstream.
 	TLS UpstreamTLS `json:"tls"`
-	// The health check configuration for the Upstream. See the health_check directive. Note: this feature is supported only in NGINX Plus.
+	// The health check configuration for the Upstream. Note: this feature is supported only in NGINX Plus.
 	HealthCheck *HealthCheck `json:"healthCheck"`
-	// The slow start allows an upstream server to gradually recover its weight from 0 to its nominal value after it has been recovered or became available or when the server becomes available after a period of time it was considered unavailable. By default, the slow start is disabled. See the slow_start parameter of the server directive. Note: The parameter cannot be used along with the random , hash or ip_hash load balancing methods and will be ignored.
+	// The slow start allows an upstream server to gradually recover its weight from 0 to its nominal value after it has been recovered or became available or when the server becomes available after a period of time it was considered unavailable. By default, the slow start is disabled. Note: The parameter cannot be used along with the random , hash or ip_hash load balancing methods and will be ignored.
 	SlowStart string `json:"slow-start"`
 	// Configures a queue for an upstream. A client request will be placed into the queue if an upstream server cannot be selected immediately while processing the request. By default, no queue is configured. Note: this feature is supported only in NGINX Plus.
 	Queue *UpstreamQueue `json:"queue"`
@@ -166,7 +166,7 @@ type Upstream struct {
 	SessionCookie *SessionCookie `json:"sessionCookie"`
 	// Enables using the Cluster IP and port of the service instead of the default behavior of using the IP and port of the pods. When this field is enabled, the fields that configure NGINX behavior related to multiple upstream servers (like lb-method and next-upstream) will have no effect, as NGINX Ingress Controller will configure NGINX with only one upstream server that will match the service Cluster IP.
 	UseClusterIP bool `json:"use-cluster-ip"`
-	// Allows proxying requests with NTLM Authentication. See the ntlm directive. In order for NTLM authentication to work, it is necessary to enable keepalive connections to upstream servers using the keepalive field. Note: this feature is supported only in NGINX Plus.
+	// Allows proxying requests with NTLM Authentication. In order for NTLM authentication to work, it is necessary to enable keepalive connections to upstream servers using the keepalive field. Note: this feature is supported only in NGINX Plus.
 	NTLM bool `json:"ntlm"`
 	// The type of the upstream. Supported values are http and grpc. The default is http. For gRPC, it is necessary to enable HTTP/2 in the ConfigMap and configure TLS termination in the VirtualServer.
 	Type string `json:"type"`
@@ -216,7 +216,7 @@ type HealthCheck struct {
 	SendTimeout string `json:"send-timeout"`
 	// The request headers used for health check requests. NGINX Plus always sets the Host, User-Agent and Connection headers for health check requests.
 	Headers []Header `json:"headers"`
-	// The expected response status codes of a health check. By default, the response should have status code 2xx or 3xx. Examples: "200", "! 500", "301-303 307". See the documentation of the match directive. This not supported for gRPC type upstreams.
+	// The expected response status codes of a health check. By default, the response should have status code 2xx or 3xx. Examples: "200", "! 500", "301-303 307". This not supported for gRPC type upstreams.
 	StatusMatch string `json:"statusMatch"`
 	// The expected gRPC status code of the upstream server response to the Check method. Configure this field only if your gRPC services do not implement the gRPC health checking protocol. For example, configure 12 if the upstream server responds with 12 (UNIMPLEMENTED) status code. Only valid on gRPC type upstreams.
 	GRPCStatus *int `json:"grpcStatus"`
@@ -262,7 +262,7 @@ type SessionCookie struct {
 type Route struct {
 	// The path of the route. NGINX will match it against the URI of a request. Possible values are: a prefix ( / , /path ), an exact match ( =/exact/match ), a case insensitive regular expression ( ~*^/Bar.*\.jpg ) or a case sensitive regular expression ( ~^/foo.*\.jpg ). In the case of a prefix (must start with / ) or an exact match (must start with = ), the path must not include any whitespace characters, { , } or ;. In the case of the regex matches, all double quotes " must be escaped and the match can’t end in an unescaped backslash \. The path must be unique among the paths of all routes of the VirtualServer. Check the location directive for more information.
 	Path string `json:"path"`
-	// A list of policies. The policies override the policies of the same type defined in the spec of the VirtualServer. See Applying Policies for more details.
+	// A list of policies. The policies override the policies of the same type defined in the spec of the VirtualServer.
 	Policies []PolicyReference `json:"policies"`
 	// The name of a VirtualServerRoute resource that defines this route. If the VirtualServerRoute belongs to a different namespace than the VirtualServer, you need to include the namespace. For example, tea-namespace/tea.
 	Route string `json:"route"`
@@ -326,19 +326,19 @@ type ActionProxy struct {
 
 // ProxyRequestHeaders defines the request headers manipulation in an ActionProxy.
 type ProxyRequestHeaders struct {
-	// Passes the original request headers to the proxied upstream server. See the proxy_pass_request_header directive for more information. Default is true.
+	// Passes the original request headers to the proxied upstream server.  Default is true.
 	Pass *bool `json:"pass"`
-	// Allows redefining or appending fields to present request headers passed to the proxied upstream servers. See the proxy_set_header directive for more information.
+	// Allows redefining or appending fields to present request headers passed to the proxied upstream servers.
 	Set []Header `json:"set"`
 }
 
 // ProxyResponseHeaders defines the response headers manipulation in an ActionProxy.
 type ProxyResponseHeaders struct {
-	// The headers that will not be passed* in the response to the client from a proxied upstream server. See the proxy_hide_header directive for more information.
+	// The headers that will not be passed* in the response to the client from a proxied upstream server.
 	Hide []string `json:"hide"`
-	// Allows passing the hidden header fields* to the client from a proxied upstream server. See the proxy_pass_header directive for more information.
+	// Allows passing the hidden header fields* to the client from a proxied upstream server.
 	Pass []string `json:"pass"`
-	// Disables processing of certain headers** to the client from a proxied upstream server. See the proxy_ignore_headers directive for more information.
+	// Disables processing of certain headers** to the client from a proxied upstream server.
 	Ignore []string `json:"ignore"`
 	// Adds headers to the response to the client.
 	Add []AddHeader `json:"add"`
@@ -347,7 +347,7 @@ type ProxyResponseHeaders struct {
 // AddHeader defines an HTTP Header with an optional Always field to use with the add_header NGINX directive.
 type AddHeader struct {
 	Header `json:",inline"`
-	// If set to true, add the header regardless of the response status code**. Default is false. See the add_header directive for more information.
+	// If set to true, add the header regardless of the response status code**. Default is false.
 	Always bool `json:"always"`
 }
 
@@ -367,9 +367,9 @@ type Condition struct {
 	Cookie string `json:"cookie"`
 	// The name of an argument. Must consist of alphanumeric characters or _.
 	Argument string `json:"argument"`
-	// The name of an NGINX variable. Must start with $. See the list of the supported variables below the table.
+	// The name of an NGINX variable. Must start with $.
 	Variable string `json:"variable"`
-	// The value to match the condition against. How to define a value is shown below the table.
+	// The value to match the condition against.
 	Value string `json:"value"`
 }
 
@@ -545,8 +545,7 @@ type VirtualServerRouteStatus struct {
 type GlobalConfiguration struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	// spec field of the GlobalConfiguration resource
-	Spec GlobalConfigurationSpec `json:"spec"`
+	Spec              GlobalConfigurationSpec `json:"spec"`
 }
 
 // GlobalConfigurationSpec is the spec of the GlobalConfiguration resource.
@@ -563,9 +562,7 @@ type Listener struct {
 	Protocol string `json:"protocol"`
 	// The port on which the listener will accept connections.
 	Port int `json:"port"`
-	// Custom SNI processing for listener. Allows listener to be used as a passthrough for SNI processing
-	PassSNI bool `json:"passSNI"`
-	// ipv4 and ipv6 addresses that NGINX will listen on. Defaults to listening on all available IPv4 and IPv6 addresses.
+	// Specifies the IPv4 address to listen on.
 	IPv4 string `json:"ipv4"`
 	// ipv6 addresses that NGINX will listen on.
 	IPv6 string `json:"ipv6"`
@@ -598,8 +595,7 @@ type GlobalConfigurationList struct {
 type TransportServer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	// spec field of the TransportServer resource
-	Spec TransportServerSpec `json:"spec"`
+	Spec              TransportServerSpec `json:"spec"`
 	// status field of the TransportServer resource
 	Status TransportServerStatus `json:"status"`
 }
@@ -616,7 +612,7 @@ type TransportServerSpec struct {
 	ServerSnippets string `json:"serverSnippets"`
 	// Sets a custom snippet in the stream context. Overrides the stream-snippets ConfigMap key.
 	StreamSnippets string `json:"streamSnippets"`
-	// The host (domain name) of the server. Must be a valid subdomain as defined in RFC 1123, such as my-app or hello.example.com. When using a wildcard domain like *.example.com the domain must be contained in double quotes. The host value needs to be unique among all Ingress and VirtualServer resources. See also Handling Host and Listener Collisions.
+	// The host (domain name) of the server. Must be a valid subdomain as defined in RFC 1123, such as my-app or hello.example.com. When using a wildcard domain like *.example.com the domain must be contained in double quotes. The host value needs to be unique among all Ingress and VirtualServer resources.
 	Host string `json:"host"`
 	// A list of upstreams.
 	Upstreams []TransportServerUpstream `json:"upstreams"`
@@ -655,9 +651,9 @@ type TransportServerUpstream struct {
 	MaxFails *int `json:"maxFails"`
 	// Sets the time during which the specified number of unsuccessful attempts to communicate with the server should happen to consider the server unavailable and the period of time the server will be considered unavailable. The default is 10s.
 	MaxConns *int `json:"maxConns"`
-	// The health check configuration for the Upstream. See the health_check directive. Note: this feature is supported only in NGINX Plus.
+	// The health check configuration for the Upstream. Note: this feature is supported only in NGINX Plus.
 	HealthCheck *TransportServerHealthCheck `json:"healthCheck"`
-	// The method used to load balance the upstream servers. By default, connections are distributed between the servers using a weighted round-robin balancing method. See the upstream section for available methods and their details.
+	// The method used to load balance the upstream servers. By default, connections are distributed between the servers using a weighted round-robin balancing method.
 	LoadBalancingMethod string `json:"loadBalancingMethod"`
 	// The name of the backup service of type ExternalName. This will be used when the primary servers are unavailable. Note: The parameter cannot be used along with the random , hash or ip_hash load balancing methods.
 	Backup string `json:"backup"`
@@ -695,23 +691,23 @@ type TransportServerMatch struct {
 
 // UpstreamParameters defines parameters for an upstream.
 type UpstreamParameters struct {
-	// The number of datagrams, after receiving which, the next datagram from the same client starts a new session. See the proxy_requests directive. The default is 0.
+	// The number of datagrams, after receiving which, the next datagram from the same client starts a new session. The default is 0.
 	UDPRequests *int `json:"udpRequests"`
-	// The number of datagrams expected from the proxied server in response to a client datagram. See the proxy_responses directive. By default, the number of datagrams is not limited.
+	// The number of datagrams expected from the proxied server in response to a client datagram.  By default, the number of datagrams is not limited.
 	UDPResponses *int `json:"udpResponses"`
-	// The timeout for establishing a connection with a proxied server. See the proxy_connect_timeout directive. The default is 60s.
+	// The timeout for establishing a connection with a proxied server.  The default is 60s.
 	ConnectTimeout string `json:"connectTimeout"`
-	// If a connection to the proxied server cannot be established, determines whether a client connection will be passed to the next server. See the proxy_next_upstream directive. The default is true.
+	// If a connection to the proxied server cannot be established, determines whether a client connection will be passed to the next server. The default is true.
 	NextUpstream bool `json:"nextUpstream"`
-	// The time allowed to pass a connection to the next server. See the proxy_next_upstream_timeout directive. The default us 0.
+	// The time allowed to pass a connection to the next server. The default us 0.
 	NextUpstreamTimeout string `json:"nextUpstreamTimeout"`
-	// The number of tries for passing a connection to the next server. See the proxy_next_upstream_tries directive. The default is 0.
+	// The number of tries for passing a connection to the next server. The default is 0.
 	NextUpstreamTries int `json:"nextUpstreamTries"`
 }
 
 // SessionParameters defines session parameters.
 type SessionParameters struct {
-	// The timeout between two successive read or write operations on client or proxied server connections. See proxy_timeout directive. The default is 10m.
+	// The timeout between two successive read or write operations on client or proxied server connections. The default is 10m.
 	Timeout string `json:"timeout"`
 }
 
@@ -754,8 +750,7 @@ type TransportServerList struct {
 type Policy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	// spec field of the Policy resource
-	Spec PolicySpec `json:"spec"`
+	Spec              PolicySpec `json:"spec"`
 	// status field of the Policy resource
 	Status PolicyStatus `json:"status"`
 }
@@ -819,7 +814,7 @@ type RateLimit struct {
 	Rate string `json:"rate"`
 	// The key to which the rate limit is applied. Can contain text, variables, or a combination of them.
 	// Variables must be surrounded by ${}. For example: ${binary_remote_addr}. Accepted variables are
-	// $binary_remote_addr,$request_uri,$request_method,$url,$http_, $args,$arg_,$cookie_,$jwt_claim_.
+	// $binary_remote_addr , $request_uri , $request_method , $url , $http_ , $args , $arg_, $cookie_ ,$jwt_claim_ .
 	Key string `json:"key"`
 	// The delay parameter specifies a limit at which excessive requests become delayed. If not set all excessive requests are delayed.
 	Delay *int `json:"delay"`
