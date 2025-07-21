@@ -108,7 +108,7 @@ type ProviderSpecificProperty struct {
 
 // PolicyReference references a policy by name and an optional namespace.
 type PolicyReference struct {
-	// The name of a policy. If the policy doesn’t exist or invalid, NGINX will respond with an error response with the 500 status code.	
+	// The name of a policy. If the policy doesn’t exist or invalid, NGINX will respond with an error response with the 500 status code.
 	Name string `json:"name"`
 	// The namespace of a policy. If not specified, the namespace of the VirtualServer resource is used.
 	Namespace string `json:"namespace"`
@@ -118,7 +118,7 @@ type PolicyReference struct {
 type Upstream struct {
 	// The name of the upstream. Must be a valid DNS label as defined in RFC 1035. For example, hello and upstream-123 are valid. The name must be unique among all upstreams of the resource.
 	Name string `json:"name"`
-	// The name of a service. The service must belong to the same namespace as the resource. If the service doesn’t exist, NGINX will assume the service has zero endpoints and return a 502 response for requests for this upstream. For NGINX Plus only, services of type ExternalName are also supported (check the prerequisites ).
+	// The name of a service. The service must belong to the same namespace as the resource. If the service doesn’t exist, NGINX will assume the service has zero endpoints and return a 502 response for requests for this upstream. For NGINX Plus only, services of type ExternalName are also supported (check the prerequisites).
 	Service string `json:"service"`
 	// Selects the pods within the service using label keys and values. By default, all pods of the service are selected. Note: the specified labels are expected to be present in the pods when they are created. If the pod labels are updated, NGINX Ingress Controller will not see that change until the number of the pods is changed.
 	Subselector map[string]string `json:"subselector"`
@@ -246,7 +246,7 @@ type SessionCookie struct {
 	Name string `json:"name"`
 	// The path for which the cookie is set.
 	Path string `json:"path"`
-	// The time for which a browser should keep the cookie. Can be set to the special value max , which will cause the cookie to expire on 31 Dec 2037 23:55:55 GMT.
+	// The time for which a browser should keep the cookie. Can be set to the special value max, which will cause the cookie to expire on 31 Dec 2037 23:55:55 GMT.
 	Expires string `json:"expires"`
 	// The domain for which the cookie is set.
 	Domain string `json:"domain"`
@@ -564,7 +564,7 @@ type Listener struct {
 	Port int `json:"port"`
 	// Specifies the IPv4 address to listen on.
 	IPv4 string `json:"ipv4"`
-	// ipv6 addresses that NGINX will listen on.
+	// ipv6 addresse that NGINX will listen on.
 	IPv6 string `json:"ipv6"`
 	// Whether the listener will be listening for SSL connections
 	Ssl bool `json:"ssl"`
@@ -655,7 +655,7 @@ type TransportServerUpstream struct {
 	HealthCheck *TransportServerHealthCheck `json:"healthCheck"`
 	// The method used to load balance the upstream servers. By default, connections are distributed between the servers using a weighted round-robin balancing method.
 	LoadBalancingMethod string `json:"loadBalancingMethod"`
-	// The name of the backup service of type ExternalName. This will be used when the primary servers are unavailable. Note: The parameter cannot be used along with the random , hash or ip_hash load balancing methods.
+	// The name of the backup service of type ExternalName. This will be used when the primary servers are unavailable. Note: The parameter cannot be used along with the random, hash or ip_hash load balancing methods.
 	Backup string `json:"backup"`
 	// The port of the backup service. The backup port is required if the backup service name is provided. The port must fall into the range 1..65535.
 	BackupPort *uint16 `json:"backupPort"`
@@ -733,8 +733,7 @@ type TransportServerStatus struct {
 type TransportServerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	// Items field of the TransportServerList resource
-	Items []TransportServer `json:"items"`
+	Items           []TransportServer `json:"items"`
 }
 
 // +genclient
@@ -814,7 +813,7 @@ type RateLimit struct {
 	Rate string `json:"rate"`
 	// The key to which the rate limit is applied. Can contain text, variables, or a combination of them.
 	// Variables must be surrounded by ${}. For example: ${binary_remote_addr}. Accepted variables are
-	// $binary_remote_addr , $request_uri , $request_method , $url , $http_ , $args , $arg_, $cookie_ ,$jwt_claim_ .
+	// $binary_remote_addr, $request_uri, $request_method, $url, $http_, $args, $arg_, $cookie_,$jwt_claim_ .
 	Key string `json:"key"`
 	// The delay parameter specifies a limit at which excessive requests become delayed. If not set all excessive requests are delayed.
 	Delay *int `json:"delay"`
