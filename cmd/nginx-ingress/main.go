@@ -1069,6 +1069,7 @@ func updateSelfWithVersionInfo(ctx context.Context, eventLog record.EventRecorde
 			labels[agentVersionLabel] = agentVersion
 		}
 		newPod.ObjectMeta.Labels = labels
+		
 		_, err = kubeClient.CoreV1().Pods(newPod.ObjectMeta.Namespace).Update(context.TODO(), newPod, meta_v1.UpdateOptions{})
 		if err != nil {
 			nl.Errorf(l, "Error updating pod with labels on attempt %d of %d: %v", i+1, maxRetries, err)
