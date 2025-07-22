@@ -135,8 +135,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: GlobalConfigurationSpec is the spec of the GlobalConfiguration
-              resource.
+            description: The GlobalConfigurationSpec resource defines the global configuration
+              parameters of the Ingress Controller.
             properties:
               listeners:
                 description: Listeners field of the GlobalConfigurationSpec resource
@@ -147,7 +147,7 @@ spec:
                       description: Specifies the IPv4 address to listen on.
                       type: string
                     ipv6:
-                      description: ipv6 addresses that NGINX will listen on.
+                      description: ipv6 addresse that NGINX will listen on.
                       type: string
                     name:
                       description: The name of the listener. The name must be unique
@@ -524,7 +524,7 @@ spec:
                     description: |-
                       The key to which the rate limit is applied. Can contain text, variables, or a combination of them.
                       Variables must be surrounded by ${}. For example: ${binary_remote_addr}. Accepted variables are
-                      $binary_remote_addr , $request_uri , $request_method , $url , $http_ , $args , $arg_, $cookie_ ,$jwt_claim_ .
+                      $binary_remote_addr, $request_uri, $request_method, $url, $http_, $args, $arg_, $cookie_,$jwt_claim_ .
                     type: string
                   logLevel:
                     description: Sets the desired logging level for cases when the
@@ -621,7 +621,7 @@ spec:
                 type: object
             type: object
           status:
-            description: status field of the Policy resource
+            description: the status of the Policy resource
             properties:
               message:
                 description: The message of the current state of the resource. It
@@ -754,7 +754,7 @@ spec:
                     type: string
                 type: object
               upstreamParameters:
-                description: The UpstreamParameters are set on stream context
+                description: UpstreamParameters defines parameters for an upstream.
                 properties:
                   connectTimeout:
                     description: The timeout for establishing a connection with a
@@ -792,7 +792,7 @@ spec:
                     backup:
                       description: 'The name of the backup service of type ExternalName.
                         This will be used when the primary servers are unavailable.
-                        Note: The parameter cannot be used along with the random ,
+                        Note: The parameter cannot be used along with the random,
                         hash or ip_hash load balancing methods.'
                       type: string
                     backupPort:
@@ -900,7 +900,7 @@ spec:
                 type: array
             type: object
           status:
-            description: status field of the TransportServer resource
+            description: The status of the TransportServer resource
             properties:
               message:
                 description: The message of the current state of the resource. It
@@ -910,10 +910,10 @@ spec:
                 description: The reason of the current state of the resource.
                 type: string
               state:
-                description: 'Represents the current state of the resource. There
-                  are three possible values: Valid, Invalid and Warning. Valid indicates
-                  that the resource has been validated and accepted by the Ingress
-                  Controller. Invalid means the resource failed validation or'
+                description: 'Represents the current state of the resource. Possible
+                  values: Valid (resource validated and accepted), Invalid (validation
+                  failed or config reload failed), or Warning (validated but may work
+                  in degraded state).'
                 type: string
             type: object
         type: object
@@ -1583,9 +1583,9 @@ spec:
                           an optional namespace.
                         properties:
                           name:
-                            description: "The name of a policy. If the policy doesn’t
+                            description: The name of a policy. If the policy doesn’t
                               exist or invalid, NGINX will respond with an error response
-                              with the 500 status code.\tv"
+                              with the 500 status code.
                             type: string
                           namespace:
                             description: The namespace of a policy. If not specified,
@@ -2018,7 +2018,7 @@ spec:
                         exist, NGINX will assume the service has zero endpoints and
                         return a 502 response for requests for this upstream. For
                         NGINX Plus only, services of type ExternalName are also supported
-                        (check the prerequisites ).
+                        .
                       type: string
                     sessionCookie:
                       description: The SessionCookie field configures session persistence
@@ -2036,7 +2036,7 @@ spec:
                           type: boolean
                         expires:
                           description: The time for which a browser should keep the
-                            cookie. Can be set to the special value max , which will
+                            cookie. Can be set to the special value max, which will
                             cause the cookie to expire on 31 Dec 2037 23:55:55 GMT.
                           type: string
                         httpOnly:
@@ -2300,9 +2300,9 @@ spec:
                     optional namespace.
                   properties:
                     name:
-                      description: "The name of a policy. If the policy doesn’t exist
+                      description: The name of a policy. If the policy doesn’t exist
                         or invalid, NGINX will respond with an error response with
-                        the 500 status code.\tv"
+                        the 500 status code.
                       type: string
                     namespace:
                       description: The namespace of a policy. If not specified, the
@@ -2894,9 +2894,9 @@ spec:
                           an optional namespace.
                         properties:
                           name:
-                            description: "The name of a policy. If the policy doesn’t
+                            description: The name of a policy. If the policy doesn’t
                               exist or invalid, NGINX will respond with an error response
-                              with the 500 status code.\tv"
+                              with the 500 status code.
                             type: string
                           namespace:
                             description: The namespace of a policy. If not specified,
@@ -3431,7 +3431,7 @@ spec:
                         exist, NGINX will assume the service has zero endpoints and
                         return a 502 response for requests for this upstream. For
                         NGINX Plus only, services of type ExternalName are also supported
-                        (check the prerequisites ).
+                        .
                       type: string
                     sessionCookie:
                       description: The SessionCookie field configures session persistence
@@ -3449,7 +3449,7 @@ spec:
                           type: boolean
                         expires:
                           description: The time for which a browser should keep the
-                            cookie. Can be set to the special value max , which will
+                            cookie. Can be set to the special value max, which will
                             cause the cookie to expire on 31 Dec 2037 23:55:55 GMT.
                           type: string
                         httpOnly:

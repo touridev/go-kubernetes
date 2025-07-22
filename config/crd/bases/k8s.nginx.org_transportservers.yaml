@@ -110,7 +110,7 @@ spec:
                     type: string
                 type: object
               upstreamParameters:
-                description: The UpstreamParameters are set on stream context
+                description: UpstreamParameters defines parameters for an upstream.
                 properties:
                   connectTimeout:
                     description: The timeout for establishing a connection with a
@@ -148,7 +148,7 @@ spec:
                     backup:
                       description: 'The name of the backup service of type ExternalName.
                         This will be used when the primary servers are unavailable.
-                        Note: The parameter cannot be used along with the random ,
+                        Note: The parameter cannot be used along with the random,
                         hash or ip_hash load balancing methods.'
                       type: string
                     backupPort:
@@ -256,7 +256,7 @@ spec:
                 type: array
             type: object
           status:
-            description: status field of the TransportServer resource
+            description: The status of the TransportServer resource
             properties:
               message:
                 description: The message of the current state of the resource. It
@@ -266,10 +266,10 @@ spec:
                 description: The reason of the current state of the resource.
                 type: string
               state:
-                description: 'Represents the current state of the resource. There
-                  are three possible values: Valid, Invalid and Warning. Valid indicates
-                  that the resource has been validated and accepted by the Ingress
-                  Controller. Invalid means the resource failed validation or'
+                description: 'Represents the current state of the resource. Possible
+                  values: Valid (resource validated and accepted), Invalid (validation
+                  failed or config reload failed), or Warning (validated but may work
+                  in degraded state).'
                 type: string
             type: object
         type: object

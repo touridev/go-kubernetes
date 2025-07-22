@@ -353,7 +353,7 @@ spec:
                     description: |-
                       The key to which the rate limit is applied. Can contain text, variables, or a combination of them.
                       Variables must be surrounded by ${}. For example: ${binary_remote_addr}. Accepted variables are
-                      $binary_remote_addr , $request_uri , $request_method , $url , $http_ , $args , $arg_, $cookie_ ,$jwt_claim_ .
+                      $binary_remote_addr, $request_uri, $request_method, $url, $http_, $args, $arg_, $cookie_,$jwt_claim_ .
                     type: string
                   logLevel:
                     description: Sets the desired logging level for cases when the
@@ -450,7 +450,7 @@ spec:
                 type: object
             type: object
           status:
-            description: status field of the Policy resource
+            description: the status of the Policy resource
             properties:
               message:
                 description: The message of the current state of the resource. It

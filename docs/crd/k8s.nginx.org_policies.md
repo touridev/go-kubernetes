@@ -74,7 +74,7 @@ The `.spec` object supports the following fields:
 | `rateLimit.condition.variables[].name` | `string` | The name of the variable to match against. |
 | `rateLimit.delay` | `integer` | The delay parameter specifies a limit at which excessive requests become delayed. If not set all excessive requests are delayed. |
 | `rateLimit.dryRun` | `boolean` | Enables the dry run mode. In this mode, the rate limit is not actually applied, but the number of excessive requests is accounted as usual in the shared memory zone. |
-| `rateLimit.key` | `string` | The key to which the rate limit is applied. Can contain text, variables, or a combination of them. Variables must be surrounded by ${}. For example: ${binary_remote_addr}. Accepted variables are $binary_remote_addr,$request_uri,$request_method,$url,$http_, $args,$arg_,$cookie_,$jwt_claim_. |
+| `rateLimit.key` | `string` | The key to which the rate limit is applied. Can contain text, variables, or a combination of them. Variables must be surrounded by ${}. For example: ${binary_remote_addr}. Accepted variables are $binary_remote_addr, $request_uri, $request_method, $url, $http_, $args, $arg_, $cookie_,$jwt_claim_ . |
 | `rateLimit.logLevel` | `string` | Sets the desired logging level for cases when the server refuses to process requests due to rate exceeding, or delays request processing. Allowed values are info, notice, warn or error. Default is error. |
 | `rateLimit.noDelay` | `boolean` | Disables the delaying of excessive requests while requests are being limited. Overrides delay if both are set. |
 | `rateLimit.rate` | `string` | The rate of requests permitted. The rate is specified in requests per second (r/s) or requests per minute (r/m). |

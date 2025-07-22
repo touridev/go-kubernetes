@@ -548,7 +548,7 @@ type GlobalConfiguration struct {
 	Spec              GlobalConfigurationSpec `json:"spec"`
 }
 
-// The GlobalConfiguration resource defines the global configuration parameters of the Ingress Controller.
+// The GlobalConfigurationSpec resource defines the global configuration parameters of the Ingress Controller.
 type GlobalConfigurationSpec struct {
 	// Listeners field of the GlobalConfigurationSpec resource
 	Listeners []Listener `json:"listeners"`

@@ -153,9 +153,9 @@ spec:
                     optional namespace.
                   properties:
                     name:
-                      description: "The name of a policy. If the policy doesn’t exist
+                      description: The name of a policy. If the policy doesn’t exist
                         or invalid, NGINX will respond with an error response with
-                        the 500 status code.\tv"
+                        the 500 status code.
                       type: string
                     namespace:
                       description: The namespace of a policy. If not specified, the
@@ -747,9 +747,9 @@ spec:
                           an optional namespace.
                         properties:
                           name:
-                            description: "The name of a policy. If the policy doesn’t
+                            description: The name of a policy. If the policy doesn’t
                               exist or invalid, NGINX will respond with an error response
-                              with the 500 status code.\tv"
+                              with the 500 status code.
                             type: string
                           namespace:
                             description: The namespace of a policy. If not specified,
@@ -1284,7 +1284,7 @@ spec:
                         exist, NGINX will assume the service has zero endpoints and
                         return a 502 response for requests for this upstream. For
                         NGINX Plus only, services of type ExternalName are also supported
-                        (check the prerequisites ).
+                        .
                       type: string
                     sessionCookie:
                       description: The SessionCookie field configures session persistence
@@ -1302,7 +1302,7 @@ spec:
                           type: boolean
                         expires:
                           description: The time for which a browser should keep the
-                            cookie. Can be set to the special value max , which will
+                            cookie. Can be set to the special value max, which will
                             cause the cookie to expire on 31 Dec 2037 23:55:55 GMT.
                           type: string
                         httpOnly:
