@@ -118,7 +118,7 @@ type PolicyReference struct {
 type Upstream struct {
 	// The name of the upstream. Must be a valid DNS label as defined in RFC 1035. For example, hello and upstream-123 are valid. The name must be unique among all upstreams of the resource.
 	Name string `json:"name"`
-	// The name of a service. The service must belong to the same namespace as the resource. If the service doesn’t exist, NGINX will assume the service has zero endpoints and return a 502 response for requests for this upstream. For NGINX Plus only, services of type ExternalName are also supported (check the prerequisites).
+	// The name of a service. The service must belong to the same namespace as the resource. If the service doesn’t exist, NGINX will assume the service has zero endpoints and return a 502 response for requests for this upstream. For NGINX Plus only, services of type ExternalName are also supported .
 	Service string `json:"service"`
 	// Selects the pods within the service using label keys and values. By default, all pods of the service are selected. Note: the specified labels are expected to be present in the pods when they are created. If the pod labels are updated, NGINX Ingress Controller will not see that change until the number of the pods is changed.
 	Subselector map[string]string `json:"subselector"`
@@ -548,7 +548,7 @@ type GlobalConfiguration struct {
 	Spec              GlobalConfigurationSpec `json:"spec"`
 }
 
-// GlobalConfigurationSpec is the spec of the GlobalConfiguration resource.
+// The GlobalConfiguration resource defines the global configuration parameters of the Ingress Controller.
 type GlobalConfigurationSpec struct {
 	// Listeners field of the GlobalConfigurationSpec resource
 	Listeners []Listener `json:"listeners"`
@@ -596,7 +596,7 @@ type TransportServer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              TransportServerSpec `json:"spec"`
-	// status field of the TransportServer resource
+	// The status of the TransportServer resource
 	Status TransportServerStatus `json:"status"`
 }
 
@@ -616,7 +616,7 @@ type TransportServerSpec struct {
 	Host string `json:"host"`
 	// A list of upstreams.
 	Upstreams []TransportServerUpstream `json:"upstreams"`
-	// The UpstreamParameters are set on stream context
+	// UpstreamParameters defines parameters for an upstream.
 	UpstreamParameters *UpstreamParameters `json:"upstreamParameters"`
 	// The parameters of the session to be used for the Server context
 	SessionParameters *SessionParameters `json:"sessionParameters"`
@@ -719,7 +719,7 @@ type TransportServerAction struct {
 
 // TransportServerStatus defines the status for the TransportServer resource.
 type TransportServerStatus struct {
-	// Represents the current state of the resource. There are three possible values: Valid, Invalid and Warning. Valid indicates that the resource has been validated and accepted by the Ingress Controller. Invalid means the resource failed validation or
+	// Represents the current state of the resource. Possible values: Valid (resource validated and accepted), Invalid (validation failed or config reload failed), or Warning (validated but may work in degraded state).
 	State string `json:"state"`
 	// The reason of the current state of the resource.
 	Reason string `json:"reason"`
@@ -750,7 +750,7 @@ type Policy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              PolicySpec `json:"spec"`
-	// status field of the Policy resource
+	// the status of the Policy resource
 	Status PolicyStatus `json:"status"`
 }
 
