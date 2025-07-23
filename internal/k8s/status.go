@@ -230,14 +230,13 @@ var (
 )
 
 func isRequiredPort(port intstr.IntOrString) bool {
-	switch port.Type {
-	case intstr.Int:
+	if port.Type == intstr.Int {
 		for _, p := range intPorts {
 			if p == port.IntVal {
 				return true
 			}
 		}
-	case intstr.String:
+	} else if port.Type == intstr.String {
 		for _, p := range stringPorts {
 			if p == port.StrVal {
 				return true

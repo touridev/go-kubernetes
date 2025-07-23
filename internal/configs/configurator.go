@@ -1275,7 +1275,7 @@ func (cnf *Configurator) updatePlusEndpoints(ingEx *IngressEx) error {
 	}
 
 	for _, rule := range ingEx.Ingress.Spec.Rules {
-		if rule.HTTP == nil {
+		if rule.IngressRuleValue.HTTP == nil {
 			continue
 		}
 
@@ -1540,7 +1540,7 @@ func (cnf *Configurator) BatchDeleteIngresses(deletedKeys []string) []error {
 }
 
 func keyToFileName(key string) string {
-	return strings.ReplaceAll(key, "/", "-")
+	return strings.Replace(key, "/", "-", -1)
 }
 
 func objectMetaToFileName(meta *meta_v1.ObjectMeta) string {
@@ -1560,12 +1560,12 @@ func getFileNameForTransportServer(transportServer *conf_v1.TransportServer) str
 }
 
 func getFileNameForVirtualServerFromKey(key string) string {
-	replaced := strings.ReplaceAll(key, "/", "_")
+	replaced := strings.Replace(key, "/", "_", -1)
 	return fmt.Sprintf("vs_%s", replaced)
 }
 
 func getFileNameForTransportServerFromKey(key string) string {
-	replaced := strings.ReplaceAll(key, "/", "_")
+	replaced := strings.Replace(key, "/", "_", -1)
 	return fmt.Sprintf("ts_%s", replaced)
 }
 

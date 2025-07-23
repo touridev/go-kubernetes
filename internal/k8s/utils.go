@@ -42,7 +42,7 @@ type storeToIngressLister struct {
 // GetByKeySafe calls Store.GetByKeySafe and returns a copy of the ingress, so it is
 // safe to modify.
 func (s *storeToIngressLister) GetByKeySafe(key string) (ing *networking.Ingress, exists bool, err error) {
-	item, exists, err := s.GetByKey(key)
+	item, exists, err := s.Store.GetByKey(key)
 	if !exists || err != nil {
 		return nil, exists, err
 	}
@@ -91,7 +91,7 @@ type storeToEndpointSliceLister struct {
 
 // GetServiceEndpointSlices returns the endpoints of a service, matched on service name.
 func (s *storeToEndpointSliceLister) GetServiceEndpointSlices(svc *v1.Service) (endpointSlices []discovery_v1.EndpointSlice, err error) {
-	for _, epStore := range s.List() {
+	for _, epStore := range s.Store.List() {
 		ep := *epStore.(*discovery_v1.EndpointSlice)
 		if svc.Name == ep.Labels["kubernetes.io/service-name"] && svc.Namespace == ep.Namespace {
 			endpointSlices = append(endpointSlices, ep)

@@ -140,8 +140,8 @@ func Test_controller_Register(t *testing.T) {
 			ig := make(map[string]*namespacedInformer)
 
 			nsi := &namespacedInformer{
-				cmSharedInformerFactory:   b.SharedInformerFactory,
-				kubeSharedInformerFactory: b.KubeSharedInformerFactory,
+				cmSharedInformerFactory:   b.Context.SharedInformerFactory,
+				kubeSharedInformerFactory: b.Context.KubeSharedInformerFactory,
 				vsSharedInformerFactory:   b.VsSharedInformerFactory,
 			}
 

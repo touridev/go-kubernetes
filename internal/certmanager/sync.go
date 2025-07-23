@@ -33,6 +33,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/record"
 
 	nl "github.com/nginx/kubernetes-ingress/internal/logger"
@@ -137,7 +138,7 @@ func buildCertificates(
 		return nil, nil, err
 	}
 
-	controllerGVK := vsGVK
+	var controllerGVK schema.GroupVersionKind = vsGVK
 	hosts := []string{vs.Spec.Host}
 
 	crt := &cmapi.Certificate{

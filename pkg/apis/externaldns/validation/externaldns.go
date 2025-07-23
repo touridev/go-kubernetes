@@ -53,7 +53,7 @@ func validateTargets(targets v1.Targets) error {
 		switch {
 		case strings.Contains(target, ":"):
 			if errMsg := validation.IsValidIPForLegacyField(field.NewPath(""), target, false, nil); len(errMsg) > 0 {
-				return fmt.Errorf("%w: target %q is invalid: %w", ErrTypeInvalid, target, errMsg[0])
+				return fmt.Errorf("%w: target %q is invalid: %s", ErrTypeInvalid, target, errMsg[0])
 			}
 		default:
 			if err := isFullyQualifiedDomainName(target); err != nil {
