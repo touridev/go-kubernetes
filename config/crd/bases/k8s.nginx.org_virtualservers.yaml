@@ -265,13 +265,12 @@ spec:
                           properties:
                             code:
                               description: 'The status code of a redirect. The allowed
-                                values are: 301 , 302 , 307 , 308. The default is
-                                301.'
+                                values are: 301, 302, 307 or 308. The default is 301.'
                               type: integer
                             url:
                               description: 'The URL to redirect the request to. Supported
-                                NGINX variables: $scheme , $http_x_forwarded_proto
-                                , $request_uri , $host. Variables must be enclosed
+                                NGINX variables: $scheme, $http_x_forwarded_proto,
+                                $request_uri or $host. Variables must be enclosed
                                 in curly braces. For example: ${host}${request_uri}.'
                               type: string
                           type: object
@@ -331,13 +330,13 @@ spec:
                             properties:
                               code:
                                 description: 'The status code of a redirect. The allowed
-                                  values are: 301 , 302 , 307 , 308. The default is
+                                  values are: 301, 302, 307 or 308. The default is
                                   301.'
                                 type: integer
                               url:
                                 description: 'The URL to redirect the request to.
-                                  Supported NGINX variables: $scheme , $http_x_forwarded_proto
-                                  , $request_uri , $host. Variables must be enclosed
+                                  Supported NGINX variables: $scheme, $http_x_forwarded_proto,
+                                  $request_uri or $host. Variables must be enclosed
                                   in curly braces. For example: ${host}${request_uri}.'
                                 type: string
                             type: object
@@ -487,13 +486,13 @@ spec:
                                 properties:
                                   code:
                                     description: 'The status code of a redirect. The
-                                      allowed values are: 301 , 302 , 307 , 308. The
+                                      allowed values are: 301, 302, 307 or 308. The
                                       default is 301.'
                                     type: integer
                                   url:
                                     description: 'The URL to redirect the request
-                                      to. Supported NGINX variables: $scheme , $http_x_forwarded_proto
-                                      , $request_uri , $host. Variables must be enclosed
+                                      to. Supported NGINX variables: $scheme, $http_x_forwarded_proto,
+                                      $request_uri or $host. Variables must be enclosed
                                       in curly braces. For example: ${host}${request_uri}.'
                                     type: string
                                 type: object
@@ -672,14 +671,14 @@ spec:
                                       properties:
                                         code:
                                           description: 'The status code of a redirect.
-                                            The allowed values are: 301 , 302 , 307
-                                            , 308. The default is 301.'
+                                            The allowed values are: 301, 302, 307
+                                            or 308. The default is 301.'
                                           type: integer
                                         url:
                                           description: 'The URL to redirect the request
-                                            to. Supported NGINX variables: $scheme
-                                            , $http_x_forwarded_proto , $request_uri
-                                            , $host. Variables must be enclosed in
+                                            to. Supported NGINX variables: $scheme,
+                                            $http_x_forwarded_proto, $request_uri
+                                            or $host. Variables must be enclosed in
                                             curly braces. For example: ${host}${request_uri}.'
                                           type: string
                                       type: object
@@ -870,13 +869,13 @@ spec:
                                 properties:
                                   code:
                                     description: 'The status code of a redirect. The
-                                      allowed values are: 301 , 302 , 307 , 308. The
+                                      allowed values are: 301, 302, 307 or 308. The
                                       default is 301.'
                                     type: integer
                                   url:
                                     description: 'The URL to redirect the request
-                                      to. Supported NGINX variables: $scheme , $http_x_forwarded_proto
-                                      , $request_uri , $host. Variables must be enclosed
+                                      to. Supported NGINX variables: $scheme, $http_x_forwarded_proto,
+                                      $request_uri or $host. Variables must be enclosed
                                       in curly braces. For example: ${host}${request_uri}.'
                                     type: string
                                 type: object

@@ -431,8 +431,8 @@ spec:
                         type: boolean
                       logDest:
                         description: The log destination for the security log. Only
-                          accepted variables are syslog:server=<ip-address &#124;
-                          localhost; fqdn>:<port>, stderr, <absolute path to file>.
+                          accepted variables are syslog:server=<ip-address>; localhost;
+                          fqdn>:<port>, stderr, <absolute path to file>.
                         type: string
                     type: object
                   securityLogs:
@@ -452,8 +452,8 @@ spec:
                           type: boolean
                         logDest:
                           description: The log destination for the security log. Only
-                            accepted variables are syslog:server=<ip-address &#124;
-                            localhost; fqdn>:<port>, stderr, <absolute path to file>.
+                            accepted variables are syslog:server=<ip-address>; localhost;
+                            fqdn>:<port>, stderr, <absolute path to file>.
                           type: string
                       type: object
                     type: array

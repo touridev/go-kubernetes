@@ -91,9 +91,9 @@ The `.spec` object supports the following fields:
 | `waf.securityLog.apLogBundle` | `string` | The App Protect WAF log bundle resource. Only works with apBundle. |
 | `waf.securityLog.apLogConf` | `string` | The App Protect WAF log conf resource. Accepts an optional namespace. Only works with apPolicy. |
 | `waf.securityLog.enable` | `boolean` | Enables security log. |
-| `waf.securityLog.logDest` | `string` | The log destination for the security log. Only accepted variables are syslog:server=<ip-address &#124; localhost; fqdn>:<port>, stderr, <absolute path to file>. |
+| `waf.securityLog.logDest` | `string` | The log destination for the security log. Only accepted variables are syslog:server=<ip-address>; localhost; fqdn>:<port>, stderr, <absolute path to file>. |
 | `waf.securityLogs` | `array` | List of configuration values. |
 | `waf.securityLogs[].apLogBundle` | `string` | The App Protect WAF log bundle resource. Only works with apBundle. |
 | `waf.securityLogs[].apLogConf` | `string` | The App Protect WAF log conf resource. Accepts an optional namespace. Only works with apPolicy. |
 | `waf.securityLogs[].enable` | `boolean` | Enables security log. |
-| `waf.securityLogs[].logDest` | `string` | The log destination for the security log. Only accepted variables are syslog:server=<ip-address &#124; localhost; fqdn>:<port>, stderr, <absolute path to file>. |
+| `waf.securityLogs[].logDest` | `string` | The log destination for the security log. Only accepted variables are syslog:server=<ip-address>; localhost; fqdn>:<port>, stderr, <absolute path to file>. |
