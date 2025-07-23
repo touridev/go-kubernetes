@@ -294,9 +294,9 @@ type Action struct {
 
 // ActionRedirect defines a redirect in an Action.
 type ActionRedirect struct {
-	// The URL to redirect the request to. Supported NGINX variables: $scheme , $http_x_forwarded_proto , $request_uri , $host. Variables must be enclosed in curly braces. For example: ${host}${request_uri}.
+	// The URL to redirect the request to. Supported NGINX variables: $scheme, $http_x_forwarded_proto, $request_uri or $host. Variables must be enclosed in curly braces. For example: ${host}${request_uri}.
 	URL string `json:"url"`
-	// The status code of a redirect. The allowed values are: 301 , 302 , 307 , 308. The default is 301.
+	// The status code of a redirect. The allowed values are: 301, 302, 307 or 308. The default is 301.
 	Code int `json:"code"`
 }
 
