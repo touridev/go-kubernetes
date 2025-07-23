@@ -121,10 +121,10 @@ func (rc *serviceReferenceChecker) IsReferencedByIngress(svcNamespace string, sv
 		}
 	}
 	for _, rules := range ing.Spec.Rules {
-		if rules.IngressRuleValue.HTTP == nil {
+		if rules.HTTP == nil {
 			continue
 		}
-		for _, p := range rules.IngressRuleValue.HTTP.Paths {
+		for _, p := range rules.HTTP.Paths {
 			if p.Backend.Service.Name == svcName {
 				return true
 			}

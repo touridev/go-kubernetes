@@ -356,7 +356,8 @@ func (lbc *LoadBalancerController) processAppProtectChanges(changes []appprotect
 	nl.Debugf(lbc.Logger, "Processing %v App Protect changes", len(changes))
 
 	for _, c := range changes {
-		if c.Op == appprotect.AddOrUpdate {
+		switch c.Op {
+		case appprotect.AddOrUpdate:
 			switch impl := c.Resource.(type) {
 			case *appprotect.PolicyEx:
 				namespace := impl.Obj.GetNamespace()
@@ -387,7 +388,7 @@ func (lbc *LoadBalancerController) processAppProtectChanges(changes []appprotect
 				lbc.updateResourcesStatusAndEvents(resources, warnings, updateErr)
 				lbc.recorder.Eventf(impl.Obj, api_v1.EventTypeNormal, nl.EventReasonAddedOrUpdated, "AppProtectLogConfig %v was added or updated", namespace+"/"+name)
 			}
-		} else if c.Op == appprotect.Delete {
+		case appprotect.Delete:
 			switch impl := c.Resource.(type) {
 			case *appprotect.PolicyEx:
 				namespace := impl.Obj.GetNamespace()

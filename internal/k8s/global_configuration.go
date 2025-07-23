@@ -123,23 +123,25 @@ func (lbc *LoadBalancerController) processChangesFromGlobalConfiguration(changes
 	for _, c := range changes {
 		switch impl := c.Resource.(type) {
 		case *VirtualServerConfiguration:
-			if c.Op == AddOrUpdate {
+			switch c.Op {
+			case AddOrUpdate:
 				vsEx := lbc.createVirtualServerEx(impl.VirtualServer, impl.VirtualServerRoutes)
 
 				updatedVSExes = append(updatedVSExes, vsEx)
 				updatedResources = append(updatedResources, impl)
-			} else if c.Op == Delete {
+			case Delete:
 				key := getResourceKey(&impl.VirtualServer.ObjectMeta)
 
 				deletedVSKeys = append(deletedVSKeys, key)
 			}
 		case *TransportServerConfiguration:
-			if c.Op == AddOrUpdate {
+			switch c.Op {
+			case AddOrUpdate:
 				tsEx := lbc.createTransportServerEx(impl.TransportServer, impl.ListenerPort, impl.IPv4, impl.IPv6)
 
 				updatedTSExes = append(updatedTSExes, tsEx)
 				updatedResources = append(updatedResources, impl)
-			} else if c.Op == Delete {
+			case Delete:
 				key := getResourceKey(&impl.TransportServer.ObjectMeta)
 
 				deletedTSKeys = append(deletedTSKeys, key)

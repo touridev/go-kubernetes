@@ -72,9 +72,10 @@ func getWorkerProcesses() (int, int, error) {
 		}
 
 		text := string(bytes.TrimRight(content, "\x00"))
-		if text == "nginx: worker process" {
+		switch text {
+		case "nginx: worker process":
 			workerProcesses++
-		} else if text == "nginx: worker process is shutting down" {
+		case "nginx: worker process is shutting down":
 			prevWorkerProcesses++
 		}
 	}

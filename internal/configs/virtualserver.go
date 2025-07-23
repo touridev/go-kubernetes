@@ -403,11 +403,7 @@ func (vsc *virtualServerConfigurator) GenerateVirtualServerConfig(
 	vsc.clearWarnings()
 
 	var maps []version2.Map
-	useCustomListeners := false
-
-	if vsEx.VirtualServer.Spec.Listener != nil {
-		useCustomListeners = true
-	}
+	useCustomListeners := vsEx.VirtualServer.Spec.Listener != nil
 
 	sslConfig := vsc.generateSSLConfig(vsEx.VirtualServer, vsEx.VirtualServer.Spec.TLS, vsEx.VirtualServer.Namespace, vsEx.SecretRefs, vsc.cfgParams)
 	tlsRedirectConfig := generateTLSRedirectConfig(vsEx.VirtualServer.Spec.TLS)
@@ -1505,7 +1501,7 @@ func (p *policiesCfg) addAPIKeyConfig(
 }
 
 func rfc1123ToSnake(rfc1123String string) string {
-	return strings.Replace(rfc1123String, "-", "_", -1)
+	return strings.ReplaceAll(rfc1123String, "-", "_")
 }
 
 func generateAPIKeyClients(secretData map[string][]byte) []apiKeyClient {
@@ -2196,9 +2192,10 @@ func GenerateExternalNameSvcKey(namespace string, service string) string {
 }
 
 func generateLBMethod(method string, defaultMethod string) string {
-	if method == "" {
+	switch method {
+	case "":
 		return defaultMethod
-	} else if method == "round_robin" {
+	case "round_robin":
 		return ""
 	}
 	return method
@@ -2230,10 +2227,7 @@ func generateRewrites(path string, proxy *conf_v1.ActionProxy, internal bool, or
 		path = originalPath
 	}
 
-	isRegex := false
-	if strings.HasPrefix(path, "~") {
-		isRegex = true
-	}
+	isRegex := strings.HasPrefix(path, "~")
 
 	trimmedPath := strings.TrimPrefix(strings.TrimPrefix(path, "~"), "*")
 	trimmedPath = strings.TrimSpace(trimmedPath)

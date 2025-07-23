@@ -38,7 +38,7 @@ func validateVariable(nVar string, validVars map[string]bool, fieldPath *field.P
 // isValidSpecialHeaderLikeVariable validates special variables $http_, $jwt_header_, $jwt_claim_
 func isValidSpecialHeaderLikeVariable(value string) []string {
 	// underscores in a header-like variable represent '-'.
-	errMsgs := validation.IsHTTPHeaderName(strings.Replace(value, "_", "-", -1))
+	errMsgs := validation.IsHTTPHeaderName(strings.ReplaceAll(value, "_", "-"))
 	if len(errMsgs) >= 1 || strings.Contains(value, "-") {
 		return []string{"a valid special variable must consists of alphanumeric characters or '_'"}
 	}

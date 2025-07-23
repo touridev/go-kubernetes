@@ -12,7 +12,6 @@ import (
 	clientset "github.com/nginx/kubernetes-ingress/pkg/client/clientset/versioned"
 	extdnslisters "github.com/nginx/kubernetes-ingress/pkg/client/listers/externaldns/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	validators "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -150,19 +149,19 @@ func buildDNSEndpoint(ctx context.Context, extdnsLister extdnslisters.DNSEndpoin
 	var err error
 	l := nl.LoggerFromContext(ctx)
 
-	existingDNSEndpoint, err = extdnsLister.DNSEndpoints(vs.Namespace).Get(vs.ObjectMeta.Name)
+	existingDNSEndpoint, err = extdnsLister.DNSEndpoints(vs.Namespace).Get(vs.Name)
 
 	if !apierrors.IsNotFound(err) && err != nil {
 		return nil, nil, err
 	}
-	var controllerGVK schema.GroupVersionKind = vsGVK
+	controllerGVK := vsGVK
 	ownerRef := *metav1.NewControllerRef(vs, controllerGVK)
 	blockOwnerDeletion := false
 	ownerRef.BlockOwnerDeletion = &blockOwnerDeletion
 
 	dnsEndpoint := &extdnsapi.DNSEndpoint{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            vs.ObjectMeta.Name,
+			Name:            vs.Name,
 			Namespace:       vs.Namespace,
 			Labels:          vs.Labels,
 			OwnerReferences: []metav1.OwnerReference{ownerRef},
@@ -246,7 +245,7 @@ func buildProviderSpecificProperties(extdnsSpec vsapi.ExternalDNS) extdnsapi.Pro
 }
 
 func extdnsendpointNeedsUpdate(dnsA, dnsB *extdnsapi.DNSEndpoint) bool {
-	if !cmp.Equal(dnsA.ObjectMeta.Name, dnsB.ObjectMeta.Name) {
+	if !cmp.Equal(dnsA.Name, dnsB.Name) {
 		return true
 	}
 	if !cmp.Equal(dnsA.Labels, dnsB.Labels) {

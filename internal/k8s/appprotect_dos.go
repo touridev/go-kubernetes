@@ -207,7 +207,8 @@ func (lbc *LoadBalancerController) processAppProtectDosChanges(changes []appprot
 	nl.Debugf(lbc.Logger, "Processing %v App Protect Dos changes", len(changes))
 
 	for _, c := range changes {
-		if c.Op == appprotectdos.AddOrUpdate {
+		switch c.Op {
+		case appprotectdos.AddOrUpdate:
 			switch impl := c.Resource.(type) {
 			case *appprotectdos.DosProtectedResourceEx:
 				nl.Debugf(lbc.Logger, "handling change UPDATE OR ADD for DOS protected %s/%s", impl.Obj.Namespace, impl.Obj.Name)
@@ -231,7 +232,7 @@ func (lbc *LoadBalancerController) processAppProtectDosChanges(changes []appprot
 				}
 				lbc.recorder.Event(impl.Obj, eventType, eventTitle, msg)
 			}
-		} else if c.Op == appprotectdos.Delete {
+		case appprotectdos.Delete:
 			switch impl := c.Resource.(type) {
 			case *appprotectdos.DosPolicyEx:
 				lbc.configurator.DeleteAppProtectDosPolicy(impl.Obj)

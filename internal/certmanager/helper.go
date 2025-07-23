@@ -118,10 +118,10 @@ func translateVsSpec(crt *cmapi.Certificate, vsCmSpec *vsapi.CertManager) error 
 	}
 
 	if vsCmSpec.IssueTempCert {
-		if crt.ObjectMeta.Annotations == nil {
-			crt.ObjectMeta.Annotations = make(map[string]string)
+		if crt.Annotations == nil {
+			crt.Annotations = make(map[string]string)
 		}
-		crt.ObjectMeta.Annotations[certMgrTempCertAnnotation] = "true"
+		crt.Annotations[certMgrTempCertAnnotation] = "true"
 	}
 
 	if len(errs) > 0 {

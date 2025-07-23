@@ -238,7 +238,7 @@ func TestStatusUpdateWithExternalStatusAndExternalService(t *testing.T) {
 		},
 	)
 
-	err := ingLister.Store.Add(&ing)
+	err := ingLister.Add(&ing)
 	if err != nil {
 		t.Errorf("Error adding Ingress to the ingress lister: %v", err)
 	}
@@ -357,7 +357,7 @@ func TestStatusUpdateWithExternalStatusAndIngressLink(t *testing.T) {
 		},
 	)
 
-	err := ingLister.Store.Add(&ing)
+	err := ingLister.Add(&ing)
 	if err != nil {
 		t.Errorf("Error adding Ingress to the ingress lister: %v", err)
 	}

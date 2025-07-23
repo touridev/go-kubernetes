@@ -1276,7 +1276,8 @@ func (lbc *LoadBalancerController) processChanges(changes []ResourceChange) {
 	nl.Debugf(lbc.Logger, "Processing %v changes", len(changes))
 
 	for _, c := range changes {
-		if c.Op == AddOrUpdate {
+		switch c.Op {
+		case AddOrUpdate:
 			switch impl := c.Resource.(type) {
 			case *VirtualServerConfiguration:
 				vsEx := lbc.createVirtualServerEx(impl.VirtualServer, impl.VirtualServerRoutes)
@@ -1301,7 +1302,7 @@ func (lbc *LoadBalancerController) processChanges(changes []ResourceChange) {
 				warnings, addOrUpdateErr := lbc.configurator.AddOrUpdateTransportServer(tsEx)
 				lbc.updateTransportServerStatusAndEvents(impl, warnings, addOrUpdateErr)
 			}
-		} else if c.Op == Delete {
+		case Delete:
 			switch impl := c.Resource.(type) {
 			case *VirtualServerConfiguration:
 				key := getResourceKey(&impl.VirtualServer.ObjectMeta)
@@ -2293,7 +2294,7 @@ func (lbc *LoadBalancerController) createIngressEx(ing *networking.Ingress, vali
 		}
 
 		// check if rule has any paths
-		if rule.IngressRuleValue.HTTP == nil {
+		if rule.HTTP == nil {
 			continue
 		}
 
@@ -3080,7 +3081,7 @@ func findProbeForPods(pods []*api_v1.Pod, svcPort *api_v1.ServicePort) *api_v1.P
 			for _, port := range container.Ports {
 				if compareContainerPortAndServicePort(port, *svcPort) {
 					// only http ReadinessProbes are useful for us
-					if container.ReadinessProbe != nil && container.ReadinessProbe.ProbeHandler.HTTPGet != nil && container.ReadinessProbe.PeriodSeconds > 0 {
+					if container.ReadinessProbe != nil && container.ReadinessProbe.HTTPGet != nil && container.ReadinessProbe.PeriodSeconds > 0 {
 						return container.ReadinessProbe
 					}
 				}
@@ -3555,12 +3556,13 @@ func (lbc *LoadBalancerController) haltIfVSConfigInvalid(vsNew *conf_v1.VirtualS
 	}
 
 	for _, c := range changes {
-		if c.Op == AddOrUpdate {
+		switch c.Op {
+		case AddOrUpdate:
 			switch impl := c.Resource.(type) {
 			case *VirtualServerConfiguration:
 				lbc.updateVirtualServerStatusAndEvents(impl, configs.Warnings{}, nil)
 			}
-		} else if c.Op == Delete {
+		case Delete:
 			switch impl := c.Resource.(type) {
 			case *VirtualServerConfiguration:
 				key := getResourceKey(&impl.VirtualServer.ObjectMeta)
@@ -3646,7 +3648,7 @@ func (lbc *LoadBalancerController) vsrHasWeightChanges(vsrOld *conf_v1.VirtualSe
 }
 
 func (lbc *LoadBalancerController) createCombinedDeploymentHeadlessServiceName() string {
-	owner := lbc.metadata.pod.ObjectMeta.OwnerReferences[0]
+	owner := lbc.metadata.pod.OwnerReferences[0]
 	name := owner.Name
 	if strings.ToLower(owner.Kind) == "replicaset" {
 		if dash := strings.LastIndex(name, "-"); dash != -1 {

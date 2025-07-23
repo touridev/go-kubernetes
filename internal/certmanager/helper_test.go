@@ -87,7 +87,7 @@ func Test_translateVsSpec(t *testing.T) {
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24 * 7}, crt.Spec.Duration)
 				a.Equal(&metav1.Duration{Duration: time.Hour * 24}, crt.Spec.RenewBefore)
 				a.Equal([]cmapi.KeyUsage{cmapi.UsageServerAuth, cmapi.UsageSigning}, crt.Spec.Usages)
-				a.Equal("true", crt.ObjectMeta.Annotations[certMgrTempCertAnnotation])
+				a.Equal("true", crt.Annotations[certMgrTempCertAnnotation])
 			},
 		},
 		"nil cm spec": {

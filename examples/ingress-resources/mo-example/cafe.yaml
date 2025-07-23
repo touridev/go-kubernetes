@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mo-webserver
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mo-webserver
+  template:
+    metadata:
+      labels:
+        app: mo-webserver
+    spec:
+      containers:
+      - name: mo-webserver
+        image: mohamadaldawamneh/http-echo:latest
+        ports:
+        - containerPort: 3333
+        env:
+        - name: TEXT
+          value: "Welcome to Mo's Website!"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mo-webserver-svc
+spec:
+  ports:
+  - port: 80
+    targetPort: 3333
+    protocol: TCP
+    name: http
+  selector:
+    app: mo-webserver
+---

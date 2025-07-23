@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mo-ingress
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - mo.example.com
+    secretName: mo-secret
+  rules:
+  - host: mo.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mo-webserver-svc
+            port:
+              number: 80
+      - path: /about
+        pathType: Prefix
+        backend:
+          service:
+            name: mo-webserver-svc
+            port:
+              number: 80
+      - path: /projects
+        pathType: Prefix
+        backend:
+          service:
+            name: mo-webserver-svc
+            port:
+              number: 80
