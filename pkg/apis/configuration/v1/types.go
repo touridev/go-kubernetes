@@ -158,7 +158,7 @@ type Upstream struct {
 	TLS UpstreamTLS `json:"tls"`
 	// The health check configuration for the Upstream. Note: this feature is supported only in NGINX Plus.
 	HealthCheck *HealthCheck `json:"healthCheck"`
-	// The slow start allows an upstream server to gradually recover its weight from 0 to its nominal value after it has been recovered or became available or when the server becomes available after a period of time it was considered unavailable. By default, the slow start is disabled. Note: The parameter cannot be used along with the random , hash or ip_hash load balancing methods and will be ignored.
+	// The slow start allows an upstream server to gradually recover its weight from 0 to its nominal value after it has been recovered or became available or when the server becomes available after a period of time it was considered unavailable. By default, the slow start is disabled. Note: The parameter cannot be used along with the random, hash or ip_hash load balancing methods and will be ignored.
 	SlowStart string `json:"slow-start"`
 	// Configures a queue for an upstream. A client request will be placed into the queue if an upstream server cannot be selected immediately while processing the request. By default, no queue is configured. Note: this feature is supported only in NGINX Plus.
 	Queue *UpstreamQueue `json:"queue"`
