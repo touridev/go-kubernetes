@@ -417,7 +417,7 @@ type TLS struct {
 type TLSRedirect struct {
 	// Enables a TLS redirect for a VirtualServer. The default is False.
 	Enable bool `json:"enable"`
-	// The status code of a redirect. The allowed values are: 301 , 302 , 307 , 308. The default is 301.
+	// The status code of a redirect. The allowed values are: 301, 302, 307 or 308. The default is 301.
 	Code *int `json:"code"`
 	// The attribute of a request that NGINX will evaluate to send a redirect. The allowed values are scheme (the scheme of the request) or x-forwarded-proto (the X-Forwarded-Proto header of the request). The default is scheme.
 	BasedOn string `json:"basedOn"`
