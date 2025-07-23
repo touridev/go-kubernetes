@@ -699,7 +699,7 @@ type UpstreamParameters struct {
 	ConnectTimeout string `json:"connectTimeout"`
 	// If a connection to the proxied server cannot be established, determines whether a client connection will be passed to the next server. The default is true.
 	NextUpstream bool `json:"nextUpstream"`
-	// The time allowed to pass a connection to the next server. The default us 0.
+	// The time allowed to pass a connection to the next server. The default is 0.
 	NextUpstreamTimeout string `json:"nextUpstreamTimeout"`
 	// The number of tries for passing a connection to the next server. The default is 0.
 	NextUpstreamTries int `json:"nextUpstreamTries"`
