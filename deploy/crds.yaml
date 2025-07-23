@@ -135,7 +135,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: The GlobalConfigurationSpec resource defines the global configuration
+            description: GlobalConfigurationSpec resource defines the global configuration
               parameters of the Ingress Controller.
             properties:
               listeners:
@@ -777,7 +777,7 @@ spec:
                     type: boolean
                   nextUpstreamTimeout:
                     description: The time allowed to pass a connection to the next
-                      server. The default us 0.
+                      server. The default is 0.
                     type: string
                   nextUpstreamTries:
                     description: The number of tries for passing a connection to the

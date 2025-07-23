@@ -39,7 +39,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: The GlobalConfigurationSpec resource defines the global configuration
+            description: GlobalConfigurationSpec resource defines the global configuration
               parameters of the Ingress Controller.
             properties:
               listeners:
