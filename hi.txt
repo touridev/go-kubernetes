@@ -8,7 +8,7 @@ I20250501 16:13:00.757811   1 main.go:107] Event(v1.ObjectReference{Kind:"Pod", 
 2025/05/01 16:13:00 [notice] 17#17: js vm init njs: 0000AAAACEE7F900
 2025/05/01 16:13:00 [notice] 17#17: using the "epoll" event method
 2025/05/01 16:13:00 [notice] 17#17: nginx/1.27.4
-2025/05/01 16:13:00 [notice] 17#17: built by gcc 12.2.0 (Debian 12.2.0-14) 
+2025/05/01 16:13:00 [notice] 17#17: built by gcc 12.2.0 (Debian 12.2.0-14)
 2025/05/01 16:13:00 [notice] 17#17: OS: Linux 6.10.14-linuxkit
 2025/05/01 16:13:00 [notice] 17#17: getrlimit(RLIMIT_NOFILE): 1048576:1048576
 2025/05/01 16:13:00 [notice] 17#17: start worker processes
@@ -139,7 +139,7 @@ I20250501 16:15:40.753379   1 service.go:32] Adding service: tea-svc
 2025/05/01 16:16:46 [notice] 35#35: exit
 2025/05/01 16:16:46 [notice] 42#42: exit
 2025/05/01 16:16:46 [notice] 40#40: exit
-I20250501 16:16:46.224592   1 main.go:107] Event(v1.ObjectReference{Kind:"Ingress", Namespace:"default", Name:"cafe-ingress", UID:"95d571e9-f2c0-483b-b427-8d914611affa", APIVersion:"networking.k8s.io/v1", ResourceVersion:"773", FieldPath:""}): type: 'Normal' reason: 'AddedOrUpdated' Configuration for default/cafe-ingress was added or updated 
+I20250501 16:16:46.224592   1 main.go:107] Event(v1.ObjectReference{Kind:"Ingress", Namespace:"default", Name:"cafe-ingress", UID:"95d571e9-f2c0-483b-b427-8d914611affa", APIVersion:"networking.k8s.io/v1", ResourceVersion:"773", FieldPath:""}): type: 'Normal' reason: 'AddedOrUpdated' Configuration for default/cafe-ingress was added or updated
 2025/05/01 16:16:46 [notice] 17#17: signal 17 (SIGCHLD) received from 34
 2025/05/01 16:16:46 [notice] 17#17: worker process 34 exited with code 0
 2025/05/01 16:16:46 [notice] 17#17: worker process 36 exited with code 0
@@ -375,10 +375,10 @@ I20250502 08:54:23.154598   1 service.go:258] Syncing service default/coffee-svc
 I20250502 08:54:23.154623   1 service.go:260] Updating 1 resources
 W20250502 08:54:23.154628   1 controller.go:2313] Error retrieving endpoints for the service tea-svc: service default/tea-svc doesn't exist
 W20250502 08:54:23.154633   1 controller.go:2313] Error retrieving endpoints for the service coffee-svc: no endpointslices for target port 8080 in service coffee-svc
-I20250502 08:54:23.154755   1 main.go:107] Event(v1.ObjectReference{Kind:"Ingress", Namespace:"default", Name:"cafe-ingress", UID:"2a1ee6cc-686b-4692-8c64-e0829e70db6c", APIVersion:"networking.k8s.io/v1", ResourceVersion:"5721", FieldPath:""}): type: 'Normal' reason: 'AddedOrUpdated' Configuration for default/cafe-ingress was added or updated 
+I20250502 08:54:23.154755   1 main.go:107] Event(v1.ObjectReference{Kind:"Ingress", Namespace:"default", Name:"cafe-ingress", UID:"2a1ee6cc-686b-4692-8c64-e0829e70db6c", APIVersion:"networking.k8s.io/v1", ResourceVersion:"5721", FieldPath:""}): type: 'Normal' reason: 'AddedOrUpdated' Configuration for default/cafe-ingress was added or updated
 W20250502 08:54:23.155433   1 controller.go:2313] Error retrieving endpoints for the service tea-svc: service default/tea-svc doesn't exist
 W20250502 08:54:23.155448   1 controller.go:2313] Error retrieving endpoints for the service coffee-svc: no endpointslices for target port 8080 in service coffee-svc
-I20250502 08:54:23.155717   1 main.go:107] Event(v1.ObjectReference{Kind:"Ingress", Namespace:"default", Name:"cafe-ingress", UID:"2a1ee6cc-686b-4692-8c64-e0829e70db6c", APIVersion:"networking.k8s.io/v1", ResourceVersion:"5721", FieldPath:""}): type: 'Normal' reason: 'AddedOrUpdated' Configuration for default/cafe-ingress was added or updated 
+I20250502 08:54:23.155717   1 main.go:107] Event(v1.ObjectReference{Kind:"Ingress", Namespace:"default", Name:"cafe-ingress", UID:"2a1ee6cc-686b-4692-8c64-e0829e70db6c", APIVersion:"networking.k8s.io/v1", ResourceVersion:"5721", FieldPath:""}): type: 'Normal' reason: 'AddedOrUpdated' Configuration for default/cafe-ingress was added or updated
 I20250502 08:54:23.157472   1 service.go:32] Adding service: tea-svc
 2025/05/02 08:54:23 [notice] 17#17: signal 17 (SIGCHLD) received from 84
 2025/05/02 08:54:23 [notice] 17#17: worker process 84 exited with code 0
@@ -502,7 +502,7 @@ W20250502 08:54:23.302624   1 controller.go:2313] Error retrieving endpoints for
 2025/05/02 08:54:23 [notice] 17#17: worker process 110 exited with code 0
 W20250502 08:54:23.449757   1 controller.go:2313] Error retrieving endpoints for the service tea-svc: no endpointslices for target port 8080 in service tea-svc
 W20250502 08:54:23.449780   1 controller.go:2313] Error retrieving endpoints for the service coffee-svc: no endpointslices for target port 8080 in service coffee-svc
-I20250502 08:54:23.450600   1 main.go:107] Event(v1.ObjectReference{Kind:"Ingress", Namespace:"default", Name:"cafe-ingress", UID:"2a1ee6cc-686b-4692-8c64-e0829e70db6c", APIVersion:"networking.k8s.io/v1", ResourceVersion:"5721", FieldPath:""}): type: 'Normal' reason: 'AddedOrUpdated' Configuration for default/cafe-ingress was added or updated 
+I20250502 08:54:23.450600   1 main.go:107] Event(v1.ObjectReference{Kind:"Ingress", Namespace:"default", Name:"cafe-ingress", UID:"2a1ee6cc-686b-4692-8c64-e0829e70db6c", APIVersion:"networking.k8s.io/v1", ResourceVersion:"5721", FieldPath:""}): type: 'Normal' reason: 'AddedOrUpdated' Configuration for default/cafe-ingress was added or updated
 2025/05/02 08:54:23 [notice] 17#17: signal 29 (SIGIO) received
 2025/05/02 08:54:23 [notice] 17#17: signal 17 (SIGCHLD) received from 110
 2025/05/02 08:54:23 [notice] 17#17: signal 17 (SIGCHLD) received from 108
