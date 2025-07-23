@@ -884,6 +884,10 @@ type JWTAuth struct {
 	JwksURI string `json:"jwksURI"`
 	// Enables in-memory caching of JWKS (JSON Web Key Sets) that are obtained from the jwksURI and sets a valid time for expiration.
 	KeyCache string `json:"keyCache"`
+	// Enables SNI (Server Name Indication) for the JWT policy. This is useful when the remote server requires SNI to serve the correct certificate.
+	SNIEnabled bool `json:"sniEnabled"`
+	// The SNI name to use when connecting to the remote server. If not set, the hostname from the ``jwksURI`` will be used.
+	SNIName string `json:"sniName"`
 }
 
 // BasicAuth holds HTTP Basic authentication configuration

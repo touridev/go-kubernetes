@@ -379,6 +379,16 @@ spec:
                       and the config must be stored in the secret under the key htpasswd,
                       otherwise the secret will be rejected as invalid.
                     type: string
+                  sniEnabled:
+                    description: Enables SNI (Server Name Indication) for the JWT
+                      policy. This is useful when the remote server requires SNI to
+                      serve the correct certificate.
+                    type: boolean
+                  sniName:
+                    description: The SNI name to use when connecting to the remote
+                      server. If not set, the hostname from the ``jwksURI`` will be
+                      used.
+                    type: string
                   token:
                     description: 'The token specifies a variable that contains the
                       JSON Web Token. By default the JWT is passed in the Authorization
