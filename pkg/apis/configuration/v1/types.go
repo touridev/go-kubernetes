@@ -984,7 +984,7 @@ type SecurityLog struct {
 	ApLogConf string `json:"apLogConf"`
 	// The App Protect WAF log bundle resource. Only works with apBundle.
 	ApLogBundle string `json:"apLogBundle"`
-	// The log destination for the security log. Only accepted variables are syslog:server=<ip-address &#124; localhost; fqdn>:<port>, stderr, <absolute path to file>.
+	// The log destination for the security log. Only accepted variables are syslog:server=<ip-address>; localhost; fqdn>:<port>, stderr, <absolute path to file>.
 	LogDest string `json:"logDest"`
 }
 
