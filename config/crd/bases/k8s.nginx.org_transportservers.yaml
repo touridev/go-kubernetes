@@ -160,7 +160,7 @@ spec:
                       description: Sets the number of unsuccessful attempts to communicate
                         with the server that should happen in the duration set by
                         the failTimeout parameter to consider the server unavailable.
-                        The default 1.
+                        The default is 1.
                       type: string
                     healthCheck:
                       description: 'The health check configuration for the Upstream.

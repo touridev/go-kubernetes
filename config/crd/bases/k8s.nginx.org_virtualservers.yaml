@@ -1004,7 +1004,7 @@ spec:
                         type: string
                       code:
                         description: 'The status code of a redirect. The allowed values
-                          are: 301 , 302 , 307 , 308. The default is 301.'
+                          are: 301, 302, 307 or 308. The default is 301.'
                         type: integer
                       enable:
                         description: Enables a TLS redirect for a VirtualServer. The
@@ -1031,7 +1031,7 @@ spec:
                     backup:
                       description: 'The name of the backup service of type ExternalName.
                         This will be used when the primary servers are unavailable.
-                        Note: The parameter cannot be used along with the random ,
+                        Note: The parameter cannot be used along with the random,
                         hash or ip_hash load balancing methods.'
                       type: string
                     backupPort:
@@ -1328,7 +1328,7 @@ spec:
                         been recovered or became available or when the server becomes
                         available after a period of time it was considered unavailable.
                         By default, the slow start is disabled. Note: The parameter
-                        cannot be used along with the random , hash or ip_hash load
+                        cannot be used along with the random, hash or ip_hash load
                         balancing methods and will be ignored.'
                       type: string
                     subselector:

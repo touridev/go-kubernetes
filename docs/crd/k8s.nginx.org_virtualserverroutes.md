@@ -161,7 +161,7 @@ The `.spec` object supports the following fields:
 | `subroutes[].splits[].action.return.type` | `string` | The MIME type of the response. The default is text/plain. |
 | `subroutes[].splits[].weight` | `integer` | The weight of an action. Must fall into the range 0..100. The sum of the weights of all splits must be equal to 100. |
 | `upstreams` | `array` | A list of upstreams. |
-| `upstreams[].backup` | `string` | The name of the backup service of type ExternalName. This will be used when the primary servers are unavailable. Note: The parameter cannot be used along with the random , hash or ip_hash load balancing methods. |
+| `upstreams[].backup` | `string` | The name of the backup service of type ExternalName. This will be used when the primary servers are unavailable. Note: The parameter cannot be used along with the random, hash or ip_hash load balancing methods. |
 | `upstreams[].backupPort` | `integer` | The port of the backup service. The backup port is required if the backup service name is provided. The port must fall into the range 1..65535. |
 | `upstreams[].buffer-size` | `string` | Sets the size of the buffer used for reading the first part of a response received from the upstream server. The default is set in the proxy-buffer-size ConfigMap key. |
 | `upstreams[].buffering` | `boolean` | Enables buffering of responses from the upstream server. The default is set in the proxy-buffering ConfigMap key. |
@@ -218,7 +218,7 @@ The `.spec` object supports the following fields:
 | `upstreams[].sessionCookie.path` | `string` | The path for which the cookie is set. |
 | `upstreams[].sessionCookie.samesite` | `string` | Adds the SameSite attribute to the cookie. The allowed values are: strict, lax, none |
 | `upstreams[].sessionCookie.secure` | `boolean` | Adds the Secure attribute to the cookie. |
-| `upstreams[].slow-start` | `string` | The slow start allows an upstream server to gradually recover its weight from 0 to its nominal value after it has been recovered or became available or when the server becomes available after a period of time it was considered unavailable. By default, the slow start is disabled. Note: The parameter cannot be used along with the random , hash or ip_hash load balancing methods and will be ignored. |
+| `upstreams[].slow-start` | `string` | The slow start allows an upstream server to gradually recover its weight from 0 to its nominal value after it has been recovered or became available or when the server becomes available after a period of time it was considered unavailable. By default, the slow start is disabled. Note: The parameter cannot be used along with the random, hash or ip_hash load balancing methods and will be ignored. |
 | `upstreams[].subselector` | `object` | Selects the pods within the service using label keys and values. By default, all pods of the service are selected. Note: the specified labels are expected to be present in the pods when they are created. If the pod labels are updated, NGINX Ingress Controller will not see that change until the number of the pods is changed. |
 | `upstreams[].tls` | `object` | The TLS configuration for the Upstream. |
 | `upstreams[].tls.enable` | `boolean` | Enables HTTPS for requests to upstream servers. The default is False , meaning that HTTP will be used. Note: by default, NGINX will not verify the upstream server certificate. To enable the verification, configure an EgressMTLS Policy. |

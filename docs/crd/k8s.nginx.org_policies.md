@@ -47,6 +47,8 @@ The `.spec` object supports the following fields:
 | `jwt.keyCache` | `string` | Enables in-memory caching of JWKS (JSON Web Key Sets) that are obtained from the jwksURI and sets a valid time for expiration. |
 | `jwt.realm` | `string` | The realm of the JWT. |
 | `jwt.secret` | `string` | The name of the Kubernetes secret that stores the Htpasswd configuration. It must be in the same namespace as the Policy resource. The secret must be of the type nginx.org/htpasswd, and the config must be stored in the secret under the key htpasswd, otherwise the secret will be rejected as invalid. |
+| `jwt.sniEnabled` | `boolean` | Enables SNI (Server Name Indication) for the JWT policy. This is useful when the remote server requires SNI to serve the correct certificate. |
+| `jwt.sniName` | `string` | The SNI name to use when connecting to the remote server. If not set, the hostname from the ``jwksURI`` will be used. |
 | `jwt.token` | `string` | The token specifies a variable that contains the JSON Web Token. By default the JWT is passed in the Authorization header as a Bearer Token. JWT may be also passed as a cookie or a part of a query string, for example: $cookie_auth_token. Accepted variables are $http_, $arg_, $cookie_. |
 | `oidc` | `object` | The OpenID Connect policy configures NGINX to authenticate client requests by validating a JWT token against an OAuth2/OIDC token provider, such as Auth0 or Keycloak. |
 | `oidc.accessTokenEnable` | `boolean` | Option of whether Bearer token is used to authorize NGINX to access protected backend. |

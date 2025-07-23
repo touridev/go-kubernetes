@@ -38,7 +38,7 @@ The `.spec` object supports the following fields:
 | `upstreams` | `array` | A list of upstreams. |
 | `upstreams[].backup` | `string` | The name of the backup service of type ExternalName. This will be used when the primary servers are unavailable. Note: The parameter cannot be used along with the random, hash or ip_hash load balancing methods. |
 | `upstreams[].backupPort` | `integer` | The port of the backup service. The backup port is required if the backup service name is provided. The port must fall into the range 1..65535. |
-| `upstreams[].failTimeout` | `string` | Sets the number of unsuccessful attempts to communicate with the server that should happen in the duration set by the failTimeout parameter to consider the server unavailable. The default 1. |
+| `upstreams[].failTimeout` | `string` | Sets the number of unsuccessful attempts to communicate with the server that should happen in the duration set by the failTimeout parameter to consider the server unavailable. The default is 1. |
 | `upstreams[].healthCheck` | `object` | The health check configuration for the Upstream. Note: this feature is supported only in NGINX Plus. |
 | `upstreams[].healthCheck.enable` | `boolean` | Enables a health check for an upstream server. The default is false. |
 | `upstreams[].healthCheck.fails` | `integer` | The number of consecutive failed health checks of a particular upstream server after which this server will be considered unhealthy. The default is 1. |
