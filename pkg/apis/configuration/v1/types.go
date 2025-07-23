@@ -645,7 +645,7 @@ type TransportServerUpstream struct {
 	Service string `json:"service"`
 	// The port of the service. If the service doesn’t define that port, NGINX will assume the service has zero endpoints and close client connections/ignore datagrams. The port must fall into the range 1..65535.
 	Port int `json:"port"`
-	// Sets the number of unsuccessful attempts to communicate with the server that should happen in the duration set by the failTimeout parameter to consider the server unavailable. The default 1.
+	// Sets the number of unsuccessful attempts to communicate with the server that should happen in the duration set by the failTimeout parameter to consider the server unavailable. The default is 1.
 	FailTimeout string `json:"failTimeout"`
 	// Sets the number of maximum connections to the proxied server. Default value is zero, meaning there is no limit. The default is 0.
 	MaxFails *int `json:"maxFails"`
