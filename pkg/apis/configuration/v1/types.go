@@ -170,7 +170,7 @@ type Upstream struct {
 	NTLM bool `json:"ntlm"`
 	// The type of the upstream. Supported values are http and grpc. The default is http. For gRPC, it is necessary to enable HTTP/2 in the ConfigMap and configure TLS termination in the VirtualServer.
 	Type string `json:"type"`
-	// The name of the backup service of type ExternalName. This will be used when the primary servers are unavailable. Note: The parameter cannot be used along with the random , hash or ip_hash load balancing methods.
+	// The name of the backup service of type ExternalName. This will be used when the primary servers are unavailable. Note: The parameter cannot be used along with the random, hash or ip_hash load balancing methods.
 	Backup string `json:"backup"`
 	// The port of the backup service. The backup port is required if the backup service name is provided. The port must fall into the range 1..65535.
 	BackupPort *uint16 `json:"backupPort"`
